@@ -1,0 +1,6 @@
+@pHishbone_HostAddress = http://localhost:5281
+
+GET {{pHishbone_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
