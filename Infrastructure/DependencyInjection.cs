@@ -58,6 +58,8 @@ namespace Infrastructure
 
             // Add Services
             services.AddScoped<IAuthService, SupabaseAuthService>();
+            services.AddScoped<ITagService, TagService>();
+            services.AddScoped<ITypeService, TypeService>();
 
             return services;
         }

@@ -1,0 +1,174 @@
+using Application.Common;
+using Application.Common.Interfaces;
+using Application.Constants;
+using Application.DTOs.CatalogDTOs;
+using AutoMapper;
+using Domain.Exceptions;
+using Infrastructure.Common.Interfaces;
+using Infrastructure.Paginate;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using CatalogType = Domain.Entities.Catalog.Type;
+
+namespace Infrastructure.Services
+{
+    public class TypeService : ITypeService
+    {
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IMapper _mapper;
+
+        public TypeService(IUnitOfWork unitOfWork, IMapper mapper)
+        {
+            _unitOfWork = unitOfWork;
+            _mapper = mapper;
+        }
+
+        public async Task<TypeDto> GetByIdAsync(string id)
+        {
+            var type = await _unitOfWork.Repository<CatalogType>().SingleOrDefaultAsync(
+                predicate: t => t.Id == id
+            );
+
+            if (type == null)
+            {
+                throw new CustomErrorException(
+                    StatusCodes.Status404NotFound,
+                    ErrorCode.NOT_FOUND,
+                    CatalogErrorMessageConstant.TypeNotFoundMessage
+                );
+            }
+
+            return _mapper.Map<TypeDto>(type);
+        }
+
+        public async Task<ICollection<TypeDto>> GetListAsync()
+        {
+            var types = await _unitOfWork.Repository<CatalogType>().GetListAsync(
+                orderBy: q => q.OrderBy(t => t.Name)
+            );
+
+            return _mapper.Map<ICollection<TypeDto>>(types);
+        }
+
+        public async Task<PaginationResponse<TypeDto>> GetPaginatedListAsync(TypeFilterDto filter)
+        {
+            var types = await _unitOfWork.Repository<CatalogType>().GetPagingListAsync(
+                predicate: string.IsNullOrWhiteSpace(filter.SearchTerm) ? null :
+                    t => t.Name.Contains(filter.SearchTerm),
+                page: filter.Page,
+                size: filter.Size,
+                sortBy: filter.SortBy,
+                isAsc: filter.IsAscending
+            );
+
+            return new PaginationResponse<TypeDto>
+            {
+                Size = types.Size,
+                Page = types.Page,
+                Total = types.Total,
+                TotalPages = types.TotalPages,
+                Items = _mapper.Map<IList<TypeDto>>(types.Items)
+            };
+        }
+
+        public async Task<TypeDto> CreateAsync(CreateTypeDto dto)
+        {
+            // Check for duplicate name
+            var existingWithName = await _unitOfWork.Repository<CatalogType>().SingleOrDefaultAsync(
+                predicate: t => t.Name == dto.Name
+            );
+            if (existingWithName != null)
+            {
+                throw new CustomErrorException(
+                    StatusCodes.Status400BadRequest,
+                    ErrorCode.DUPLICATE,
+                    CatalogErrorMessageConstant.TypeNameDuplicate
+                );
+            }
+
+            var type = _mapper.Map<CatalogType>(dto);
+            await _unitOfWork.Repository<CatalogType>().InsertAsync(type);
+            await _unitOfWork.SaveChangesAsync();
+
+            return _mapper.Map<TypeDto>(type);
+        }
+
+        public async Task<ICollection<TypeDto>> CreateRangeAsync(List<CreateTypeDto> dtos)
+        {
+            // Check for duplicate names in batch
+            var names = dtos.Select(d => d.Name).ToList();
+            var existingNames = await _unitOfWork.Repository<CatalogType>().GetListAsync(
+                predicate: t => names.Contains(t.Name)
+            );
+
+            if (existingNames.Any())
+            {
+                throw new CustomErrorException(
+                    StatusCodes.Status400BadRequest,
+                    ErrorCode.DUPLICATE,
+                    $"Types with names already exist: {string.Join(", ", existingNames.Select(t => t.Name))}"
+                );
+            }
+
+            var types = _mapper.Map<List<CatalogType>>(dtos);
+            await _unitOfWork.Repository<CatalogType>().InsertRangeAsync(types);
+            await _unitOfWork.SaveChangesAsync();
+
+            return _mapper.Map<ICollection<TypeDto>>(types);
+        }
+
+        public async Task<TypeDto> UpdateAsync(string id, UpdateTypeDto dto)
+        {
+            var type = await _unitOfWork.Repository<CatalogType>().SingleOrDefaultAsync(
+                predicate: t => t.Id == id
+            );
+
+            if (type == null)
+            {
+                throw new CustomErrorException(
+                    StatusCodes.Status404NotFound,
+                    ErrorCode.NOT_FOUND,
+                    CatalogErrorMessageConstant.TypeNotFoundMessage
+                );
+            }
+
+            // Check for duplicate name (excluding current type)
+            var existingWithName = await _unitOfWork.Repository<CatalogType>().SingleOrDefaultAsync(
+                predicate: t => t.Name == dto.Name && t.Id != id
+            );
+            if (existingWithName != null)
+            {
+                throw new CustomErrorException(
+                    StatusCodes.Status400BadRequest,
+                    ErrorCode.DUPLICATE,
+                    CatalogErrorMessageConstant.TypeNameDuplicate
+                );
+            }
+
+            _mapper.Map(dto, type);
+            await _unitOfWork.Repository<CatalogType>().Update(type);
+            await _unitOfWork.SaveChangesAsync();
+
+            return _mapper.Map<TypeDto>(type);
+        }
+
+        public async Task DeleteAsync(string id)
+        {
+            var type = await _unitOfWork.Repository<CatalogType>().SingleOrDefaultAsync(
+                predicate: t => t.Id == id
+            );
+
+            if (type == null)
+            {
+                throw new CustomErrorException(
+                    StatusCodes.Status404NotFound,
+                    ErrorCode.NOT_FOUND,
+                    CatalogErrorMessageConstant.TypeNotFoundMessage
+                );
+            }
+
+            _unitOfWork.Repository<CatalogType>().Delete(type);
+            await _unitOfWork.SaveChangesAsync();
+        }
+    }
+}

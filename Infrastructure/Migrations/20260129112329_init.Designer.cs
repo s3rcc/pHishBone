@@ -3,6 +3,7 @@ using System;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260129112329_init")]
+    partial class init
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -133,26 +136,8 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.Catalog.SpeciesEnvironment", b =>
                 {
-                    b.Property<string>("Id")
+                    b.Property<string>("SpeciesId")
                         .HasColumnType("text");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DeletedBy")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("DeletedTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("LastUpdatedBy")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("LastUpdatedTime")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("MinTankVolume")
                         .HasColumnType("integer");
@@ -174,14 +159,14 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
-                    b.HasKey("Id");
+                    b.HasKey("SpeciesId");
 
                     b.ToTable("SpeciesEnvironment", "catalog");
                 });
 
             modelBuilder.Entity("Domain.Entities.Catalog.SpeciesProfile", b =>
                 {
-                    b.Property<string>("Id")
+                    b.Property<string>("SpeciesId")
                         .HasColumnType("text");
 
                     b.Property<decimal>("AdultSize")
@@ -189,18 +174,6 @@ namespace Infrastructure.Migrations
 
                     b.Property<decimal>("BioLoadFactor")
                         .HasColumnType("decimal(3,2)");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DeletedBy")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("DeletedTime")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
                         .HasColumnType("text");
@@ -214,12 +187,6 @@ namespace Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(false);
-
-                    b.Property<string>("LastUpdatedBy")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("LastUpdatedTime")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("MinGroupSize")
                         .ValueGeneratedOnAdd()
@@ -239,48 +206,24 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
-                    b.HasKey("Id");
+                    b.HasKey("SpeciesId");
 
                     b.ToTable("SpeciesProfile", "catalog");
                 });
 
             modelBuilder.Entity("Domain.Entities.Catalog.SpeciesTag", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("text");
-
-                    b.Property<string>("CreatedBy")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DeletedBy")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("DeletedTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("LastUpdatedBy")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("LastUpdatedTime")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<string>("SpeciesId")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("TagId")
-                        .IsRequired()
                         .HasColumnType("text");
 
-                    b.HasKey("Id");
+                    b.HasKey("SpeciesId", "TagId");
 
                     b.HasIndex("TagId");
 
-                    b.HasIndex("SpeciesId", "TagId")
-                        .IsUnique();
+                    b.HasIndex("SpeciesId", "TagId");
 
                     b.ToTable("SpeciesTags", "catalog");
                 });
@@ -445,7 +388,7 @@ namespace Infrastructure.Migrations
                 {
                     b.HasOne("Domain.Entities.Catalog.Species", "Species")
                         .WithOne("SpeciesEnvironment")
-                        .HasForeignKey("Domain.Entities.Catalog.SpeciesEnvironment", "Id")
+                        .HasForeignKey("Domain.Entities.Catalog.SpeciesEnvironment", "SpeciesId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -456,7 +399,7 @@ namespace Infrastructure.Migrations
                 {
                     b.HasOne("Domain.Entities.Catalog.Species", "Species")
                         .WithOne("SpeciesProfile")
-                        .HasForeignKey("Domain.Entities.Catalog.SpeciesProfile", "Id")
+                        .HasForeignKey("Domain.Entities.Catalog.SpeciesProfile", "SpeciesId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

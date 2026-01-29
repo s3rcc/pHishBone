@@ -14,6 +14,15 @@ namespace Infrastructure.Persistence
 
         public DbSet<PBUser> PBUsers { get; set; }
 
+        // Catalog Module DbSets
+        public DbSet<Domain.Entities.Catalog.Type> CatalogTypes { get; set; }
+        public DbSet<Domain.Entities.Catalog.Species> Species { get; set; }
+        public DbSet<Domain.Entities.Catalog.SpeciesEnvironment> SpeciesEnvironments { get; set; }
+        public DbSet<Domain.Entities.Catalog.SpeciesProfile> SpeciesProfiles { get; set; }
+        public DbSet<Domain.Entities.Catalog.Tag> Tags { get; set; }
+        public DbSet<Domain.Entities.Catalog.SpeciesTag> SpeciesTags { get; set; }
+        public DbSet<Domain.Entities.Catalog.CompatibilityRule> CompatibilityRules { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
