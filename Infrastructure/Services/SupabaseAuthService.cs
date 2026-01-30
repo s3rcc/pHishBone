@@ -43,8 +43,8 @@ namespace Infrastructure.Services
             {
                 _logger.LogError("Failed to create user in Supabase Auth for email: {Email}", request.Email);
                 throw new CustomErrorException(
-                    StatusCodes.Status400BadRequest, 
-                    ErrorCode.BADREQUEST, 
+                    StatusCodes.Status400BadRequest,
+                    ErrorCode.BADREQUEST,
                     "Failed to create user account");
             }
 
@@ -54,13 +54,14 @@ namespace Infrastructure.Services
                 Username = request.Username,
                 Email = request.Email,
                 SupabaseUserId = authResponse.User.Id,
+                Role = Domain.Enums.Role.User, // Default role
                 CreatedBy = authResponse.User.Id
             };
 
             await _unitOfWork.Repository<PBUser>().InsertAsync(user);
             await _unitOfWork.SaveChangesAsync();
 
-            _logger.LogInformation("Successfully registered user with email: {Email}, UserId: {UserId}", 
+            _logger.LogInformation("Successfully registered user with email: {Email}, UserId: {UserId}",
                 request.Email, user.Id);
 
             // Map response
@@ -91,10 +92,10 @@ namespace Infrastructure.Services
             // Get user from local database
             var user = await _unitOfWork.Repository<PBUser>()
                 .SingleOrDefaultAsync(predicate: u => u.SupabaseUserId == authResponse.User.Id);
-            
+
             if (user == null)
             {
-                _logger.LogError("User authenticated in Supabase but not found in local database. SupabaseUserId: {SupabaseUserId}", 
+                _logger.LogError("User authenticated in Supabase but not found in local database. SupabaseUserId: {SupabaseUserId}",
                     authResponse.User.Id);
                 throw new CustomErrorException(StatusCodes.Status404NotFound, ErrorCode.NOT_FOUND, ErrorMessageConstant.UserNotFound);
             }
@@ -111,6 +112,68 @@ namespace Infrastructure.Services
                 ExpiresIn = authResponse.ExpiresIn,
                 User = userDto
             };
+        }
+
+        public async Task<LoginResponseDto> RefreshTokenAsync(string refreshToken)
+        {
+            _logger.LogInformation("Attempting to refresh token");
+
+            // Set the session with the refresh token, then refresh
+            var session = await _supabaseClient.Auth.RefreshSession();
+
+            if (session?.User == null)
+            {
+                _logger.LogWarning("Failed to refresh token - Invalid refresh token");
+                throw new CustomErrorException(
+                    StatusCodes.Status401Unauthorized,
+                    ErrorCode.UNAUTHORIZED,
+                    "Invalid or expired refresh token");
+            }
+
+            // Get user from local database
+            var user = await _unitOfWork.Repository<PBUser>()
+                .SingleOrDefaultAsync(predicate: u => u.SupabaseUserId == session.User.Id);
+
+            if (user == null)
+            {
+                _logger.LogError("User not found in local database. SupabaseUserId: {SupabaseUserId}",
+                    session.User.Id);
+                throw new CustomErrorException(
+                    StatusCodes.Status404NotFound,
+                    ErrorCode.NOT_FOUND,
+                    ErrorMessageConstant.UserNotFound);
+            }
+
+            _logger.LogInformation("Successfully refreshed token for user: {UserId}", user.Id);
+
+            var userDto = _mapper.Map<UserDto>(user);
+
+            return new LoginResponseDto
+            {
+                AccessToken = session.AccessToken ?? string.Empty,
+                RefreshToken = session.RefreshToken ?? string.Empty,
+                ExpiresIn = session.ExpiresIn,
+                User = userDto
+            };
+        }
+
+        public async Task<UserDto> GetCurrentUserAsync(string userId)
+        {
+            _logger.LogInformation("Getting current user: {UserId}", userId);
+
+            var user = await _unitOfWork.Repository<PBUser>()
+                .SingleOrDefaultAsync(predicate: u => u.Id == userId);
+
+            if (user == null)
+            {
+                _logger.LogWarning("User not found: {UserId}", userId);
+                throw new CustomErrorException(
+                    StatusCodes.Status404NotFound,
+                    ErrorCode.NOT_FOUND,
+                    ErrorMessageConstant.UserNotFound);
+            }
+
+            return _mapper.Map<UserDto>(user);
         }
     }
 }

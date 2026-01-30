@@ -22,20 +22,20 @@ namespace Infrastructure
             {
                 throw new InvalidOperationException("Database connection string is missing");
             }
-            
+
 
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseNpgsql(connectionString));
 
             // Configure Supabase settings
             var supabaseSettings = configuration.GetSection("Supabase").Get<SupabaseSettings>();
-            
+
             if (supabaseSettings == null || string.IsNullOrEmpty(supabaseSettings.Url) || string.IsNullOrEmpty(supabaseSettings.Key))
             {
                 throw new InvalidOperationException("Supabase configuration is missing or incomplete");
             }
 
-            services.Configure<SupabaseSettings>(options => 
+            services.Configure<SupabaseSettings>(options =>
                 configuration.GetSection("Supabase").Bind(options));
 
             // Add Supabase client
@@ -60,6 +60,7 @@ namespace Infrastructure
             services.AddScoped<IAuthService, SupabaseAuthService>();
             services.AddScoped<ITagService, TagService>();
             services.AddScoped<ITypeService, TypeService>();
+            services.AddScoped<ICurrentUserService, CurrentUserService>();
 
             return services;
         }
