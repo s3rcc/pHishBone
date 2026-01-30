@@ -77,7 +77,8 @@ namespace pHishbone.Controllers
             {
                 return Unauthorized(ApiResponse<object>.Error(
                     "User not authenticated",
-                    StatusCodes.Status401Unauthorized
+                    //StatusCodes.Status401Unauthorized
+                    "User not authenticated"
                 ));
             }
 
