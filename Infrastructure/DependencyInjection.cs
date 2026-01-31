@@ -61,6 +61,7 @@ namespace Infrastructure
             services.AddScoped<ITagService, TagService>();
             services.AddScoped<ITypeService, TypeService>();
             services.AddScoped<ICurrentUserService, CurrentUserService>();
+            services.AddScoped<Application.Services.ITankService, TankService>();
 
             return services;
         }
