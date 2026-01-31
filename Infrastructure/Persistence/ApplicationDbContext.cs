@@ -23,6 +23,11 @@ namespace Infrastructure.Persistence
         public DbSet<Domain.Entities.Catalog.SpeciesTag> SpeciesTags { get; set; }
         public DbSet<Domain.Entities.Catalog.CompatibilityRule> CompatibilityRules { get; set; }
 
+        // Project Module DbSets
+        public DbSet<Domain.Entities.Project.Tank> Tanks { get; set; }
+        public DbSet<Domain.Entities.Project.TankItem> TankItems { get; set; }
+        public DbSet<Domain.Entities.Project.TankSnapshot> TankSnapshots { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

@@ -6,5 +6,7 @@ namespace Application.Common.Interfaces
     {
         Task<LoginResponseDto> RegisterAsync(RegisterRequestDto request);
         Task<LoginResponseDto> LoginAsync(LoginRequestDto request);
+        Task<LoginResponseDto> RefreshTokenAsync(string refreshToken);
+        Task<UserDto> GetCurrentUserAsync(string userId);
     }
 }
