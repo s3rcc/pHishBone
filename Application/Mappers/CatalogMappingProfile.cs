@@ -55,6 +55,89 @@ namespace Application.Mappers
                 .ForMember(dest => dest.DeletedBy, opt => opt.Ignore())
                 .ForMember(dest => dest.DeletedTime, opt => opt.Ignore())
                 .ForMember(dest => dest.Species, opt => opt.Ignore());
+
+            // Species mappings
+            // SpeciesEnvironment mappings
+            CreateMap<SpeciesEnvironment, SpeciesEnvironmentDto>();
+            CreateMap<CreateSpeciesDto.EnvironmentDto, SpeciesEnvironment>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedTime, opt => opt.Ignore())
+                .ForMember(dest => dest.LastUpdatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.LastUpdatedTime, opt => opt.Ignore())
+                .ForMember(dest => dest.DeletedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.DeletedTime, opt => opt.Ignore())
+                .ForMember(dest => dest.Species, opt => opt.Ignore());
+            
+            CreateMap<UpdateSpeciesDto.EnvironmentDto, SpeciesEnvironment>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedTime, opt => opt.Ignore())
+                .ForMember(dest => dest.LastUpdatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.LastUpdatedTime, opt => opt.Ignore())
+                .ForMember(dest => dest.DeletedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.DeletedTime, opt => opt.Ignore())
+                .ForMember(dest => dest.Species, opt => opt.Ignore());
+
+            // SpeciesProfile mappings
+            CreateMap<SpeciesProfile, SpeciesProfileDto>();
+            CreateMap<CreateSpeciesDto.ProfileDto, SpeciesProfile>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedTime, opt => opt.Ignore())
+                .ForMember(dest => dest.LastUpdatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.LastUpdatedTime, opt => opt.Ignore())
+                .ForMember(dest => dest.DeletedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.DeletedTime, opt => opt.Ignore())
+                .ForMember(dest => dest.Species, opt => opt.Ignore());
+
+            CreateMap<UpdateSpeciesDto.ProfileDto, SpeciesProfile>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedTime, opt => opt.Ignore())
+                .ForMember(dest => dest.LastUpdatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.LastUpdatedTime, opt => opt.Ignore())
+                .ForMember(dest => dest.DeletedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.DeletedTime, opt => opt.Ignore())
+                .ForMember(dest => dest.Species, opt => opt.Ignore());
+
+            // Species entity mappings
+            CreateMap<Species, SpeciesDto>()
+                .ForMember(dest => dest.TypeName, opt => opt.MapFrom(s => s.Type.Name));
+
+            CreateMap<Species, SpeciesDetailDto>()
+                .ForMember(dest => dest.TypeName, opt => opt.MapFrom(s => s.Type.Name))
+                .ForMember(dest => dest.Environment, opt => opt.MapFrom(s => s.SpeciesEnvironment))
+                .ForMember(dest => dest.Profile, opt => opt.MapFrom(s => s.SpeciesProfile))
+                .ForMember(dest => dest.Tags, opt => opt.MapFrom(s => s.SpeciesTags.Select(st => st.Tag)));
+
+            CreateMap<CreateSpeciesDto, Species>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.Slug, opt => opt.Ignore()) // Set manually in service
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedTime, opt => opt.Ignore())
+                .ForMember(dest => dest.LastUpdatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.LastUpdatedTime, opt => opt.Ignore())
+                .ForMember(dest => dest.DeletedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.DeletedTime, opt => opt.Ignore())
+                .ForMember(dest => dest.Type, opt => opt.Ignore())
+                .ForMember(dest => dest.SpeciesEnvironment, opt => opt.Ignore())
+                .ForMember(dest => dest.SpeciesProfile, opt => opt.Ignore())
+                .ForMember(dest => dest.SpeciesTags, opt => opt.Ignore());
+
+            CreateMap<UpdateSpeciesDto, Species>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.Slug, opt => opt.Ignore()) // Immutable!
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedTime, opt => opt.Ignore())
+                .ForMember(dest => dest.LastUpdatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.LastUpdatedTime, opt => opt.Ignore())
+                .ForMember(dest => dest.DeletedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.DeletedTime, opt => opt.Ignore())
+                .ForMember(dest => dest.Type, opt => opt.Ignore())
+                .ForMember(dest => dest.SpeciesEnvironment, opt => opt.Ignore())
+                .ForMember(dest => dest.SpeciesProfile, opt => opt.Ignore())
+                .ForMember(dest => dest.SpeciesTags, opt => opt.Ignore());
         }
     }
 }

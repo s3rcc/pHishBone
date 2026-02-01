@@ -60,6 +60,12 @@ namespace Infrastructure
             services.AddScoped<IAuthService, SupabaseAuthService>();
             services.AddScoped<ITagService, TagService>();
             services.AddScoped<ITypeService, TypeService>();
+<<<<<<< Updated upstream
+=======
+            services.AddScoped<ISpeciesService, SpeciesService>();
+            services.AddScoped<ICurrentUserService, CurrentUserService>();
+            services.AddScoped<Application.Services.ITankService, TankService>();
+>>>>>>> Stashed changes
 
             return services;
         }
