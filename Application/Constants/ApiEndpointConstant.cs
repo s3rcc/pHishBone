@@ -34,5 +34,17 @@ namespace Application.Constants
             public const string Update = "{id}";
             public const string Delete = "{id}";
         }
+
+        public static class Species
+        {
+            public const string Base = "api/catalog/species";
+            public const string GetById = "{id}";
+            public const string GetDetailById = "{id}/detail";
+            public const string GetList = "";
+            public const string GetPaginated = "paginated";
+            public const string Create = "";
+            public const string Update = "{id}";
+            public const string Delete = "{id}";
+        }
     }
 }
