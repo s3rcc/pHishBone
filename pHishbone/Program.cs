@@ -21,49 +21,60 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
-    // Use Serilog for logging
-    builder.Host.UseSerilog();
+    // Use Serilog for logging, reading from the configuration
+    builder.Host.UseSerilog((context, services, configuration) => configuration
+        .ReadFrom.Configuration(context.Configuration)
+        .ReadFrom.Services(services)
+        .Enrich.FromLogContext());
 
-    // Add services to the container.
-    builder.Services.AddControllers();
+// Add services to the container.
+builder.Services.AddControllers();
 
-    // Add Infrastructure services (DbContext, Supabase, UnitOfWork, Repositories, Auth)
-    builder.Services.AddInfrastructure(builder.Configuration);
+// Add HttpContextAccessor (required for CurrentUserService)
+builder.Services.AddHttpContextAccessor();
 
-    // Add Application services (AutoMapper, FluentValidation)
-    builder.Services.AddApplicationServices();
+// Add Infrastructure services (DbContext, Supabase, UnitOfWork, Repositories, Auth)
+builder.Services.AddInfrastructure(builder.Configuration);
 
-    // Add CORS
-    builder.Services.AddCorsPolicy();
+// Add Application services (AutoMapper, FluentValidation)
+builder.Services.AddApplicationServices();
 
-    // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-    builder.Services.AddEndpointsApiExplorer();
-    builder.Services.AddSwaggerGen();
+// Add CORS
+builder.Services.AddCorsPolicy();
 
-    var app = builder.Build();
+// Add JWT Authentication
+builder.Services.AddJwtAuthentication(builder.Configuration);
 
-    // Configure the HTTP request pipeline.
-    if (app.Environment.IsDevelopment())
-    {
-        app.UseSwagger();
-        app.UseSwaggerUI();
-    }
+// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
-    // Serilog request logging
-    app.UseSerilogRequestLogging();
+var app = builder.Build();
 
-    // Global exception handling middleware
-    app.UseMiddleware<ExceptionHandlingMiddleware>();
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
-    app.UseMiddleware<SupabaseExceptionMiddleware>();
+// Serilog request logging
+app.UseSerilogRequestLogging();
 
-    app.UseHttpsRedirection();
+// Global exception handling middleware
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-    app.UseCors("AllowAll");
+app.UseMiddleware<SupabaseExceptionMiddleware>();
 
-    app.UseAuthorization();
+app.UseHttpsRedirection();
 
-    app.MapControllers();
+app.UseCors("AllowAll");
+
+// Authentication must come BEFORE Authorization
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
 
     app.Run();
 }

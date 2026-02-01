@@ -2,6 +2,15 @@ namespace Application.Constants
 {
     public static class ApiEndpointConstant
     {
+        public static class Auth
+        {
+            public const string Base = "api/auth";
+            public const string Register = "register";
+            public const string Login = "login";
+            public const string Refresh = "refresh";
+            public const string Me = "me";
+        }
+
         public static class Tag
         {
             public const string Base = "api/catalog/tags";
