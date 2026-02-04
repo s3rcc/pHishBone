@@ -175,6 +175,207 @@ namespace Infrastructure.Services
 
             return _mapper.Map<UserDto>(user);
         }
+
+        public async Task ForgotPasswordAsync(ForgotPasswordRequestDto request)
+        {
+            _logger.LogInformation("Password reset requested for email: {Email}", request.Email);
+
+            try
+            {
+                // Send password reset email via Supabase
+                await _supabaseClient.Auth.ResetPasswordForEmail(request.Email);
+
+                _logger.LogInformation("Password reset email sent successfully to: {Email}", request.Email);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send password reset email to: {Email}", request.Email);
+                throw new CustomErrorException(
+                    StatusCodes.Status500InternalServerError,
+                    ErrorCode.INTERNAL_SERVER_ERROR,
+                    ErrorMessageConstant.PasswordResetFailed);
+            }
+        }
+
+        public async Task ResetPasswordAsync(ResetPasswordRequestDto request)
+        {
+            _logger.LogInformation("Attempting to reset password for email: {Email}", request.Email);
+
+            try
+            {
+                // Verify the reset token (OTP)
+                var session = await _supabaseClient.Auth.VerifyOTP(
+                    request.Email,
+                    request.Code,
+                    Supabase.Gotrue.Constants.EmailOtpType.Recovery);
+
+                if (session?.User == null)
+                {
+                    _logger.LogWarning("Invalid reset code for email: {Email}", request.Email);
+                    throw new CustomErrorException(
+                        StatusCodes.Status400BadRequest,
+                        ErrorCode.BADREQUEST,
+                        ErrorMessageConstant.InvalidResetToken);
+                }
+
+                // Update user's password
+                var userAttributes = new Supabase.Gotrue.UserAttributes
+                {
+                    Password = request.Password
+                };
+
+                await _supabaseClient.Auth.Update(userAttributes);
+
+                _logger.LogInformation("Password reset successfully for email: {Email}", request.Email);
+            }
+            catch (CustomErrorException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to reset password for email: {Email}", request.Email);
+                throw new CustomErrorException(
+                    StatusCodes.Status500InternalServerError,
+                    ErrorCode.INTERNAL_SERVER_ERROR,
+                    ErrorMessageConstant.PasswordResetFailed);
+            }
+        }
+
+        public async Task ChangePasswordAsync(ChangePasswordRequestDto request, string userId)
+        {
+            _logger.LogInformation("Attempting to change password for user: {UserId}", userId);
+
+            try
+            {
+                // Verify current password by attempting to sign in
+                var user = await _unitOfWork.Repository<PBUser>()
+                    .SingleOrDefaultAsync(predicate: u => u.Id == userId);
+
+                if (user == null)
+                {
+                    _logger.LogWarning("User not found: {UserId}", userId);
+                    throw new CustomErrorException(
+                        StatusCodes.Status404NotFound,
+                        ErrorCode.NOT_FOUND,
+                        ErrorMessageConstant.UserNotFound);
+                }
+
+                // Verify current password
+                try
+                {
+                    await _supabaseClient.Auth.SignIn(user.Email, request.CurrentPassword);
+                }
+                catch
+                {
+                    _logger.LogWarning("Invalid current password for user: {UserId}", userId);
+                    throw new CustomErrorException(
+                        StatusCodes.Status401Unauthorized,
+                        ErrorCode.UNAUTHORIZED,
+                        "Current password is incorrect");
+                }
+
+                // Update to new password
+                var userAttributes = new Supabase.Gotrue.UserAttributes
+                {
+                    Password = request.NewPassword
+                };
+
+                await _supabaseClient.Auth.Update(userAttributes);
+
+                _logger.LogInformation("Password changed successfully for user: {UserId}", userId);
+            }
+            catch (CustomErrorException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to change password for user: {UserId}", userId);
+                throw new CustomErrorException(
+                    StatusCodes.Status500InternalServerError,
+                    ErrorCode.INTERNAL_SERVER_ERROR,
+                    ErrorMessageConstant.PasswordChangeFailed);
+            }
+        }
+
+        public async Task VerifyEmailAsync(VerifyEmailRequestDto request)
+        {
+            _logger.LogInformation("Attempting to verify email: {Email}", request.Email);
+
+            try
+            {
+                // Verify OTP
+                var session = await _supabaseClient.Auth.VerifyOTP(
+                    request.Email,
+                    request.Token,
+                    Supabase.Gotrue.Constants.EmailOtpType.Signup);
+
+                if (session?.User == null)
+                {
+                    _logger.LogWarning("Invalid verification token for email: {Email}", request.Email);
+                    throw new CustomErrorException(
+                        StatusCodes.Status400BadRequest,
+                        ErrorCode.BADREQUEST,
+                        ErrorMessageConstant.InvalidVerificationToken);
+                }
+
+                _logger.LogInformation("Email verified successfully: {Email}", request.Email);
+            }
+            catch (CustomErrorException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to verify email: {Email}", request.Email);
+                throw new CustomErrorException(
+                    StatusCodes.Status500InternalServerError,
+                    ErrorCode.INTERNAL_SERVER_ERROR,
+                    ErrorMessageConstant.EmailVerificationFailed);
+            }
+        }
+
+        public async Task ResendVerificationEmailAsync(ResendVerificationRequestDto request)
+        {
+            _logger.LogInformation("Resending verification email to: {Email}", request.Email);
+
+            try
+            {
+                // Resend signup confirmation email
+                await _supabaseClient.Auth.ResetPasswordForEmail(request.Email);
+
+                _logger.LogInformation("Verification email resent successfully to: {Email}", request.Email);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to resend verification email to: {Email}", request.Email);
+                throw new CustomErrorException(
+                    StatusCodes.Status500InternalServerError,
+                    ErrorCode.INTERNAL_SERVER_ERROR,
+                    "Failed to resend verification email");
+            }
+        }
+
+        public async Task LogoutAsync()
+        {
+            _logger.LogInformation("Attempting to logout user");
+
+            try
+            {
+                await _supabaseClient.Auth.SignOut();
+
+                _logger.LogInformation("User logged out successfully");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to logout user");
+                throw new CustomErrorException(
+                    StatusCodes.Status500InternalServerError,
+                    ErrorCode.INTERNAL_SERVER_ERROR,
+                    ErrorMessageConstant.LogoutFailed);
+            }
+        }
     }
 }
 

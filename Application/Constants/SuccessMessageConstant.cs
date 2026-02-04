@@ -1,0 +1,58 @@
+namespace Application.Constants
+{
+    /// <summary>
+    /// Constants for success messages across the application
+    /// </summary>
+    public static class SuccessMessageConstant
+    {
+        #region Auth
+        public const string UserRegisteredSuccessfully = "User registered successfully";
+        public const string LoginSuccessful = "Login successful";
+        public const string TokenRefreshedSuccessfully = "Token refreshed successfully";
+        public const string UserRetrievedSuccessfully = "User retrieved successfully";
+        public const string LogoutSuccessful = "Logged out successfully";
+        public const string PasswordResetEmailSent = "Password reset email has been sent";
+        public const string PasswordChangedSuccessfully = "Password changed successfully";
+        public const string EmailVerifiedSuccessfully = "Email verified successfully";
+        public const string EmailVerificationSent = "Verification email has been sent";
+        #endregion Auth
+
+        #region Catalog - Tag
+        public const string TagRetrievedSuccessfully = "Tag retrieved successfully";
+        public const string TagsRetrievedSuccessfully = "Tags retrieved successfully";
+        public const string TagCreatedSuccessfully = "Tag created successfully";
+        public const string TagsCreatedSuccessfully = "Tags created successfully";
+        public const string TagUpdatedSuccessfully = "Tag updated successfully";
+        public const string TagDeletedSuccessfully = "Tag deleted successfully";
+        #endregion Catalog - Tag
+
+        #region Catalog - Type
+        public const string TypeRetrievedSuccessfully = "Type retrieved successfully";
+        public const string TypesRetrievedSuccessfully = "Types retrieved successfully";
+        public const string TypeCreatedSuccessfully = "Type created successfully";
+        public const string TypesCreatedSuccessfully = "Types created successfully";
+        public const string TypeUpdatedSuccessfully = "Type updated successfully";
+        public const string TypeDeletedSuccessfully = "Type deleted successfully";
+        #endregion Catalog - Type
+
+        #region Catalog - Species
+        public const string SpeciesRetrievedSuccessfully = "Species retrieved successfully";
+        public const string SpeciesDetailsRetrievedSuccessfully = "Species details retrieved successfully";
+        public const string SpeciesListRetrievedSuccessfully = "Species list retrieved successfully";
+        public const string SpeciesCreatedSuccessfully = "Species created successfully";
+        public const string SpeciesUpdatedSuccessfully = "Species updated successfully";
+        public const string SpeciesDeletedSuccessfully = "Species deleted successfully";
+        #endregion Catalog - Species
+
+        #region Project - Tank
+        public const string TankRetrievedSuccessfully = "Tank retrieved successfully";
+        public const string TanksRetrievedSuccessfully = "Tanks retrieved successfully";
+        public const string TankCreatedSuccessfully = "Tank created successfully";
+        public const string TankUpdatedSuccessfully = "Tank updated successfully";
+        public const string TankDeletedSuccessfully = "Tank deleted successfully";
+        public const string TankItemAddedSuccessfully = "Item added to tank successfully";
+        public const string TankItemUpdatedSuccessfully = "Tank item updated successfully";
+        public const string TankItemRemovedSuccessfully = "Item removed from tank successfully";
+        #endregion Project - Tank
+    }
+}

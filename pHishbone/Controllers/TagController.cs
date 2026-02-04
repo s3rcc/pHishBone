@@ -28,7 +28,7 @@ namespace pHishbone.Controllers
         public async Task<IActionResult> GetById([FromRoute] string id)
         {
             var tag = await _tagService.GetByIdAsync(id);
-            return Ok(ApiResponse<TagDto>.Success(tag, "Tag retrieved successfully"));
+            return Ok(ApiResponse<TagDto>.Success(tag, SuccessMessageConstant.TagRetrievedSuccessfully));
         }
 
         /// <summary>
@@ -39,7 +39,7 @@ namespace pHishbone.Controllers
         public async Task<IActionResult> GetList()
         {
             var tags = await _tagService.GetListAsync();
-            return Ok(ApiResponse<ICollection<TagDto>>.Success(tags, "Tags retrieved successfully"));
+            return Ok(ApiResponse<ICollection<TagDto>>.Success(tags, SuccessMessageConstant.TagsRetrievedSuccessfully));
         }
 
         /// <summary>
@@ -50,7 +50,7 @@ namespace pHishbone.Controllers
         public async Task<IActionResult> GetPaginated([FromQuery] TagFilterDto filter)
         {
             var tags = await _tagService.GetPaginatedListAsync(filter);
-            return Ok(ApiResponse<object>.Success(tags, "Tags retrieved successfully"));
+            return Ok(ApiResponse<object>.Success(tags, SuccessMessageConstant.TagsRetrievedSuccessfully));
         }
 
         /// <summary>
@@ -65,7 +65,7 @@ namespace pHishbone.Controllers
             return CreatedAtAction(
                 nameof(GetById),
                 new { id = tag.Id },
-                ApiResponse<TagDto>.Success(tag, "Tag created successfully", 201)
+                ApiResponse<TagDto>.Success(tag, SuccessMessageConstant.TagCreatedSuccessfully, 201)
             );
         }
 
@@ -78,7 +78,7 @@ namespace pHishbone.Controllers
         public async Task<IActionResult> CreateRange([FromBody] List<CreateTagDto> dtos)
         {
             var tags = await _tagService.CreateRangeAsync(dtos);
-            return Ok(ApiResponse<ICollection<TagDto>>.Success(tags, "Tags created successfully", 201));
+            return Ok(ApiResponse<ICollection<TagDto>>.Success(tags, SuccessMessageConstant.TagsCreatedSuccessfully, 201));
         }
 
         /// <summary>
@@ -91,7 +91,7 @@ namespace pHishbone.Controllers
         public async Task<IActionResult> Update([FromRoute] string id, [FromBody] UpdateTagDto dto)
         {
             var tag = await _tagService.UpdateAsync(id, dto);
-            return Ok(ApiResponse<TagDto>.Success(tag, "Tag updated successfully"));
+            return Ok(ApiResponse<TagDto>.Success(tag, SuccessMessageConstant.TagUpdatedSuccessfully));
         }
 
         /// <summary>
@@ -103,7 +103,7 @@ namespace pHishbone.Controllers
         public async Task<IActionResult> Delete([FromRoute] string id)
         {
             await _tagService.DeleteAsync(id);
-            return Ok(ApiResponse<object>.Success(null, "Tag deleted successfully"));
+            return Ok(ApiResponse<object>.Success(null, SuccessMessageConstant.TagDeletedSuccessfully));
         }
     }
 }

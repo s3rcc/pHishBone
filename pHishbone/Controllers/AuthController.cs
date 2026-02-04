@@ -2,6 +2,7 @@ using Application.Common;
 using Application.Common.Interfaces;
 using Application.Constants;
 using Application.DTOs.Auth;
+using Application.DTOs.AuthDTOs;
 using Microsoft.AspNetCore.Mvc;
 
 namespace pHishbone.Controllers
@@ -35,7 +36,7 @@ namespace pHishbone.Controllers
             var result = await _authService.RegisterAsync(request);
             return StatusCode(
                 StatusCodes.Status201Created,
-                ApiResponse<LoginResponseDto>.Success(result, "User registered successfully", 201)
+                ApiResponse<LoginResponseDto>.Success(result, SuccessMessageConstant.UserRegisteredSuccessfully, 201)
             );
         }
 
@@ -48,7 +49,7 @@ namespace pHishbone.Controllers
         public async Task<IActionResult> Login([FromBody] LoginRequestDto request)
         {
             var result = await _authService.LoginAsync(request);
-            return Ok(ApiResponse<LoginResponseDto>.Success(result, "Login successful"));
+            return Ok(ApiResponse<LoginResponseDto>.Success(result, SuccessMessageConstant.LoginSuccessful));
         }
 
         /// <summary>
@@ -60,7 +61,7 @@ namespace pHishbone.Controllers
         public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequestDto dto)
         {
             var response = await _authService.RefreshTokenAsync(dto.RefreshToken);
-            return Ok(ApiResponse<LoginResponseDto>.Success(response, "Token refreshed successfully"));
+            return Ok(ApiResponse<LoginResponseDto>.Success(response, SuccessMessageConstant.TokenRefreshedSuccessfully));
         }
 
         /// <summary>
@@ -83,15 +84,90 @@ namespace pHishbone.Controllers
             }
 
             var user = await _authService.GetCurrentUserAsync(userId);
-            return Ok(ApiResponse<UserDto>.Success(user, "User retrieved successfully"));
+            return Ok(ApiResponse<UserDto>.Success(user, SuccessMessageConstant.UserRetrievedSuccessfully));
+        }
+
+        /// <summary>
+        /// Logout current authenticated user
+        /// </summary>
+        [HttpPost(ApiEndpointConstant.Auth.Logout)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> Logout()
+        {
+            await _authService.LogoutAsync();
+            return Ok(ApiResponse<object>.Success(null, SuccessMessageConstant.LogoutSuccessful));
+        }
+
+        /// <summary>
+        /// Request password reset email
+        /// </summary>
+        [HttpPost(ApiEndpointConstant.Auth.ForgotPassword)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestDto request)
+        {
+            await _authService.ForgotPasswordAsync(request);
+            return Ok(ApiResponse<object>.Success(null, SuccessMessageConstant.PasswordResetEmailSent));
+        }
+
+        /// <summary>
+        /// Reset password using reset code from email
+        /// </summary>
+        [HttpPost(ApiEndpointConstant.Auth.ResetPassword)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto request)
+        {
+            await _authService.ResetPasswordAsync(request);
+            return Ok(ApiResponse<object>.Success(null, SuccessMessageConstant.PasswordChangedSuccessfully));
+        }
+
+        /// <summary>
+        /// Change password for authenticated user
+        /// </summary>
+        [HttpPost(ApiEndpointConstant.Auth.ChangePassword)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequestDto request)
+        {
+            var userId = _currentUserService.GetUserId();
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(ApiResponse<object>.Error(
+                    "User not authenticated",
+                    "User not authenticated"
+                ));
+            }
+
+            await _authService.ChangePasswordAsync(request, userId);
+            return Ok(ApiResponse<object>.Success(null, SuccessMessageConstant.PasswordChangedSuccessfully));
+        }
+
+        /// <summary>
+        /// Verify email with verification token
+        /// </summary>
+        [HttpPost(ApiEndpointConstant.Auth.VerifyEmail)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequestDto request)
+        {
+            await _authService.VerifyEmailAsync(request);
+            return Ok(ApiResponse<object>.Success(null, SuccessMessageConstant.EmailVerifiedSuccessfully));
+        }
+
+        /// <summary>
+        /// Resend verification email
+        /// </summary>
+        [HttpPost(ApiEndpointConstant.Auth.ResendVerification)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> ResendVerification([FromBody] ResendVerificationRequestDto request)
+        {
+            await _authService.ResendVerificationEmailAsync(request);
+            return Ok(ApiResponse<object>.Success(null, SuccessMessageConstant.EmailVerificationSent));
         }
     }
 
-    /// <summary>
-    /// DTO for refresh token request
-    /// </summary>
-    public class RefreshTokenRequestDto
-    {
-        public string RefreshToken { get; set; } = string.Empty;
-    }
 }

@@ -9,6 +9,12 @@ namespace Application.Constants
             public const string Login = "login";
             public const string Refresh = "refresh";
             public const string Me = "me";
+            public const string Logout = "logout";
+            public const string ForgotPassword = "forgot-password";
+            public const string ResetPassword = "reset-password";
+            public const string ChangePassword = "change-password";
+            public const string VerifyEmail = "verify-email";
+            public const string ResendVerification = "resend-verification";
         }
 
         public static class Tag
