@@ -52,5 +52,18 @@ namespace Application.Constants
             public const string Update = "{id}";
             public const string Delete = "{id}";
         }
+
+        public static class Tank
+        {
+            public const string Base = "api/tanks";
+            public const string GetUserTanks = "";
+            public const string GetById = "{tankId}";
+            public const string Create = "";
+            public const string Update = "{tankId}";
+            public const string Delete = "{tankId}";
+            public const string Items = "{tankId}/items";
+            public const string ItemById = "items/{itemId}";
+            public const string LatestSnapshot = "{tankId}/snapshot";
+        }
     }
 }
