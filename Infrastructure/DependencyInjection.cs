@@ -63,6 +63,7 @@ namespace Infrastructure
             services.AddScoped<ISpeciesService, SpeciesService>();
             services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddScoped<Application.Services.ITankService, TankService>();
+            services.AddScoped<Application.Services.ITankItemService, TankItemService>();
 
             return services;
         }
