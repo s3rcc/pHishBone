@@ -27,54 +27,81 @@ try
         .ReadFrom.Services(services)
         .Enrich.FromLogContext());
 
-// Add services to the container.
-builder.Services.AddControllers();
+    // Add services to the container.
+    builder.Services.AddControllers();
 
-// Add HttpContextAccessor (required for CurrentUserService)
-builder.Services.AddHttpContextAccessor();
+    // Add HttpContextAccessor (required for CurrentUserService)
+    builder.Services.AddHttpContextAccessor();
 
-// Add Infrastructure services (DbContext, Supabase, UnitOfWork, Repositories, Auth)
-builder.Services.AddInfrastructure(builder.Configuration);
+    // Add Infrastructure services (DbContext, Supabase, UnitOfWork, Repositories, Auth)
+    builder.Services.AddInfrastructure(builder.Configuration);
 
-// Add Application services (AutoMapper, FluentValidation)
-builder.Services.AddApplicationServices();
+    // Add Application services (AutoMapper, FluentValidation)
+    builder.Services.AddApplicationServices();
 
-// Add CORS
-builder.Services.AddCorsPolicy();
+    // Add CORS
+    builder.Services.AddCorsPolicy();
 
-// Add JWT Authentication
-builder.Services.AddJwtAuthentication(builder.Configuration);
+    // Add JWT Authentication
+    builder.Services.AddJwtAuthentication(builder.Configuration);
 
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+    // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen(options =>
+    {
+        // Fix for nested classes with duplicate names
+        options.CustomSchemaIds(type =>
+        {
+            string GetName(Type t)
+            {
+                if (!t.IsGenericType) return t.Name;
 
-var app = builder.Build();
+                var name = t.Name;
+                if (name.Contains('`'))
+                {
+                    name = name.Substring(0, name.IndexOf('`'));
+                }
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+                var args = t.GetGenericArguments().Select(GetName);
+                return $"{name}Of{string.Join("", args)}";
+            }
 
-// Serilog request logging
-app.UseSerilogRequestLogging();
+            var schemaId = GetName(type);
 
-// Global exception handling middleware
-app.UseMiddleware<ExceptionHandlingMiddleware>();
+            if (type.DeclaringType != null)
+            {
+                return $"{type.DeclaringType.Name}{schemaId}";
+            }
+            return schemaId;
+        });
+    });
 
-app.UseMiddleware<SupabaseExceptionMiddleware>();
+    var app = builder.Build();
 
-app.UseHttpsRedirection();
+    // Configure the HTTP request pipeline.
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI();
+    }
 
-app.UseCors("AllowAll");
+    // Serilog request logging
+    app.UseSerilogRequestLogging();
 
-// Authentication must come BEFORE Authorization
-app.UseAuthentication();
-app.UseAuthorization();
+    // Global exception handling middleware
+    app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-app.MapControllers();
+    app.UseMiddleware<SupabaseExceptionMiddleware>();
+
+    app.UseHttpsRedirection();
+
+    app.UseCors("AllowAll");
+
+    // Authentication must come BEFORE Authorization
+    app.UseAuthentication();
+    app.UseAuthorization();
+
+    app.MapControllers();
 
     app.Run();
 }

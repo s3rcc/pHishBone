@@ -60,12 +60,9 @@ namespace Infrastructure
             services.AddScoped<IAuthService, SupabaseAuthService>();
             services.AddScoped<ITagService, TagService>();
             services.AddScoped<ITypeService, TypeService>();
-            services.AddScoped<ICurrentUserService, CurrentUserService>();
-            services.AddScoped<Application.Services.ITankService, TankService>();
-
             services.AddScoped<ISpeciesService, SpeciesService>();
             services.AddScoped<ICurrentUserService, CurrentUserService>();
-            //services.AddScoped<Application.Services.ITankService, TankService>();
+            services.AddScoped<Application.Services.ITankService, TankService>();
 
             return services;
         }

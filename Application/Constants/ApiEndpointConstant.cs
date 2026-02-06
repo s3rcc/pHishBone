@@ -9,6 +9,12 @@ namespace Application.Constants
             public const string Login = "login";
             public const string Refresh = "refresh";
             public const string Me = "me";
+            public const string Logout = "logout";
+            public const string ForgotPassword = "forgot-password";
+            public const string ResetPassword = "reset-password";
+            public const string ChangePassword = "change-password";
+            public const string VerifyEmail = "verify-email";
+            public const string ResendVerification = "resend-verification";
         }
 
         public static class Tag
@@ -45,6 +51,19 @@ namespace Application.Constants
             public const string Create = "";
             public const string Update = "{id}";
             public const string Delete = "{id}";
+        }
+
+        public static class Tank
+        {
+            public const string Base = "api/tanks";
+            public const string GetUserTanks = "";
+            public const string GetById = "{tankId}";
+            public const string Create = "";
+            public const string Update = "{tankId}";
+            public const string Delete = "{tankId}";
+            public const string Items = "{tankId}/items";
+            public const string ItemById = "items/{itemId}";
+            public const string LatestSnapshot = "{tankId}/snapshot";
         }
     }
 }

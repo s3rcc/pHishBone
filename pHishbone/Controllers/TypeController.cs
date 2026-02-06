@@ -28,7 +28,7 @@ namespace pHishbone.Controllers
         public async Task<IActionResult> GetById([FromRoute] string id)
         {
             var type = await _typeService.GetByIdAsync(id);
-            return Ok(ApiResponse<TypeDto>.Success(type, "Type retrieved successfully"));
+            return Ok(ApiResponse<TypeDto>.Success(type, SuccessMessageConstant.TypeRetrievedSuccessfully));
         }
 
         /// <summary>
@@ -39,7 +39,7 @@ namespace pHishbone.Controllers
         public async Task<IActionResult> GetList()
         {
             var types = await _typeService.GetListAsync();
-            return Ok(ApiResponse<ICollection<TypeDto>>.Success(types, "Types retrieved successfully"));
+            return Ok(ApiResponse<ICollection<TypeDto>>.Success(types, SuccessMessageConstant.TypesRetrievedSuccessfully));
         }
 
         /// <summary>
@@ -50,7 +50,7 @@ namespace pHishbone.Controllers
         public async Task<IActionResult> GetPaginated([FromQuery] TypeFilterDto filter)
         {
             var types = await _typeService.GetPaginatedListAsync(filter);
-            return Ok(ApiResponse<object>.Success(types, "Types retrieved successfully"));
+            return Ok(ApiResponse<object>.Success(types, SuccessMessageConstant.TypesRetrievedSuccessfully));
         }
 
         /// <summary>
@@ -65,7 +65,7 @@ namespace pHishbone.Controllers
             return CreatedAtAction(
                 nameof(GetById),
                 new { id = type.Id },
-                ApiResponse<TypeDto>.Success(type, "Type created successfully", 201)
+                ApiResponse<TypeDto>.Success(type, SuccessMessageConstant.TypeCreatedSuccessfully, 201)
             );
         }
 
@@ -78,7 +78,7 @@ namespace pHishbone.Controllers
         public async Task<IActionResult> CreateRange([FromBody] List<CreateTypeDto> dtos)
         {
             var types = await _typeService.CreateRangeAsync(dtos);
-            return Ok(ApiResponse<ICollection<TypeDto>>.Success(types, "Types created successfully", 201));
+            return Ok(ApiResponse<ICollection<TypeDto>>.Success(types, SuccessMessageConstant.TypesCreatedSuccessfully, 201));
         }
 
         /// <summary>
@@ -91,7 +91,7 @@ namespace pHishbone.Controllers
         public async Task<IActionResult> Update([FromRoute] string id, [FromBody] UpdateTypeDto dto)
         {
             var type = await _typeService.UpdateAsync(id, dto);
-            return Ok(ApiResponse<TypeDto>.Success(type, "Type updated successfully"));
+            return Ok(ApiResponse<TypeDto>.Success(type, SuccessMessageConstant.TypeUpdatedSuccessfully));
         }
 
         /// <summary>
@@ -103,7 +103,7 @@ namespace pHishbone.Controllers
         public async Task<IActionResult> Delete([FromRoute] string id)
         {
             await _typeService.DeleteAsync(id);
-            return Ok(ApiResponse<object>.Success(null, "Type deleted successfully"));
+            return Ok(ApiResponse<object>.Success(null, SuccessMessageConstant.TypeDeletedSuccessfully));
         }
     }
 }

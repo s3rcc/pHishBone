@@ -28,7 +28,7 @@ namespace pHishbone.Controllers
         public async Task<IActionResult> GetById([FromRoute] string id)
         {
             var species = await _speciesService.GetByIdAsync(id);
-            return Ok(ApiResponse<SpeciesDto>.Success(species, "Species retrieved successfully"));
+            return Ok(ApiResponse<SpeciesDto>.Success(species, SuccessMessageConstant.SpeciesRetrievedSuccessfully));
         }
 
         /// <summary>
@@ -40,7 +40,7 @@ namespace pHishbone.Controllers
         public async Task<IActionResult> GetDetailById([FromRoute] string id)
         {
             var species = await _speciesService.GetDetailByIdAsync(id);
-            return Ok(ApiResponse<SpeciesDetailDto>.Success(species, "Species details retrieved successfully"));
+            return Ok(ApiResponse<SpeciesDetailDto>.Success(species, SuccessMessageConstant.SpeciesDetailsRetrievedSuccessfully));
         }
 
         /// <summary>
@@ -51,7 +51,7 @@ namespace pHishbone.Controllers
         public async Task<IActionResult> GetList()
         {
             var species = await _speciesService.GetListAsync();
-            return Ok(ApiResponse<ICollection<SpeciesDto>>.Success(species, "Species list retrieved successfully"));
+            return Ok(ApiResponse<ICollection<SpeciesDto>>.Success(species, SuccessMessageConstant.SpeciesListRetrievedSuccessfully));
         }
 
         /// <summary>
@@ -62,7 +62,7 @@ namespace pHishbone.Controllers
         public async Task<IActionResult> GetPaginated([FromQuery] SpeciesFilterDto filter)
         {
             var species = await _speciesService.GetPaginatedListAsync(filter);
-            return Ok(ApiResponse<object>.Success(species, "Species retrieved successfully"));
+            return Ok(ApiResponse<object>.Success(species, SuccessMessageConstant.SpeciesRetrievedSuccessfully));
         }
 
         /// <summary>
@@ -77,7 +77,7 @@ namespace pHishbone.Controllers
             return CreatedAtAction(
                 nameof(GetDetailById),
                 new { id = species.Id },
-                ApiResponse<SpeciesDetailDto>.Success(species, "Species created successfully", 201)
+                ApiResponse<SpeciesDetailDto>.Success(species, SuccessMessageConstant.SpeciesCreatedSuccessfully, 201)
             );
         }
 
@@ -91,7 +91,7 @@ namespace pHishbone.Controllers
         public async Task<IActionResult> Update([FromRoute] string id, [FromBody] UpdateSpeciesDto dto)
         {
             var species = await _speciesService.UpdateAsync(id, dto);
-            return Ok(ApiResponse<SpeciesDetailDto>.Success(species, "Species updated successfully"));
+            return Ok(ApiResponse<SpeciesDetailDto>.Success(species, SuccessMessageConstant.SpeciesUpdatedSuccessfully));
         }
 
         /// <summary>
@@ -103,7 +103,7 @@ namespace pHishbone.Controllers
         public async Task<IActionResult> Delete([FromRoute] string id)
         {
             await _speciesService.DeleteAsync(id);
-            return Ok(ApiResponse<object>.Success(null, "Species deleted successfully"));
+            return Ok(ApiResponse<object>.Success(null, SuccessMessageConstant.SpeciesDeletedSuccessfully));
         }
     }
 }
