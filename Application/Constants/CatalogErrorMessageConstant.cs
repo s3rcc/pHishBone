@@ -32,5 +32,14 @@ namespace Application.Constants
         public const string SpeciesScientificNameRequired = "Scientific name is required";
         public const string SpeciesTypeIdRequired = "Type ID is required";
         #endregion Species Errors
+
+        #region Image Errors
+        public const string ImageNotFound = "Image not found";
+        public const string ImageUrlRequired = "Image URL is required";
+        public const string InvalidImageUrl = "Image URL must be a valid URL";
+        public const string ImageUrlTooLong = "Image URL cannot exceed 500 characters";
+        public const string CaptionTooLong = "Caption cannot exceed 255 characters";
+        #endregion Image Errors
     }
 }
+

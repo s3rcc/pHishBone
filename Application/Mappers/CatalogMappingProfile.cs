@@ -138,6 +138,10 @@ namespace Application.Mappers
                 .ForMember(dest => dest.SpeciesEnvironment, opt => opt.Ignore())
                 .ForMember(dest => dest.SpeciesProfile, opt => opt.Ignore())
                 .ForMember(dest => dest.SpeciesTags, opt => opt.Ignore());
+
+            // SpeciesImage mappings
+            CreateMap<SpeciesImage, DTOs.ImageDTOs.ImageResponseDto>();
         }
     }
 }
+

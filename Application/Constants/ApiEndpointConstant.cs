@@ -73,5 +73,23 @@ namespace Application.Constants
             public const string Update = "{itemId}";
             public const string Delete = "{itemId}";
         }
+
+        public static class SpeciesImage
+        {
+            public const string GetAll = "{id}/images";
+            public const string Add = "{id}/images";
+            public const string Delete = "{id}/images/{imageId}";
+            public const string SetThumbnail = "{id}/set-thumbnail";
+        }
+
+        public static class TankImage
+        {
+            public const string Base = "api/tanks/{tankId}/images";
+            public const string GetAll = "";
+            public const string Add = "";
+            public const string Delete = "{imageId}";
+            public const string SetThumbnail = "set-thumbnail";
+        }
     }
 }
+

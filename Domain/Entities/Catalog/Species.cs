@@ -19,5 +19,7 @@ namespace Domain.Entities.Catalog
         public SpeciesEnvironment? SpeciesEnvironment { get; set; }
         public SpeciesProfile? SpeciesProfile { get; set; }
         public ICollection<SpeciesTag> SpeciesTags { get; set; } = new List<SpeciesTag>();
+        public ICollection<SpeciesImage> SpeciesImages { get; set; } = new List<SpeciesImage>();
     }
 }
+
