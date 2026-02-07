@@ -16,5 +16,7 @@ namespace Application.Constants
         public const string ReferenceIdRequired = "Reference ID is required.";
         public const string InvalidQuantity = "Quantity must be a positive value.";
         public const string NoteTooLong = "Note cannot exceed 255 characters.";
+        public const string SpeciesNotFoundInCatalog = "The specified species does not exist in the catalog.";
+        public const string ProductNotFoundInCatalog = "The specified product does not exist in the catalog.";
     }
 }

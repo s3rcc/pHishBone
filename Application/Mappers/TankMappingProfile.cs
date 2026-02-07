@@ -30,6 +30,10 @@ namespace Application.Mappers
 
             // TankSnapshot mappings
             CreateMap<TankSnapshot, TankSnapshotResponseDto>();
+
+            // TankImage mappings
+            CreateMap<TankImage, DTOs.ImageDTOs.ImageResponseDto>();
         }
     }
 }
+

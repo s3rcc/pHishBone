@@ -131,64 +131,6 @@ namespace pHishbone.Controllers
         }
 
         /// <summary>
-        /// Add an item to a tank.
-        /// </summary>
-        [HttpPost(ApiEndpointConstant.Tank.Items)]
-        [ProducesResponseType(typeof(ApiResponse<TankItemResponseDto>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
-        public async Task<IActionResult> AddItemToTank([FromRoute] string tankId, [FromBody] AddTankItemDto dto, CancellationToken cancellationToken)
-        {
-            var userId = _currentUserService.GetUserId();
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized();
-            }
-
-            var item = await _tankService.AddItemToTankAsync(tankId, dto, userId, cancellationToken);
-            return StatusCode(StatusCodes.Status201Created,
-                ApiResponse<TankItemResponseDto>.Success(item, SuccessMessageConstant.TankItemAddedSuccessfully, 201));
-        }
-
-        /// <summary>
-        /// Update a tank item.
-        /// </summary>
-        [HttpPut(ApiEndpointConstant.Tank.ItemById)]
-        [ProducesResponseType(typeof(ApiResponse<TankItemResponseDto>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
-        public async Task<IActionResult> UpdateTankItem([FromRoute] string itemId, [FromBody] UpdateTankItemDto dto, CancellationToken cancellationToken)
-        {
-            var userId = _currentUserService.GetUserId();
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized();
-            }
-
-            var item = await _tankService.UpdateTankItemAsync(itemId, dto, userId, cancellationToken);
-            return Ok(ApiResponse<TankItemResponseDto>.Success(item, SuccessMessageConstant.TankItemUpdatedSuccessfully));
-        }
-
-        /// <summary>
-        /// Remove an item from a tank.
-        /// </summary>
-        [HttpDelete(ApiEndpointConstant.Tank.ItemById)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
-        public async Task<IActionResult> RemoveItemFromTank([FromRoute] string itemId, CancellationToken cancellationToken)
-        {
-            var userId = _currentUserService.GetUserId();
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized();
-            }
-
-            await _tankService.RemoveItemFromTankAsync(itemId, userId, cancellationToken);
-            return Ok(ApiResponse<object>.Success(null, SuccessMessageConstant.TankItemRemovedSuccessfully));
-        }
-
-        /// <summary>
         /// Get the latest compatibility snapshot for a tank.
         /// </summary>
         [HttpGet(ApiEndpointConstant.Tank.LatestSnapshot)]

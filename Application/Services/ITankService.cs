@@ -33,21 +33,6 @@ namespace Application.Services
         Task DeleteTankAsync(string tankId, string userId, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Add an item to a tank.
-        /// </summary>
-        Task<TankItemResponseDto> AddItemToTankAsync(string tankId, AddTankItemDto dto, string userId, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Remove an item from a tank.
-        /// </summary>
-        Task RemoveItemFromTankAsync(string itemId, string userId, CancellationToken cancellationToken = default);
-
-        /// <summary>
-        /// Update a tank item.
-        /// </summary>
-        Task<TankItemResponseDto> UpdateTankItemAsync(string itemId, UpdateTankItemDto dto, string userId, CancellationToken cancellationToken = default);
-
-        /// <summary>
         /// Get the latest compatibility snapshot for a tank.
         /// </summary>
         Task<TankSnapshotResponseDto?> GetLatestSnapshotAsync(string tankId, CancellationToken cancellationToken = default);

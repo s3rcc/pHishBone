@@ -54,5 +54,13 @@ namespace Application.Constants
         public const string TankItemUpdatedSuccessfully = "Tank item updated successfully";
         public const string TankItemRemovedSuccessfully = "Item removed from tank successfully";
         #endregion Project - Tank
+
+        #region Images
+        public const string ImageAddedSuccessfully = "Image added successfully";
+        public const string ImageRemovedSuccessfully = "Image removed successfully";
+        public const string ImagesRetrievedSuccessfully = "Images retrieved successfully";
+        public const string ThumbnailSetSuccessfully = "Thumbnail set successfully";
+        #endregion Images
     }
 }
+

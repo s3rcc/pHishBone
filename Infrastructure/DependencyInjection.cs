@@ -63,8 +63,12 @@ namespace Infrastructure
             services.AddScoped<ISpeciesService, SpeciesService>();
             services.AddScoped<ICurrentUserService, CurrentUserService>();
             services.AddScoped<Application.Services.ITankService, TankService>();
+            services.AddScoped<Application.Services.ITankItemService, TankItemService>();
+            services.AddScoped<Application.Services.ISpeciesImageService, SpeciesImageService>();
+            services.AddScoped<Application.Services.ITankImageService, TankImageService>();
 
             return services;
         }
     }
 }
+

@@ -21,9 +21,16 @@ namespace Domain.Entities.Project
         
         public WaterType WaterType { get; set; }
         public TankStatus Status { get; set; } = TankStatus.Draft;
+        
+        /// <summary>
+        /// Representative image URL for list views and thumbnails.
+        /// </summary>
+        public string? ThumbnailUrl { get; set; }
 
         // Navigation properties (same schema relationships)
         public ICollection<TankItem> TankItems { get; set; } = new List<TankItem>();
         public ICollection<TankSnapshot> TankSnapshots { get; set; } = new List<TankSnapshot>();
+        public ICollection<TankImage> TankImages { get; set; } = new List<TankImage>();
     }
 }
+

@@ -61,9 +61,35 @@ namespace Application.Constants
             public const string Create = "";
             public const string Update = "{tankId}";
             public const string Delete = "{tankId}";
-            public const string Items = "{tankId}/items";
-            public const string ItemById = "items/{itemId}";
             public const string LatestSnapshot = "{tankId}/snapshot";
+        }
+
+        public static class TankItem
+        {
+            public const string Base = "api/tanks/{tankId}/items";
+            public const string GetAll = "";
+            public const string Add = "";
+            public const string GetById = "{itemId}";
+            public const string Update = "{itemId}";
+            public const string Delete = "{itemId}";
+        }
+
+        public static class SpeciesImage
+        {
+            public const string GetAll = "{id}/images";
+            public const string Add = "{id}/images";
+            public const string Delete = "{id}/images/{imageId}";
+            public const string SetThumbnail = "{id}/set-thumbnail";
+        }
+
+        public static class TankImage
+        {
+            public const string Base = "api/tanks/{tankId}/images";
+            public const string GetAll = "";
+            public const string Add = "";
+            public const string Delete = "{imageId}";
+            public const string SetThumbnail = "set-thumbnail";
         }
     }
 }
+
