@@ -17,6 +17,9 @@ namespace Infrastructure.Persistence.Configurations.Catalog
                 .IsRequired()
                 .HasMaxLength(500);
 
+            builder.Property(si => si.PublicId)
+                .HasMaxLength(255);
+
             builder.Property(si => si.Caption)
                 .HasMaxLength(255);
 

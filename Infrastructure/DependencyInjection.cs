@@ -1,8 +1,11 @@
 using Application.Common.Interfaces;
+using Application.Services;
+using CloudinaryDotNet;
 using Infrastructure.Common.Interfaces;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
 using Infrastructure.Services;
+using Infrastructure.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -52,6 +55,9 @@ namespace Infrastructure
                 return supabase;
             });
 
+            // Configure Cloudinary
+            services.Configure<CloudinarySettings>(configuration.GetSection("CloudinarySettings"));
+
             // Add Unit of Work and Repositories
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
@@ -62,10 +68,11 @@ namespace Infrastructure
             services.AddScoped<ITypeService, TypeService>();
             services.AddScoped<ISpeciesService, SpeciesService>();
             services.AddScoped<ICurrentUserService, CurrentUserService>();
-            services.AddScoped<Application.Services.ITankService, TankService>();
-            services.AddScoped<Application.Services.ITankItemService, TankItemService>();
-            services.AddScoped<Application.Services.ISpeciesImageService, SpeciesImageService>();
-            services.AddScoped<Application.Services.ITankImageService, TankImageService>();
+            services.AddScoped<ITankService, TankService>();
+            services.AddScoped<ITankItemService, TankItemService>();
+            services.AddScoped<ISpeciesImageService, SpeciesImageService>();
+            services.AddScoped<ITankImageService, TankImageService>();
+            services.AddScoped<IPhotoService, PhotoService>();
 
             return services;
         }

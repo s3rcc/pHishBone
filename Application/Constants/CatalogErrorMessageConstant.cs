@@ -39,6 +39,8 @@ namespace Application.Constants
         public const string InvalidImageUrl = "Image URL must be a valid URL";
         public const string ImageUrlTooLong = "Image URL cannot exceed 500 characters";
         public const string CaptionTooLong = "Caption cannot exceed 255 characters";
+        public const string FileRequired = "Image file is required";
+        public const string AllUploadsFailedMessage = "All image uploads failed. Please try again.";
         #endregion Image Errors
     }
 }

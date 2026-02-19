@@ -78,6 +78,7 @@ namespace Application.Constants
         {
             public const string GetAll = "{id}/images";
             public const string Add = "{id}/images";
+            public const string AddBatch = "{id}/images/batch";
             public const string Delete = "{id}/images/{imageId}";
             public const string SetThumbnail = "{id}/set-thumbnail";
         }
@@ -87,6 +88,7 @@ namespace Application.Constants
             public const string Base = "api/tanks/{tankId}/images";
             public const string GetAll = "";
             public const string Add = "";
+            public const string AddBatch = "batch";
             public const string Delete = "{imageId}";
             public const string SetThumbnail = "set-thumbnail";
         }

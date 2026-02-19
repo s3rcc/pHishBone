@@ -18,5 +18,6 @@ namespace Application.Constants
         public const string NoteTooLong = "Note cannot exceed 255 characters.";
         public const string SpeciesNotFoundInCatalog = "The specified species does not exist in the catalog.";
         public const string ProductNotFoundInCatalog = "The specified product does not exist in the catalog.";
+        public const string AllUploadsFailedMessage = "All image uploads failed. Please try again.";
     }
 }
