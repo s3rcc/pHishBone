@@ -17,6 +17,9 @@ namespace Infrastructure.Persistence.Configurations.Project
                 .IsRequired()
                 .HasMaxLength(500);
 
+            builder.Property(ti => ti.PublicId)
+                .HasMaxLength(255);
+
             builder.Property(ti => ti.Caption)
                 .HasMaxLength(255);
 

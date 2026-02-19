@@ -1,4 +1,5 @@
 using Application.DTOs.ImageDTOs;
+using Microsoft.AspNetCore.Http;
 
 namespace Application.Services
 {
@@ -10,21 +11,26 @@ namespace Application.Services
         /// <summary>
         /// Get all images for a species.
         /// </summary>
-        Task<IEnumerable<ImageResponseDto>> GetImagesAsync(string speciesId, CancellationToken cancellationToken = default);
+        Task<IEnumerable<ImageResponseDto>> GetImagesAsync(string speciesId);
 
         /// <summary>
-        /// Add an image to a species gallery.
+        /// Add a single image to a species gallery via file upload.
         /// </summary>
-        Task<ImageResponseDto> AddImageAsync(string speciesId, CreateImageDto dto, CancellationToken cancellationToken = default);
+        Task<ImageResponseDto> AddImageAsync(string speciesId, CreateImageDto dto);
 
         /// <summary>
-        /// Remove an image from a species gallery.
+        /// Add multiple images to a species gallery concurrently.
         /// </summary>
-        Task RemoveImageAsync(string speciesId, string imageId, CancellationToken cancellationToken = default);
+        Task<List<ImageResponseDto>> AddImagesAsync(string speciesId, List<IFormFile> files);
 
         /// <summary>
-        /// Set the main thumbnail image for a species.
+        /// Remove an image from a species gallery and delete from CDN.
         /// </summary>
-        Task SetThumbnailAsync(string speciesId, SetThumbnailDto dto, CancellationToken cancellationToken = default);
+        Task RemoveImageAsync(string speciesId, string imageId);
+
+        /// <summary>
+        /// Set the main thumbnail image for a species via file upload.
+        /// </summary>
+        Task SetThumbnailAsync(string speciesId, SetThumbnailDto dto);
     }
 }

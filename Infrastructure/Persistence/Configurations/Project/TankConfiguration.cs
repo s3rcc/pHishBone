@@ -46,6 +46,9 @@ namespace Infrastructure.Persistence.Configurations.Project
             builder.Property(t => t.ThumbnailUrl)
                 .HasMaxLength(500);
 
+            builder.Property(t => t.ThumbnailPublicId)
+                .HasMaxLength(255);
+
             // Indexes for query performance
             builder.HasIndex(t => t.UserId);
             builder.HasIndex(t => t.Status);

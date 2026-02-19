@@ -19,12 +19,14 @@ namespace Infrastructure.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ICurrentUserService _currentUserService;
+        private readonly IPhotoService _photoService;
 
-        public TankService(IUnitOfWork unitOfWork, IMapper mapper, ICurrentUserService currentUserService)
+        public TankService(IUnitOfWork unitOfWork, IMapper mapper, ICurrentUserService currentUserService, IPhotoService photoService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _currentUserService = currentUserService;
+            _photoService = photoService;
         }
 
         public async Task<IEnumerable<TankListItemDto>> GetUserTanksAsync(string userId, CancellationToken cancellationToken = default)
@@ -120,7 +122,8 @@ namespace Infrastructure.Services
         public async Task DeleteTankAsync(string tankId, string userId, CancellationToken cancellationToken = default)
         {
             var tank = await _unitOfWork.Repository<Tank>().SingleOrDefaultAsync(
-                predicate: t => t.Id == tankId && t.DeletedTime == null
+                predicate: t => t.Id == tankId && t.DeletedTime == null,
+                include: q => q.Include(t => t.TankImages)
             );
 
             if (tank == null)
@@ -142,12 +145,29 @@ namespace Infrastructure.Services
                 );
             }
 
+            // Collect all CDN public IDs for cleanup
+            var publicIds = tank.TankImages
+                .Where(ti => !string.IsNullOrEmpty(ti.PublicId))
+                .Select(ti => ti.PublicId!)
+                .ToList();
+
+            if (!string.IsNullOrEmpty(tank.ThumbnailPublicId))
+            {
+                publicIds.Add(tank.ThumbnailPublicId);
+            }
+
             // Soft delete
             tank.DeletedTime = DateTime.UtcNow;
             tank.DeletedBy = _currentUserService.GetUserId();
 
             await _unitOfWork.Repository<Tank>().Update(tank);
             await _unitOfWork.SaveChangesAsync();
+
+            // Cleanup CDN after DB commit
+            if (publicIds.Count > 0)
+            {
+                await _photoService.DeletePhotosAsync(publicIds);
+            }
         }
 
         public async Task<TankSnapshotResponseDto?> GetLatestSnapshotAsync(string tankId, CancellationToken cancellationToken = default)

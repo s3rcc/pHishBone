@@ -1,4 +1,5 @@
 using Application.DTOs.ImageDTOs;
+using Microsoft.AspNetCore.Http;
 
 namespace Application.Services
 {
@@ -10,21 +11,26 @@ namespace Application.Services
         /// <summary>
         /// Get all images for a tank.
         /// </summary>
-        Task<IEnumerable<ImageResponseDto>> GetImagesAsync(string tankId, string userId, CancellationToken cancellationToken = default);
+        Task<IEnumerable<ImageResponseDto>> GetImagesAsync(string tankId, string userId);
 
         /// <summary>
-        /// Add an image to a tank gallery.
+        /// Add a single image to a tank gallery via file upload.
         /// </summary>
-        Task<ImageResponseDto> AddImageAsync(string tankId, CreateImageDto dto, string userId, CancellationToken cancellationToken = default);
+        Task<ImageResponseDto> AddImageAsync(string tankId, CreateImageDto dto, string userId);
 
         /// <summary>
-        /// Remove an image from a tank gallery.
+        /// Add multiple images to a tank gallery concurrently.
         /// </summary>
-        Task RemoveImageAsync(string tankId, string imageId, string userId, CancellationToken cancellationToken = default);
+        Task<List<ImageResponseDto>> AddImagesAsync(string tankId, List<IFormFile> files, string userId);
 
         /// <summary>
-        /// Set the main thumbnail image for a tank.
+        /// Remove an image from a tank gallery and delete from CDN.
         /// </summary>
-        Task SetThumbnailAsync(string tankId, SetThumbnailDto dto, string userId, CancellationToken cancellationToken = default);
+        Task RemoveImageAsync(string tankId, string imageId, string userId);
+
+        /// <summary>
+        /// Set the main thumbnail image for a tank via file upload.
+        /// </summary>
+        Task SetThumbnailAsync(string tankId, SetThumbnailDto dto, string userId);
     }
 }

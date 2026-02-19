@@ -37,7 +37,7 @@ namespace pHishbone.Controllers
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<ImageResponseDto>>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
-        public async Task<IActionResult> GetImages([FromRoute] string tankId, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetImages([FromRoute] string tankId)
         {
             var userId = _currentUserService.GetUserId();
             if (string.IsNullOrEmpty(userId))
@@ -45,18 +45,18 @@ namespace pHishbone.Controllers
                 return Unauthorized();
             }
 
-            var images = await _tankImageService.GetImagesAsync(tankId, userId, cancellationToken);
+            var images = await _tankImageService.GetImagesAsync(tankId, userId);
             return Ok(ApiResponse<IEnumerable<ImageResponseDto>>.Success(images, SuccessMessageConstant.ImagesRetrievedSuccessfully));
         }
 
         /// <summary>
-        /// Add an image to a tank gallery.
+        /// Add a single image to a tank gallery via file upload.
         /// </summary>
         [HttpPost(ApiEndpointConstant.TankImage.Add)]
         [ProducesResponseType(typeof(ApiResponse<ImageResponseDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
-        public async Task<IActionResult> AddImage([FromRoute] string tankId, [FromBody] CreateImageDto dto, CancellationToken cancellationToken)
+        public async Task<IActionResult> AddImage([FromRoute] string tankId, [FromForm] CreateImageDto dto)
         {
             var userId = _currentUserService.GetUserId();
             if (string.IsNullOrEmpty(userId))
@@ -66,9 +66,31 @@ namespace pHishbone.Controllers
 
             _logger.LogInformation("Adding image to tank {TankId}", tankId);
 
-            var image = await _tankImageService.AddImageAsync(tankId, dto, userId, cancellationToken);
+            var image = await _tankImageService.AddImageAsync(tankId, dto, userId);
             return StatusCode(StatusCodes.Status201Created,
                 ApiResponse<ImageResponseDto>.Success(image, SuccessMessageConstant.ImageAddedSuccessfully, 201));
+        }
+
+        /// <summary>
+        /// Add multiple images to a tank gallery concurrently.
+        /// </summary>
+        [HttpPost(ApiEndpointConstant.TankImage.AddBatch)]
+        [ProducesResponseType(typeof(ApiResponse<List<ImageResponseDto>>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> AddImages([FromRoute] string tankId, [FromForm] List<IFormFile> files)
+        {
+            var userId = _currentUserService.GetUserId();
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+
+            _logger.LogInformation("Adding {Count} images to tank {TankId}", files.Count, tankId);
+
+            var images = await _tankImageService.AddImagesAsync(tankId, files, userId);
+            return StatusCode(StatusCodes.Status201Created,
+                ApiResponse<List<ImageResponseDto>>.Success(images, SuccessMessageConstant.ImageAddedSuccessfully, 201));
         }
 
         /// <summary>
@@ -78,7 +100,7 @@ namespace pHishbone.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
-        public async Task<IActionResult> RemoveImage([FromRoute] string tankId, [FromRoute] string imageId, CancellationToken cancellationToken)
+        public async Task<IActionResult> RemoveImage([FromRoute] string tankId, [FromRoute] string imageId)
         {
             var userId = _currentUserService.GetUserId();
             if (string.IsNullOrEmpty(userId))
@@ -88,18 +110,18 @@ namespace pHishbone.Controllers
 
             _logger.LogInformation("Removing image {ImageId} from tank {TankId}", imageId, tankId);
 
-            await _tankImageService.RemoveImageAsync(tankId, imageId, userId, cancellationToken);
+            await _tankImageService.RemoveImageAsync(tankId, imageId, userId);
             return Ok(ApiResponse<object>.Success(null, SuccessMessageConstant.ImageRemovedSuccessfully));
         }
 
         /// <summary>
-        /// Set the main thumbnail image for a tank.
+        /// Set the main thumbnail image for a tank via file upload.
         /// </summary>
         [HttpPatch(ApiEndpointConstant.TankImage.SetThumbnail)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
-        public async Task<IActionResult> SetThumbnail([FromRoute] string tankId, [FromBody] SetThumbnailDto dto, CancellationToken cancellationToken)
+        public async Task<IActionResult> SetThumbnail([FromRoute] string tankId, [FromForm] SetThumbnailDto dto)
         {
             var userId = _currentUserService.GetUserId();
             if (string.IsNullOrEmpty(userId))
@@ -107,7 +129,7 @@ namespace pHishbone.Controllers
                 return Unauthorized();
             }
 
-            await _tankImageService.SetThumbnailAsync(tankId, dto, userId, cancellationToken);
+            await _tankImageService.SetThumbnailAsync(tankId, dto, userId);
             return Ok(ApiResponse<object>.Success(null, SuccessMessageConstant.ThumbnailSetSuccessfully));
         }
     }

@@ -2,6 +2,7 @@ using Application.Common;
 using Application.Common.Interfaces;
 using Application.Constants;
 using Application.DTOs.CatalogDTOs;
+using Application.Services;
 using AutoMapper;
 using Domain.Entities.Catalog;
 using Domain.Exceptions;
@@ -18,12 +19,14 @@ namespace Infrastructure.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ICurrentUserService _currentUserService;
+        private readonly IPhotoService _photoService;
 
-        public SpeciesService(IUnitOfWork unitOfWork, IMapper mapper, ICurrentUserService currentUserService)
+        public SpeciesService(IUnitOfWork unitOfWork, IMapper mapper, ICurrentUserService currentUserService, IPhotoService photoService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _currentUserService = currentUserService;
+            _photoService = photoService;
         }
 
         public async Task<SpeciesDto> GetByIdAsync(string id)

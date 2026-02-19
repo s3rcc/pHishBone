@@ -24,6 +24,9 @@ namespace Infrastructure.Persistence.Configurations.Catalog
                 .HasMaxLength(100);
 
             builder.Property(s => s.ThumbnailUrl)
+                .HasMaxLength(500);
+
+            builder.Property(s => s.ThumbnailPublicId)
                 .HasMaxLength(255);
 
             builder.Property(s => s.Slug)

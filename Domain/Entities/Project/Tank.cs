@@ -26,6 +26,7 @@ namespace Domain.Entities.Project
         /// Representative image URL for list views and thumbnails.
         /// </summary>
         public string? ThumbnailUrl { get; set; }
+        public string? ThumbnailPublicId { get; set; }
 
         // Navigation properties (same schema relationships)
         public ICollection<TankItem> TankItems { get; set; } = new List<TankItem>();

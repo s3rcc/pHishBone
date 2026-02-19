@@ -19,6 +19,11 @@ namespace Domain.Entities.Catalog
         public string ImageUrl { get; set; } = string.Empty;
 
         /// <summary>
+        /// Cloudinary public ID for asset management and cleanup.
+        /// </summary>
+        public string? PublicId { get; set; }
+
+        /// <summary>
         /// Optional description of the image.
         /// </summary>
         public string? Caption { get; set; }
