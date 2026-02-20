@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using System.Security.Claims;
 
 namespace Infrastructure.Services
@@ -10,10 +11,12 @@ namespace Infrastructure.Services
     public class CurrentUserService : Application.Common.Interfaces.ICurrentUserService
     {
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly ILogger<CurrentUserService> _logger;
 
-        public CurrentUserService(IHttpContextAccessor httpContextAccessor)
+        public CurrentUserService(IHttpContextAccessor httpContextAccessor, ILogger<CurrentUserService> logger)
         {
             _httpContextAccessor = httpContextAccessor;
+            _logger = logger;
         }
 
         /// <summary>
@@ -26,8 +29,11 @@ namespace Infrastructure.Services
         /// </summary>
         public string? GetUserId()
         {
+            _logger.LogInformation("Retrieved User ID: {UserId}", User?.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? User?.FindFirst("sub")?.Value);
             return User?.FindFirst(ClaimTypes.NameIdentifier)?.Value 
                 ?? User?.FindFirst("sub")?.Value;
+            
         }
 
         /// <summary>

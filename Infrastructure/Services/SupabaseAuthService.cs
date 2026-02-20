@@ -162,7 +162,7 @@ namespace Infrastructure.Services
             _logger.LogInformation("Getting current user: {UserId}", userId);
 
             var user = await _unitOfWork.Repository<PBUser>()
-                .SingleOrDefaultAsync(predicate: u => u.Id == userId);
+                .SingleOrDefaultAsync(predicate: u => u.SupabaseUserId == userId);
 
             if (user == null)
             {
