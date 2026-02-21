@@ -1,7 +1,10 @@
 using Infrastructure;
+using Microsoft.OpenApi.Any;
+using Microsoft.OpenApi.Models;
 using pHishbone.Extensions;
 using pHishbone.Middleware;
 using Serilog;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 // Configure Serilog early to catch startup errors
 Log.Logger = new LoggerConfiguration()
@@ -100,6 +103,17 @@ try
             }
             return schemaId;
         });
+
+        // Add enum name annotations (x-enumNames) for frontend readability
+        options.SchemaFilter<EnumSchemaFilter>();
+
+        // Include XML comments from the pHishbone API project
+        var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+        var xmlPath = System.IO.Path.Combine(AppContext.BaseDirectory, xmlFile);
+        if (System.IO.File.Exists(xmlPath))
+        {
+            options.IncludeXmlComments(xmlPath);
+        }
     });
 
     var app = builder.Build();
@@ -139,4 +153,41 @@ catch (Exception ex) when (ex is not HostAbortedException
 finally
 {
     Log.CloseAndFlush();
+}
+
+/// <summary>
+/// Swagger schema filter that annotates enum schemas with their string names
+/// using the x-enumNames extension. This makes enum values human-readable
+/// for frontend developers without changing the wire format (integers).
+/// </summary>
+public class EnumSchemaFilter : ISchemaFilter
+{
+    public void Apply(OpenApiSchema schema, SchemaFilterContext context)
+    {
+        if (!context.Type.IsEnum) return;
+
+        var enumNames = Enum.GetNames(context.Type);
+        var enumValues = Enum.GetValues(context.Type).Cast<int>().ToArray();
+
+        // Add x-enumNames extension for tools that support it (e.g. NSwag, OpenAPI Generator)
+        schema.Extensions["x-enumNames"] = new OpenApiArray();
+        var nameArray = (OpenApiArray)schema.Extensions["x-enumNames"];
+        foreach (var name in enumNames)
+        {
+            nameArray.Add(new OpenApiString(name));
+        }
+
+        // Add x-enum-varnames (alternative convention used by some generators)
+        schema.Extensions["x-enum-varnames"] = new OpenApiArray();
+        var varNames = (OpenApiArray)schema.Extensions["x-enum-varnames"];
+        foreach (var name in enumNames)
+        {
+            varNames.Add(new OpenApiString(name));
+        }
+
+        // Annotate the description with the enum mappings
+        var mappings = enumValues.Zip(enumNames, (v, n) => $"{v} = {n}");
+        schema.Description = (schema.Description ?? "") +
+            " Values: " + string.Join(", ", mappings);
+    }
 }

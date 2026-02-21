@@ -46,11 +46,11 @@ namespace pHishbone.Controllers
         /// Get paginated types with filter
         /// </summary>
         [HttpGet(ApiEndpointConstant.Type.GetPaginated)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<PaginationResponse<TypeDto>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetPaginated([FromQuery] TypeFilterDto filter)
         {
             var types = await _typeService.GetPaginatedListAsync(filter);
-            return Ok(ApiResponse<object>.Success(types, SuccessMessageConstant.TypesRetrievedSuccessfully));
+            return Ok(ApiResponse<PaginationResponse<TypeDto>>.Success(types, SuccessMessageConstant.TypesRetrievedSuccessfully));
         }
 
         /// <summary>
