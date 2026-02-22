@@ -46,11 +46,11 @@ namespace pHishbone.Controllers
         /// Get paginated tags with filter
         /// </summary>
         [HttpGet(ApiEndpointConstant.Tag.GetPaginated)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<PaginationResponse<TagDto>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetPaginated([FromQuery] TagFilterDto filter)
         {
             var tags = await _tagService.GetPaginatedListAsync(filter);
-            return Ok(ApiResponse<object>.Success(tags, SuccessMessageConstant.TagsRetrievedSuccessfully));
+            return Ok(ApiResponse<PaginationResponse<TagDto>>.Success(tags, SuccessMessageConstant.TagsRetrievedSuccessfully));
         }
 
         /// <summary>

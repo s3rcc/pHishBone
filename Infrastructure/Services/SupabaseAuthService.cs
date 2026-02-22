@@ -36,6 +36,30 @@ namespace Infrastructure.Services
         {
             _logger.LogInformation("Attempting to register user with email: {Email}", request.Email);
 
+            var existingUser = await _unitOfWork.Repository<PBUser>()
+                .SingleOrDefaultAsync(predicate: u => u.Email == request.Email);
+
+            if (existingUser != null)
+            {
+                _logger.LogWarning("User with email {Email} already exists", request.Email);
+                throw new CustomErrorException(
+                    StatusCodes.Status400BadRequest,
+                    ErrorCode.BADREQUEST,
+                    ErrorMessageConstant.DuplicateEmail);
+            }
+
+            var existingUserName = await _unitOfWork.Repository<PBUser>()
+                .SingleOrDefaultAsync(predicate: u => u.Username == request.Username);
+
+            if (existingUserName != null)
+            {
+                _logger.LogWarning("User with username {UserName} already exists", request.Username);
+                throw new CustomErrorException(
+                    StatusCodes.Status400BadRequest,
+                    ErrorCode.BADREQUEST,
+                    ErrorMessageConstant.DuplicateUserName);
+            }
+
             // Register user in Supabase Auth
             var authResponse = await _supabaseClient.Auth.SignUp(request.Email, request.Password);
 
@@ -162,7 +186,7 @@ namespace Infrastructure.Services
             _logger.LogInformation("Getting current user: {UserId}", userId);
 
             var user = await _unitOfWork.Repository<PBUser>()
-                .SingleOrDefaultAsync(predicate: u => u.Id == userId);
+                .SingleOrDefaultAsync(predicate: u => u.SupabaseUserId == userId);
 
             if (user == null)
             {

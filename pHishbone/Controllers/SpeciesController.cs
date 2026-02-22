@@ -5,7 +5,6 @@ using Application.DTOs.CatalogDTOs;
 using Application.DTOs.ImageDTOs;
 using Application.Services;
 using Microsoft.AspNetCore.Mvc;
-
 namespace pHishbone.Controllers
 {
     [ApiController]
@@ -65,11 +64,11 @@ namespace pHishbone.Controllers
         /// Get paginated species with filtering and search
         /// </summary>
         [HttpGet(ApiEndpointConstant.Species.GetPaginated)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<PaginationResponse<SpeciesDto>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetPaginated([FromQuery] SpeciesFilterDto filter)
         {
             var species = await _speciesService.GetPaginatedListAsync(filter);
-            return Ok(ApiResponse<object>.Success(species, SuccessMessageConstant.SpeciesRetrievedSuccessfully));
+            return Ok(ApiResponse<PaginationResponse<SpeciesDto>>.Success(species, SuccessMessageConstant.SpeciesRetrievedSuccessfully));
         }
 
         /// <summary>
