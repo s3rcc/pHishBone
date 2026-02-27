@@ -15,6 +15,9 @@ namespace Application.Constants
         public const string PasswordChangedSuccessfully = "Password changed successfully";
         public const string EmailVerifiedSuccessfully = "Email verified successfully";
         public const string EmailVerificationSent = "Verification email has been sent";
+        public const string ProfileUpdatedSuccessfully = "Profile updated successfully";
+        public const string AvatarUploadedSuccessfully = "Avatar uploaded successfully";
+        public const string EmailChangeRequested = "Please check your inbox to confirm the email change.";
         #endregion Auth
 
         #region Catalog - Tag

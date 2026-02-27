@@ -3,6 +3,8 @@ using Application.Common.Interfaces;
 using Application.Constants;
 using Application.DTOs.Auth;
 using Application.DTOs.AuthDTOs;
+using Application.DTOs.PBUserDTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace pHishbone.Controllers
@@ -12,15 +14,18 @@ namespace pHishbone.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
+        private readonly IUserService _userService;
         private readonly ICurrentUserService _currentUserService;
         private readonly ILogger<AuthController> _logger;
 
         public AuthController(
             IAuthService authService,
+            IUserService userService,
             ICurrentUserService currentUserService,
             ILogger<AuthController> logger)
         {
             _authService = authService;
+            _userService = userService;
             _currentUserService = currentUserService;
             _logger = logger;
         }
@@ -168,6 +173,73 @@ namespace pHishbone.Controllers
             await _authService.ResendVerificationEmailAsync(request);
             return Ok(ApiResponse<object>.Success(null, SuccessMessageConstant.EmailVerificationSent));
         }
-    }
 
+        // ─────────────────────────────────────────────────────────────
+        // User Profile Endpoints
+        // ─────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Update the current user's profile (username).
+        /// </summary>
+        [Authorize]
+        [HttpPut(ApiEndpointConstant.Auth.Me)]
+        [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequestDto request)
+        {
+            var userId = _currentUserService.GetUserId();
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(ApiResponse<object>.Error("User not authenticated", "User not authenticated"));
+            }
+
+            var result = await _userService.UpdateProfileAsync(request, userId);
+            return Ok(ApiResponse<UserDto>.Success(result, SuccessMessageConstant.ProfileUpdatedSuccessfully));
+        }
+
+        /// <summary>
+        /// Upload or replace the current user's avatar image.
+        /// </summary>
+        [Authorize]
+        [HttpPost(ApiEndpointConstant.Auth.MeAvatar)]
+        [Consumes("multipart/form-data")]
+        [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> UploadAvatar(IFormFile file)
+        {
+            var userId = _currentUserService.GetUserId();
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(ApiResponse<object>.Error("User not authenticated", "User not authenticated"));
+            }
+
+            var result = await _userService.UploadAvatarAsync(file, userId);
+            return Ok(ApiResponse<UserDto>.Success(result, SuccessMessageConstant.AvatarUploadedSuccessfully));
+        }
+
+        /// <summary>
+        /// Request an email change. Supabase sends a confirmation email to both old and new addresses.
+        /// </summary>
+        [Authorize]
+        [HttpPost(ApiEndpointConstant.Auth.ChangeEmail)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> ChangeEmail([FromBody] ChangeEmailRequestDto request)
+        {
+            var userId = _currentUserService.GetUserId();
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(ApiResponse<object>.Error("User not authenticated", "User not authenticated"));
+            }
+
+            var message = await _userService.ChangeEmailAsync(request, userId);
+            return Ok(ApiResponse<object>.Success(null, message));
+        }
+    }
 }

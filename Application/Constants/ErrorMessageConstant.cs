@@ -19,6 +19,9 @@ namespace Application.Constants
         public const string LogoutFailed = "Failed to logout.";
         public const string DuplicateUserName = "Username already exists.";
         public const string DuplicateEmail = "Email already exists.";
+        public const string AvatarUploadFailed = "Failed to upload avatar. Please try again.";
+        public const string EmailChangeFailed = "Failed to change email. Please try again.";
+        public const string UsernameTaken = "Username is already taken.";
         #endregion Auth
     }
 

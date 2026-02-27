@@ -73,6 +73,7 @@ namespace Infrastructure
             services.AddScoped<ISpeciesImageService, SpeciesImageService>();
             services.AddScoped<ITankImageService, TankImageService>();
             services.AddScoped<IPhotoService, PhotoService>();
+            services.AddScoped<IUserService, UserService>();
 
             return services;
         }
