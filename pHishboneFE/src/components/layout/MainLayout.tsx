@@ -1,5 +1,6 @@
 import { Suspense, useCallback } from 'react';
 import { useNavigate, Outlet } from '@tanstack/react-router';
+import { useQuery } from '@tanstack/react-query';
 
 import AppBar from '@mui/material/AppBar';
 import Avatar from '@mui/material/Avatar';
@@ -14,7 +15,7 @@ import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import WavesIcon from '@mui/icons-material/Waves';
 import { ErrorBoundary } from '../ErrorBoundary';
-import { useCurrentUser, useLogout } from '../../features/auth';
+import { useCurrentUser, useLogout, AUTH_ME_KEY, authApi } from '../../features/auth';
 import { useThemeMode } from '../../context/ThemeContext';
 
 
@@ -76,6 +77,17 @@ function NavAuthSection() {
 export function MainLayout() {
     const navigate = useNavigate();
     const { mode, toggleTheme } = useThemeMode();
+
+    // Non-suspending observer used solely to derive a resetKey for ErrorBoundary.
+    // When the user logs in and invalidateQueries refetches /me successfully,
+    // `isAuthenticated` flips from false → true, which changes resetKey and
+    // forces the ErrorBoundary to reset its hasError state.
+    const { data: meData } = useQuery({
+        queryKey: AUTH_ME_KEY,
+        queryFn: authApi.getMe,
+        retry: false,
+    });
+    const resetKey = meData ? 'auth' : 'guest';
     const isLight = mode === 'light';
 
     return (
@@ -126,7 +138,7 @@ export function MainLayout() {
                         </Tooltip>
 
                         {/* Auth section – ErrorBoundary catches 401/network errors and shows unauthenticated UI */}
-                        <ErrorBoundary
+                        <ErrorBoundary resetKey={resetKey}
                             fallback={
                                 <Box sx={{ display: 'flex', gap: 1 }}>
                                     <Button variant="text" onClick={() => navigate({ to: '/login' })}>
