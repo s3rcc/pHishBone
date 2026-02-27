@@ -18,7 +18,8 @@
     "@tanstack/react-router": "^1.161.3",
     "axios": "^1.13.5",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "react-easy-crop": "^5.5.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

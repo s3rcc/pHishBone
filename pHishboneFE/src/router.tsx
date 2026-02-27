@@ -4,8 +4,9 @@ import { MainLayout } from './components/layout/MainLayout';
 import { SuspenseLoader } from './components/layout/SuspenseLoader';
 import { LoginForm, RegisterForm } from './features/auth';
 
-// Lazy-load homepage for code splitting
+// Lazy-load pages for code splitting
 const HomePage = lazy(() => import('./routes/index'));
+const ProfilePage = lazy(() => import('./features/profile/components/ProfilePage'));
 
 // ─── Root Route ───────────────────────────────────────────────────────────────
 const rootRoute = createRootRoute({
@@ -39,8 +40,18 @@ const registerRoute = createRoute({
     component: RegisterForm,
 });
 
+const profileRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/profile',
+    component: () => (
+        <Suspense fallback={<SuspenseLoader />}>
+            <ProfilePage />
+        </Suspense>
+    ),
+});
+
 // ─── Route Tree & Router ──────────────────────────────────────────────────────
-const routeTree = rootRoute.addChildren([indexRoute, loginRoute, registerRoute]);
+const routeTree = rootRoute.addChildren([indexRoute, loginRoute, registerRoute, profileRoute]);
 
 export const router = createRouter({
     routeTree,

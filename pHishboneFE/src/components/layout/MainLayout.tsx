@@ -34,26 +34,43 @@ function NavAuthSection() {
     if (user) {
         return (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Avatar
+                <Box
+                    onClick={() => navigate({ to: '/profile' })}
                     sx={{
-                        width: 34,
-                        height: 34,
-                        bgcolor: 'primary.main',
-                        fontSize: '0.85rem',
-                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        cursor: 'pointer',
+                        borderRadius: 2,
+                        px: 0.75,
+                        py: 0.25,
+                        '&:hover': { bgcolor: 'action.hover' },
+                        transition: 'background 0.2s',
                     }}
                 >
-                    {user.username.charAt(0).toUpperCase()}
-                </Avatar>
-                <Typography variant="body2" fontWeight={600} sx={{ display: { xs: 'none', sm: 'block' } }}>
-                    {user.username}
-                </Typography>
+                    <Avatar
+                        src={user.avatarUrl ?? undefined}
+                        alt={user.username}
+                        sx={{
+                            width: 34,
+                            height: 34,
+                            bgcolor: 'primary.main',
+                            fontSize: '0.85rem',
+                            fontWeight: 700,
+                        }}
+                    >
+                        {!user.avatarUrl && user.username.charAt(0).toUpperCase()}
+                    </Avatar>
+                    <Typography variant="body2" fontWeight={600} sx={{ display: { xs: 'none', sm: 'block' } }}>
+                        {user.username}
+                    </Typography>
+                </Box>
                 <Button
                     variant="outlined"
                     size="small"
                     onClick={handleLogout}
                     disabled={isPending}
-                    sx={{ ml: 1 }}
+                    sx={{ ml: 0.5 }}
                 >
                     Logout
                 </Button>

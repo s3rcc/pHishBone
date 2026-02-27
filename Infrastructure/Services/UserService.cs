@@ -77,6 +77,9 @@ namespace Infrastructure.Services
                 user.Username = dto.Username;
             }
 
+            // GenericRepository.SingleOrDefaultAsync always uses AsNoTracking(), so we must
+            // explicitly call Update() to mark the entity as Modified before saving.
+            await _unitOfWork.Repository<PBUser>().Update(user);
             await _unitOfWork.SaveChangesAsync();
 
             _logger.LogInformation("Profile updated successfully for user: {UserId}", userId);
@@ -124,6 +127,9 @@ namespace Infrastructure.Services
             user.AvatarUrl = uploadResult.Url;
             user.AvatarPublicId = uploadResult.PublicId;
 
+            // GenericRepository.SingleOrDefaultAsync always uses AsNoTracking(), so we must
+            // explicitly call Update() to mark the entity as Modified before saving.
+            await _unitOfWork.Repository<PBUser>().Update(user);
             await _unitOfWork.SaveChangesAsync();
 
             _logger.LogInformation("Avatar uploaded successfully for user: {UserId}, PublicId: {PublicId}",
@@ -187,8 +193,10 @@ namespace Infrastructure.Services
                     ErrorMessageConstant.EmailChangeFailed);
             }
 
-            // Update local DB immediately (MVP sync strategy)
+            // Update local DB immediately (MVP sync strategy).
+            // GenericRepository.SingleOrDefaultAsync always uses AsNoTracking(), so Update() is required.
             user.Email = dto.NewEmail;
+            await _unitOfWork.Repository<PBUser>().Update(user);
             await _unitOfWork.SaveChangesAsync();
 
             _logger.LogInformation("Email change requested successfully for user: {UserId}", userId);
