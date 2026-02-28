@@ -1,6 +1,7 @@
 import { Suspense, useCallback } from 'react';
 import { useNavigate, Outlet } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 import AppBar from '@mui/material/AppBar';
 import Avatar from '@mui/material/Avatar';
@@ -17,10 +18,12 @@ import WavesIcon from '@mui/icons-material/Waves';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { useCurrentUser, useLogout, AUTH_ME_KEY, authApi } from '../../features/auth';
 import { useThemeMode } from '../../context/ThemeContext';
+import { LanguageSwitcher } from '../ui/LanguageSwitcher';
 
 
 // ─── Auth-aware nav section (wrapped in its own Suspense) ───────────────────
 function NavAuthSection() {
+    const { t } = useTranslation();
     const user = useCurrentUser();
     const { mutate: logout, isPending } = useLogout();
     const navigate = useNavigate();
@@ -72,7 +75,7 @@ function NavAuthSection() {
                     disabled={isPending}
                     sx={{ ml: 0.5 }}
                 >
-                    Logout
+                    {t('Navigation.logout')}
                 </Button>
             </Box>
         );
@@ -81,10 +84,10 @@ function NavAuthSection() {
     return (
         <Box sx={{ display: 'flex', gap: 1 }}>
             <Button variant="text" onClick={() => navigate({ to: '/login' })}>
-                Login
+                {t('Navigation.login')}
             </Button>
             <Button variant="contained" onClick={() => navigate({ to: '/register' })}>
-                Register
+                {t('Navigation.register')}
             </Button>
         </Box>
     );
@@ -94,6 +97,7 @@ function NavAuthSection() {
 export function MainLayout() {
     const navigate = useNavigate();
     const { mode, toggleTheme } = useThemeMode();
+    const { t } = useTranslation();
 
     // Non-suspending observer used solely to derive a resetKey for ErrorBoundary.
     // When the user logs in and invalidateQueries refetches /me successfully,
@@ -142,8 +146,11 @@ export function MainLayout() {
                             </Typography>
                         </Box>
 
+                        {/* Language switcher */}
+                        <LanguageSwitcher />
+
                         {/* Theme toggle button */}
-                        <Tooltip title={isLight ? 'Switch to dark mode' : 'Switch to light mode'}>
+                        <Tooltip title={isLight ? t('Navigation.switchToDark') : t('Navigation.switchToLight')}>
                             <IconButton
                                 onClick={toggleTheme}
                                 size="small"
@@ -159,10 +166,10 @@ export function MainLayout() {
                             fallback={
                                 <Box sx={{ display: 'flex', gap: 1 }}>
                                     <Button variant="text" onClick={() => navigate({ to: '/login' })}>
-                                        Login
+                                        {t('Navigation.login')}
                                     </Button>
                                     <Button variant="contained" onClick={() => navigate({ to: '/register' })}>
-                                        Register
+                                        {t('Navigation.register')}
                                     </Button>
                                 </Box>
                             }

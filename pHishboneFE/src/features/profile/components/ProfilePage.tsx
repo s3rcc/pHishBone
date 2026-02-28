@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
@@ -14,6 +15,7 @@ import { ChangeEmailForm } from './ChangeEmailForm';
 
 export const ProfilePage: React.FC = () => {
     const user = useCurrentUser();
+    const { t } = useTranslation();
 
     return (
         <Box
@@ -45,10 +47,10 @@ export const ProfilePage: React.FC = () => {
                     <AccountCircleIcon sx={{ color: 'primary.main', fontSize: 32 }} />
                     <Box>
                         <Typography variant="h5" fontWeight={800} letterSpacing="-0.5px">
-                            My Profile
+                            {t('Profile.pageTitle')}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                            Manage your account settings
+                            {t('Profile.pageSubtitle')}
                         </Typography>
                     </Box>
                 </Box>
@@ -131,13 +133,13 @@ export const ProfilePage: React.FC = () => {
 
                             <Box>
                                 <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
-                                    ACCOUNT INFO
+                                    {t('Profile.accountInfo')}
                                 </Typography>
                                 <Typography variant="body2">
-                                    <strong>Role:</strong>&nbsp;{user.role}
+                                    <strong>{t('Profile.roleLabel')}</strong>&nbsp;{user.role}
                                 </Typography>
                                 <Typography variant="body2" sx={{ mt: 0.5 }}>
-                                    <strong>User ID:</strong>&nbsp;
+                                    <strong>{t('Profile.userIdLabel')}</strong>&nbsp;
                                     <Typography
                                         component="span"
                                         variant="body2"

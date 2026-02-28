@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Alert from '@mui/material/Alert';
 import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
@@ -33,6 +34,7 @@ export const UploadAvatarCard: React.FC<UploadAvatarCardProps> = ({ currentUsern
     });
 
     const { mutate: uploadAvatar, isPending } = useUploadAvatarMutation();
+    const { t } = useTranslation();
 
     const handleCloseSnackbar = useCallback(() => {
         setSnackbar((prev) => ({ ...prev, open: false }));
@@ -59,12 +61,12 @@ export const UploadAvatarCard: React.FC<UploadAvatarCardProps> = ({ currentUsern
 
             uploadAvatar(croppedFile, {
                 onSuccess: (res) => {
-                    setSnackbar({ open: true, message: res.message ?? 'Avatar updated!', severity: 'success' });
+                    setSnackbar({ open: true, message: res.message ?? t('Profile.Avatar.successMessage'), severity: 'success' });
                 },
                 onError: (err: unknown) => {
                     const msg =
                         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-                        'Failed to upload avatar.';
+                        t('Profile.Avatar.errorMessage');
                     setSnackbar({ open: true, message: msg, severity: 'error' });
                     setPreview(null); // revert optimistic preview on error
                 },
@@ -98,7 +100,7 @@ export const UploadAvatarCard: React.FC<UploadAvatarCardProps> = ({ currentUsern
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2.5 }}>
                     <PhotoCameraIcon fontSize="small" sx={{ color: 'primary.main' }} />
                     <Typography variant="subtitle1" fontWeight={700}>
-                        Profile Avatar
+                        {t('Profile.Avatar.sectionTitle')}
                     </Typography>
                 </Box>
 
@@ -152,10 +154,10 @@ export const UploadAvatarCard: React.FC<UploadAvatarCardProps> = ({ currentUsern
                             onClick={() => fileInputRef.current?.click()}
                             startIcon={<PhotoCameraIcon />}
                         >
-                            {isPending ? 'Uploading…' : 'Change Photo'}
+                            {isPending ? t('Profile.Avatar.uploading') : t('Profile.Avatar.changePhoto')}
                         </Button>
                         <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 0.75 }}>
-                            JPG or PNG — cropped to 400 × 400 px
+                            {t('Profile.Avatar.hint')}
                         </Typography>
                     </Box>
                 </Box>
@@ -170,7 +172,7 @@ export const UploadAvatarCard: React.FC<UploadAvatarCardProps> = ({ currentUsern
                     onClose={handleCropperClose}
                     aspect={1}
                     outputSize={{ width: 400, height: 400 }}
-                    title="Crop Avatar"
+                    title={t('Profile.Avatar.cropTitle')}
                 />
             )}
 

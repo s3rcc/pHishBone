@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Grid from '@mui/material/Grid';
@@ -15,6 +16,7 @@ import type { RegisterRequestDto } from '../types';
 export function RegisterForm() {
     const navigate = useNavigate();
     const { mutate: register, isPending } = useRegisterMutation();
+    const { t } = useTranslation();
 
     const [form, setForm] = useState<RegisterRequestDto>({ username: '', email: '', password: '' });
     const [snackbar, setSnackbar] = useState<{
@@ -39,13 +41,13 @@ export function RegisterForm() {
             e.preventDefault();
             register(form, {
                 onSuccess: (response) => {
-                    setSnackbar({ open: true, message: response.message ?? 'Account created!', severity: 'success' });
+                    setSnackbar({ open: true, message: response.message ?? t('Auth.Register.successMessage'), severity: 'success' });
                     setTimeout(() => navigate({ to: '/' }), 800);
                 },
                 onError: (error: unknown) => {
                     const msg =
                         (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-                        'Registration failed. Please try again.';
+                        t('Auth.Register.errorMessage');
                     setSnackbar({ open: true, message: msg, severity: 'error' });
                 },
             });
@@ -67,15 +69,15 @@ export function RegisterForm() {
                 <Grid size={{ xs: 12, sm: 12, md: 12, lg: 12 }}>
                     <Paper elevation={4} sx={{ p: { xs: 3, md: 5 } }}>
                         <Typography variant="h4" gutterBottom sx={{ mb: 1 }}>
-                            Create Account 🐠
+                            {t('Auth.Register.title')}
                         </Typography>
                         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                            Join pHishbone and start building your dream aquarium
+                            {t('Auth.Register.subtitle')}
                         </Typography>
 
                         <Box component="form" onSubmit={handleSubmit} noValidate sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                             <TextField
-                                label="Username"
+                                label={t('Auth.Register.usernameLabel')}
                                 name="username"
                                 value={form.username}
                                 onChange={handleChange}
@@ -84,7 +86,7 @@ export function RegisterForm() {
                                 autoComplete="username"
                             />
                             <TextField
-                                label="Email"
+                                label={t('Auth.Register.emailLabel')}
                                 name="email"
                                 type="email"
                                 value={form.email}
@@ -94,7 +96,7 @@ export function RegisterForm() {
                                 autoComplete="email"
                             />
                             <TextField
-                                label="Password"
+                                label={t('Auth.Register.passwordLabel')}
                                 name="password"
                                 type="password"
                                 value={form.password}
@@ -111,14 +113,14 @@ export function RegisterForm() {
                                 fullWidth
                                 sx={{ mt: 1 }}
                             >
-                                {isPending ? <CircularProgress size={22} color="inherit" /> : 'Create Account'}
+                                {isPending ? <CircularProgress size={22} color="inherit" /> : t('Auth.Register.submitButton')}
                             </Button>
                         </Box>
 
                         <Typography variant="body2" sx={{ mt: 3, textAlign: 'center' }} color="text.secondary">
-                            Already have an account?{' '}
+                            {t('Auth.Register.hasAccount')}{' '}
                             <Button variant="text" size="small" onClick={() => navigate({ to: '/login' })}>
-                                Sign In
+                                {t('Auth.Register.loginLink')}
                             </Button>
                         </Typography>
                     </Paper>

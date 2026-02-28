@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -23,6 +24,7 @@ export const UpdateUsernameForm: React.FC<UpdateUsernameFormProps> = ({ currentU
     });
 
     const { mutate: updateProfile, isPending } = useUpdateProfileMutation();
+    const { t } = useTranslation();
 
     const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         setUsername(e.target.value);
@@ -37,12 +39,12 @@ export const UpdateUsernameForm: React.FC<UpdateUsernameFormProps> = ({ currentU
             e.preventDefault();
             updateProfile(username, {
                 onSuccess: (res) => {
-                    setSnackbar({ open: true, message: res.message ?? 'Username updated!', severity: 'success' });
+                    setSnackbar({ open: true, message: res.message ?? t('Profile.Username.successMessage'), severity: 'success' });
                 },
                 onError: (err: unknown) => {
                     const msg =
                         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-                        'Failed to update username.';
+                        t('Profile.Username.errorMessage');
                     setSnackbar({ open: true, message: msg, severity: 'error' });
                 },
             });
@@ -64,19 +66,19 @@ export const UpdateUsernameForm: React.FC<UpdateUsernameFormProps> = ({ currentU
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                     <EditIcon fontSize="small" sx={{ color: 'primary.main' }} />
                     <Typography variant="subtitle1" fontWeight={700}>
-                        Update Username
+                        {t('Profile.Username.sectionTitle')}
                     </Typography>
                 </Box>
 
                 <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
                     <TextField
-                        label="Username"
+                        label={t('Profile.Username.fieldLabel')}
                         value={username}
                         onChange={handleChange}
                         size="small"
                         fullWidth
                         inputProps={{ minLength: 3, maxLength: 50 }}
-                        helperText="3–50 characters"
+                        helperText={t('Profile.Username.helperText')}
                     />
                     <Button
                         type="submit"
@@ -84,7 +86,7 @@ export const UpdateUsernameForm: React.FC<UpdateUsernameFormProps> = ({ currentU
                         disabled={isPending || username === currentUsername}
                         sx={{ whiteSpace: 'nowrap', minWidth: 110 }}
                     >
-                        {isPending ? <CircularProgress size={20} color="inherit" /> : 'Save'}
+                        {isPending ? <CircularProgress size={20} color="inherit" /> : t('Profile.Username.submitButton')}
                     </Button>
                 </Box>
             </Paper>

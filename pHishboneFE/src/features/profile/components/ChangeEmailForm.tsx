@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -20,6 +21,7 @@ export const ChangeEmailForm: React.FC = () => {
     });
 
     const { mutate: changeEmail, isPending } = useChangeEmailMutation();
+    const { t } = useTranslation();
 
     const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         setNewEmail(e.target.value);
@@ -37,7 +39,7 @@ export const ChangeEmailForm: React.FC = () => {
                     // Backend returns a confirmation message, not an updated user
                     setSnackbar({
                         open: true,
-                        message: res.message ?? 'Check your inbox to confirm the email change.',
+                        message: res.message ?? t('Profile.Email.successMessage'),
                         severity: 'info',
                     });
                     setNewEmail('');
@@ -45,7 +47,7 @@ export const ChangeEmailForm: React.FC = () => {
                 onError: (err: unknown) => {
                     const msg =
                         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-                        'Failed to request email change.';
+                        t('Profile.Email.errorMessage');
                     setSnackbar({ open: true, message: msg, severity: 'error' });
                 },
             });
@@ -67,20 +69,20 @@ export const ChangeEmailForm: React.FC = () => {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                     <EmailIcon fontSize="small" sx={{ color: 'primary.main' }} />
                     <Typography variant="subtitle1" fontWeight={700}>
-                        Change Email
+                        {t('Profile.Email.sectionTitle')}
                     </Typography>
                 </Box>
 
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 2 }}>
                     <InfoIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
                     <Typography variant="caption" color="text.secondary">
-                        Supabase will send a confirmation link to both your old and new address.
+                        {t('Profile.Email.hint')}
                     </Typography>
                 </Box>
 
                 <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
                     <TextField
-                        label="New Email"
+                        label={t('Profile.Email.fieldLabel')}
                         type="email"
                         value={newEmail}
                         onChange={handleChange}
@@ -94,7 +96,7 @@ export const ChangeEmailForm: React.FC = () => {
                         disabled={isPending || !newEmail}
                         sx={{ whiteSpace: 'nowrap', minWidth: 110 }}
                     >
-                        {isPending ? <CircularProgress size={20} color="inherit" /> : 'Request'}
+                        {isPending ? <CircularProgress size={20} color="inherit" /> : t('Profile.Email.submitButton')}
                     </Button>
                 </Box>
             </Paper>

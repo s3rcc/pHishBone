@@ -5,9 +5,11 @@ import Container from '@mui/material/Container';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useNavigate } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 
 export default function HomePage() {
     const navigate = useNavigate();
+    const { t } = useTranslation();
 
     return (
         <Box
@@ -65,7 +67,7 @@ export default function HomePage() {
                             sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: '#1DE9B6', animation: 'pulse 2s infinite' }}
                         />
                         <Typography variant="caption" color="primary.light" fontWeight={600} letterSpacing={0.8}>
-                            AQUARIUM EXPERT SYSTEM
+                            {t('Home.badge')}
                         </Typography>
                     </Box>
 
@@ -83,7 +85,7 @@ export default function HomePage() {
                             WebkitTextFillColor: 'transparent',
                         }}
                     >
-                        Design Your Dream Aquarium. Safely.
+                        {t('Home.headline')}
                     </Typography>
 
                     {/* Subtitle */}
@@ -92,8 +94,7 @@ export default function HomePage() {
                         color="text.secondary"
                         sx={{ mb: 5, maxWidth: 560, fontWeight: 400, lineHeight: 1.7 }}
                     >
-                        Build perfectly balanced ecosystems with intelligent species compatibility checks,
-                        water parameter monitoring, and real-time tank health metrics.
+                        {t('Home.subtitle')}
                     </Typography>
 
                     {/* CTAs */}
@@ -116,7 +117,7 @@ export default function HomePage() {
                                 transition: 'all 0.25s ease',
                             }}
                         >
-                            🚀 Start Building
+                            {t('Home.ctaStart')}
                         </Button>
                         <Button
                             variant="outlined"
@@ -136,23 +137,23 @@ export default function HomePage() {
                                 transition: 'all 0.25s ease',
                             }}
                         >
-                            🐟 Explore Catalog
+                            {t('Home.ctaExplore')}
                         </Button>
                     </Stack>
 
                     {/* Stats row */}
                     <Stack direction="row" spacing={4} sx={{ mt: 6 }}>
-                        {[
-                            { value: '500+', label: 'Fish Species' },
-                            { value: '99%', label: 'Accuracy Rate' },
-                            { value: '10k+', label: 'Aquarists' },
-                        ].map((stat) => (
-                            <Box key={stat.label}>
+                        {([
+                            { value: '500+', labelKey: 'Home.statsFishSpecies' },
+                            { value: '99%', labelKey: 'Home.statsAccuracy' },
+                            { value: '10k+', labelKey: 'Home.statsAquarists' },
+                        ] as const).map((stat) => (
+                            <Box key={stat.labelKey}>
                                 <Typography variant="h5" fontWeight={800} color="primary.light">
                                     {stat.value}
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary">
-                                    {stat.label}
+                                    {t(stat.labelKey)}
                                 </Typography>
                             </Box>
                         ))}

@@ -1,0 +1,85 @@
+{
+    "Common": {
+        "save": "Lưu",
+        "cancel": "Hủy",
+        "loading": "Đang tải...",
+        "request": "Yêu cầu",
+        "uploading": "Đang tải lên…",
+        "changePhoto": "Đổi Ảnh"
+    },
+    "Navigation": {
+        "login": "Đăng nhập",
+        "register": "Đăng ký",
+        "logout": "Đăng xuất",
+        "switchToDark": "Chuyển sang chế độ tối",
+        "switchToLight": "Chuyển sang chế độ sáng",
+        "switchLanguage": "Switch language / Chuyển ngôn ngữ"
+    },
+    "Home": {
+        "badge": "HỆ THỐNG CHUYÊN GIA THỦY SINH",
+        "headline": "Thiết Kế Hồ Cá Mơ Ước. An Toàn.",
+        "subtitle": "Xây dựng hệ sinh thái cân bằng hoàn hảo với kiểm tra khả năng tương thích loài thông minh, theo dõi thông số nước và thông báo sức khỏe hồ cá theo thời gian thực.",
+        "ctaStart": "🚀 Bắt Đầu Xây Dựng",
+        "ctaExplore": "🐟 Khám Phá Danh Mục",
+        "statsFishSpecies": "Loài Cá",
+        "statsAccuracy": "Độ Chính Xác",
+        "statsAquarists": "Người Nuôi Cá"
+    },
+    "Auth": {
+        "Login": {
+            "title": "Chào mừng trở lại 👋",
+            "subtitle": "Đăng nhập vào tài khoản pHishbone của bạn",
+            "emailLabel": "Email",
+            "passwordLabel": "Mật khẩu",
+            "submitButton": "Đăng Nhập",
+            "noAccount": "Chưa có tài khoản?",
+            "registerLink": "Đăng ký",
+            "successMessage": "Đăng nhập thành công!",
+            "errorMessage": "Đăng nhập thất bại. Vui lòng thử lại."
+        },
+        "Register": {
+            "title": "Tạo Tài Khoản 🐠",
+            "subtitle": "Tham gia pHishbone và bắt đầu xây dựng hồ cá mơ ước của bạn",
+            "usernameLabel": "Tên người dùng",
+            "emailLabel": "Email",
+            "passwordLabel": "Mật khẩu",
+            "submitButton": "Tạo Tài Khoản",
+            "hasAccount": "Đã có tài khoản?",
+            "loginLink": "Đăng nhập",
+            "successMessage": "Tài khoản đã được tạo!",
+            "errorMessage": "Đăng ký thất bại. Vui lòng thử lại."
+        }
+    },
+    "Profile": {
+        "pageTitle": "Hồ Sơ Của Tôi",
+        "pageSubtitle": "Quản lý cài đặt tài khoản của bạn",
+        "accountInfo": "THÔNG TIN TÀI KHOẢN",
+        "roleLabel": "Vai trò:",
+        "userIdLabel": "ID người dùng:",
+        "Avatar": {
+            "sectionTitle": "Ảnh Đại Diện",
+            "changePhoto": "Đổi Ảnh",
+            "uploading": "Đang tải lên…",
+            "hint": "JPG hoặc PNG — cắt thành 400 × 400 px",
+            "cropTitle": "Cắt Ảnh Đại Diện",
+            "successMessage": "Ảnh đại diện đã được cập nhật!",
+            "errorMessage": "Tải ảnh đại diện thất bại."
+        },
+        "Username": {
+            "sectionTitle": "Cập Nhật Tên Người Dùng",
+            "fieldLabel": "Tên người dùng",
+            "helperText": "3–50 ký tự",
+            "submitButton": "Lưu",
+            "successMessage": "Tên người dùng đã được cập nhật!",
+            "errorMessage": "Cập nhật tên người dùng thất bại."
+        },
+        "Email": {
+            "sectionTitle": "Đổi Email",
+            "hint": "Supabase sẽ gửi liên kết xác nhận đến cả địa chỉ cũ và địa chỉ mới của bạn.",
+            "fieldLabel": "Email mới",
+            "submitButton": "Yêu cầu",
+            "successMessage": "Kiểm tra hộp thư để xác nhận thay đổi email.",
+            "errorMessage": "Yêu cầu đổi email thất bại."
+        }
+    }
+}

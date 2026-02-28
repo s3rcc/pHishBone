@@ -725,3 +725,189 @@ Before finalizing code:
 This skill is applicable to execute the workflow or actions described in the overview.
 
 I already have the skill file here, so just have the insruction and the api endpoint + request and reponse for those pages
+
+---
+
+
+
+## 19. Multi-Language (i18n) Standards
+
+
+
+### Library & Stack
+
+
+
+* **Library:** `i18next` + `react-i18next` + `i18next-browser-languagedetector`
+
+* **NOT** `next-intl` — this is a Vite project, not Next.js
+
+* Supported locales: `en` (English) and `vi` (Vietnamese)
+
+
+
+### File Structure
+
+
+
+```
+
+src/
+
+  i18n/
+
+    index.ts           # i18next initialization (import this in main.tsx FIRST)
+
+    i18n.d.ts          # TypeScript type augmentation for t() autocomplete
+
+    locales/
+
+      en.json          # English dictionary — source of truth
+
+      vi.json          # Vietnamese dictionary — must mirror en.json exactly
+
+```
+
+
+
+### Dictionary Structure (Nested by Feature)
+
+
+
+Translations are grouped by feature namespace:
+
+```json
+
+{
+
+  "Common":    { "save": "...", "cancel": "...", "loading": "..." },
+
+  "Navigation": { "login": "...", "register": "...", "logout": "...", ... },
+
+  "Home":      { "badge": "...", "headline": "...", "subtitle": "...", ... },
+
+  "Auth": {
+
+    "Login":    { "title": "...", "emailLabel": "...", "submitButton": "...", ... },
+
+    "Register": { "title": "...", "usernameLabel": "...", ... }
+
+  },
+
+  "Profile": {
+
+    "Avatar":   { "sectionTitle": "...", "changePhoto": "...", ... },
+
+    "Username": { "sectionTitle": "...", "fieldLabel": "...", ... },
+
+    "Email":    { "sectionTitle": "...", "fieldLabel": "...", ... }
+
+  }
+
+}
+
+```
+
+
+
+### Locale Persistence
+
+
+
+* Language is stored in `localStorage` under key `phishbone-language`
+
+* Default locale: `en`
+
+* Fallback locale: `en`
+
+* Browser language is used when no `localStorage` value exists
+
+
+
+### Hook Usage
+
+
+
+```ts
+
+// In any component (Server or Client)
+
+const { t } = useTranslation();
+
+// Usage:
+
+t('Navigation.login')       // ✅ flat key
+
+t('Auth.Login.submitButton') // ✅ nested key — TypeScript autocomplete works
+
+```
+
+
+
+* Always destructure `{ t }` from `useTranslation()` — never use `i18n.t()` directly in JSX
+
+* `useTranslation()` must be called at the **top of the component**, alongside other hooks
+
+
+
+### LanguageSwitcher Component
+
+
+
+* Location: `src/components/ui/LanguageSwitcher.tsx`
+
+* Type: `React.FC` (explicit, no props)
+
+* UI: MUI `ToggleButtonGroup` with `EN` and `VI` values
+
+* Language change handler **must** be wrapped in `useCallback`
+
+* Must be placed in `MainLayout` Navbar, between the logo and theme toggle
+
+
+
+### TypeScript Requirements
+
+
+
+* `src/i18n/i18n.d.ts` must declare `CustomTypeOptions` mapping `'translation'` to `typeof en`
+
+* This gives full **autocomplete and compile-time safety** on all `t('key')` calls
+
+* Adding keys to `en.json` automatically enables type checking — no manual type updates needed
+
+
+
+### Rules (Non-Negotiable)
+
+
+
+❌ No hardcoded user-facing strings in any component — use `t('Namespace.key')`
+
+❌ Do not use inline fallback strings like `t('key') || 'fallback'` — put the fallback in `en.json`
+
+❌ Do not call `i18n.changeLanguage()` outside of `LanguageSwitcher`
+
+❌ Do not add keys to `vi.json` without a matching key in `en.json`
+
+✅ Add new feature strings to **both** `en.json` and `vi.json` at the same time
+
+✅ Group keys under the feature name (e.g., `Profile.Avatar.*`, `Auth.Login.*`)
+
+✅ Use `Common.*` for strings shared across multiple features (Save, Cancel, etc.)
+
+
+
+### Adding i18n to a New Feature
+
+
+
+1. Add keys to `src/i18n/locales/en.json` under `"FeatureName": { ... }`
+
+2. Add matching Vietnamese translations to `src/i18n/locales/vi.json`
+
+3. In each component: `const { t } = useTranslation();`
+
+4. Replace every hardcoded string with `t('FeatureName.keyName')`
+
+5. Run `npx tsc --noEmit` to confirm zero type errors
