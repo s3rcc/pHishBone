@@ -42,3 +42,17 @@ export function useChangeEmailMutation() {
         mutationFn: useCallback((newEmail: string) => profileApi.changeEmail(newEmail), []),
     });
 }
+
+/**
+ * Mutation to change the user's password (requires current password for verification).
+ */
+export function useChangePasswordMutation() {
+    return useMutation({
+        mutationFn: useCallback(
+            ({ currentPassword, newPassword }: { currentPassword: string; newPassword: string }) =>
+                profileApi.changePassword(currentPassword, newPassword),
+            [],
+        ),
+    });
+}
+

@@ -29,4 +29,15 @@ export const profileApi = {
         const { data } = await axiosInstance.post<ApiResponse<object>>('/api/auth/change-email', { newEmail });
         return data;
     },
+
+    /**
+     * POST /api/auth/change-password — change password for authenticated user
+     */
+    changePassword: async (currentPassword: string, newPassword: string): Promise<ApiResponse<object>> => {
+        const { data } = await axiosInstance.post<ApiResponse<object>>('/api/auth/change-password', {
+            currentPassword,
+            newPassword,
+        });
+        return data;
+    },
 };

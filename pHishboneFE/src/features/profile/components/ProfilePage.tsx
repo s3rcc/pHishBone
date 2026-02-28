@@ -1,6 +1,5 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Divider from '@mui/material/Divider';
@@ -12,6 +11,7 @@ import { useCurrentUser } from '../../auth';
 import { UpdateUsernameForm } from './UpdateUsernameForm';
 import { UploadAvatarCard } from './UploadAvatarCard';
 import { ChangeEmailForm } from './ChangeEmailForm';
+import { ChangePasswordForm } from './ChangePasswordForm';
 
 export const ProfilePage: React.FC = () => {
     const user = useCurrentUser();
@@ -55,62 +55,6 @@ export const ProfilePage: React.FC = () => {
                     </Box>
                 </Box>
 
-                {/* ── User Summary Banner ──────────────────────────────── */}
-                <Box
-                    sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 2,
-                        p: 2.5,
-                        mb: 4,
-                        borderRadius: 2,
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        background: (theme) =>
-                            theme.palette.mode === 'dark'
-                                ? 'rgba(0,188,212,0.06)'
-                                : 'rgba(0,188,212,0.04)',
-                    }}
-                >
-                    <Avatar
-                        src={user.avatarUrl ?? undefined}
-                        alt={user.username}
-                        sx={{
-                            width: 56,
-                            height: 56,
-                            bgcolor: 'primary.main',
-                            fontWeight: 700,
-                            fontSize: '1.5rem',
-                            boxShadow: '0 4px 14px rgba(0,188,212,0.3)',
-                        }}
-                    >
-                        {!user.avatarUrl && user.username.charAt(0).toUpperCase()}
-                    </Avatar>
-                    <Box>
-                        <Typography variant="subtitle1" fontWeight={700}>
-                            {user.username}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                            {user.email}
-                        </Typography>
-                        <Typography
-                            variant="caption"
-                            sx={{
-                                px: 1,
-                                py: 0.25,
-                                borderRadius: 1,
-                                bgcolor: 'primary.main',
-                                color: '#fff',
-                                fontWeight: 600,
-                                fontSize: '0.65rem',
-                                textTransform: 'uppercase',
-                            }}
-                        >
-                            {user.role}
-                        </Typography>
-                    </Box>
-                </Box>
-
                 {/* ── Settings Sections ────────────────────────────────── */}
                 <Grid container spacing={3}>
                     {/* Left column: avatar + username */}
@@ -124,10 +68,11 @@ export const ProfilePage: React.FC = () => {
                         </Stack>
                     </Grid>
 
-                    {/* Right column: email settings + divider + role info */}
+                    {/* Right column: email + password + account info */}
                     <Grid size={{ xs: 12, md: 6 }}>
                         <Stack spacing={3}>
-                            <ChangeEmailForm />
+                            <ChangeEmailForm currentEmail={user.email} />
+                            <ChangePasswordForm />
 
                             <Divider />
 

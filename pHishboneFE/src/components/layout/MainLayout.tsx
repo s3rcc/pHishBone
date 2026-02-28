@@ -1,4 +1,4 @@
-import { Suspense, useCallback } from 'react';
+import { Suspense, useCallback, useRef, useState } from 'react';
 import { useNavigate, Outlet } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -8,37 +8,78 @@ import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
-import IconButton from '@mui/material/IconButton';
+import Divider from '@mui/material/Divider';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import Switch from '@mui/material/Switch';
 import Toolbar from '@mui/material/Toolbar';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import LanguageIcon from '@mui/icons-material/Language';
 import LightModeIcon from '@mui/icons-material/LightMode';
+import LogoutIcon from '@mui/icons-material/Logout';
+import SettingsIcon from '@mui/icons-material/Settings';
 import WavesIcon from '@mui/icons-material/Waves';
+
 import { ErrorBoundary } from '../ErrorBoundary';
 import { useCurrentUser, useLogout, AUTH_ME_KEY, authApi } from '../../features/auth';
 import { useThemeMode } from '../../context/ThemeContext';
-import { LanguageSwitcher } from '../ui/LanguageSwitcher';
 
+const LOCALES = ['en', 'vi'] as const;
+type Locale = (typeof LOCALES)[number];
 
 // ─── Auth-aware nav section (wrapped in its own Suspense) ───────────────────
 function NavAuthSection() {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const user = useCurrentUser();
     const { mutate: logout, isPending } = useLogout();
     const navigate = useNavigate();
+    const { mode, toggleTheme } = useThemeMode();
+
+    const anchorRef = useRef<HTMLDivElement>(null);
+    const [menuOpen, setMenuOpen] = useState(false);
+
+    const isLight = mode === 'light';
+
+    // Normalise language code — browser may return 'en-US', we only want 'en'
+    const current = (i18n.language?.split('-')[0] ?? 'en') as Locale;
+    const activeLocale: Locale = LOCALES.includes(current) ? current : 'en';
+
+    const handleMenuOpen = useCallback(() => setMenuOpen(true), []);
+    const handleMenuClose = useCallback(() => setMenuOpen(false), []);
 
     const handleLogout = useCallback(() => {
+        handleMenuClose();
         logout(undefined, {
             onSuccess: () => navigate({ to: '/' }),
         });
-    }, [logout, navigate]);
+    }, [logout, navigate, handleMenuClose]);
+
+    const handleNavigateProfile = useCallback(() => {
+        handleMenuClose();
+        navigate({ to: '/profile' });
+    }, [navigate, handleMenuClose]);
+
+    const handleLanguageChange = useCallback(
+        (_: React.MouseEvent<HTMLElement>, value: Locale | null) => {
+            if (value) i18n.changeLanguage(value);
+        },
+        [i18n],
+    );
 
     if (user) {
         return (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <>
+                {/* Avatar chip — acts as the dropdown trigger */}
                 <Box
-                    onClick={() => navigate({ to: '/profile' })}
+                    ref={anchorRef}
+                    onClick={handleMenuOpen}
                     sx={{
                         display: 'flex',
                         alignItems: 'center',
@@ -49,7 +90,10 @@ function NavAuthSection() {
                         py: 0.25,
                         '&:hover': { bgcolor: 'action.hover' },
                         transition: 'background 0.2s',
+                        userSelect: 'none',
                     }}
+                    aria-haspopup="true"
+                    aria-expanded={menuOpen}
                 >
                     <Avatar
                         src={user.avatarUrl ?? undefined}
@@ -64,20 +108,188 @@ function NavAuthSection() {
                     >
                         {!user.avatarUrl && user.username.charAt(0).toUpperCase()}
                     </Avatar>
-                    <Typography variant="body2" fontWeight={600} sx={{ display: { xs: 'none', sm: 'block' } }}>
+                    <Typography
+                        variant="body2"
+                        fontWeight={600}
+                        sx={{ display: { xs: 'none', sm: 'block' } }}
+                    >
                         {user.username}
                     </Typography>
+                    <KeyboardArrowDownIcon
+                        fontSize="small"
+                        sx={{
+                            color: 'text.secondary',
+                            transition: 'transform 0.2s',
+                            transform: menuOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                            display: { xs: 'none', sm: 'block' },
+                        }}
+                    />
                 </Box>
-                <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={handleLogout}
-                    disabled={isPending}
-                    sx={{ ml: 0.5 }}
+
+                {/* ── Dropdown Menu ─────────────────────────────────────── */}
+                <Menu
+                    anchorEl={anchorRef.current}
+                    open={menuOpen}
+                    onClose={handleMenuClose}
+                    transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                    anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                    slotProps={{
+                        paper: {
+                            elevation: 0,
+                            sx: {
+                                mt: 1,
+                                minWidth: 240,
+                                overflow: 'visible',
+                                border: '1px solid',
+                                borderColor: 'divider',
+                                borderRadius: 2,
+                                backdropFilter: 'blur(12px)',
+                                bgcolor: (theme) =>
+                                    theme.palette.mode === 'dark'
+                                        ? 'rgba(13,33,55,0.97)'
+                                        : 'rgba(250,253,255,0.97)',
+                                '&::before': {
+                                    content: '""',
+                                    display: 'block',
+                                    position: 'absolute',
+                                    top: 0,
+                                    right: 18,
+                                    width: 10,
+                                    height: 10,
+                                    bgcolor: 'background.paper',
+                                    transform: 'translateY(-50%) rotate(45deg)',
+                                    borderLeft: '1px solid',
+                                    borderTop: '1px solid',
+                                    borderColor: 'divider',
+                                    zIndex: 0,
+                                },
+                            },
+                        },
+                    }}
                 >
-                    {t('Navigation.logout')}
-                </Button>
-            </Box>
+                    {/* User identity header */}
+                    <Box sx={{ px: 2, py: 1.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Avatar
+                            src={user.avatarUrl ?? undefined}
+                            alt={user.username}
+                            sx={{
+                                width: 40,
+                                height: 40,
+                                bgcolor: 'primary.main',
+                                fontWeight: 700,
+                                boxShadow: '0 2px 8px rgba(0,188,212,0.35)',
+                            }}
+                        >
+                            {!user.avatarUrl && user.username.charAt(0).toUpperCase()}
+                        </Avatar>
+                        <Box>
+                            <Typography variant="body2" fontWeight={700} noWrap>
+                                {user.username}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" noWrap>
+                                {user.email}
+                            </Typography>
+                        </Box>
+                    </Box>
+
+                    <Divider />
+
+                    {/* Settings */}
+                    <MenuItem onClick={handleNavigateProfile} sx={{ py: 1.25 }}>
+                        <ListItemIcon>
+                            <SettingsIcon fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText primary={t('Navigation.settings')} />
+                    </MenuItem>
+
+                    {/* Appearance — theme toggle */}
+                    <MenuItem
+                        onClick={toggleTheme}
+                        sx={{ py: 1.25 }}
+                        disableRipple={false}
+                    >
+                        <ListItemIcon>
+                            {isLight ? <DarkModeIcon fontSize="small" /> : <LightModeIcon fontSize="small" />}
+                        </ListItemIcon>
+                        <ListItemText
+                            primary={t('Navigation.appearance')}
+                            secondary={isLight ? t('Navigation.lightMode') : t('Navigation.darkMode')}
+                            secondaryTypographyProps={{ variant: 'caption' }}
+                        />
+                        <Switch
+                            checked={!isLight}
+                            size="small"
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={toggleTheme}
+                            color="primary"
+                            sx={{ ml: 1 }}
+                        />
+                    </MenuItem>
+
+                    {/* Language toggle */}
+                    <MenuItem disableRipple sx={{ py: 1.25, '&:hover': { bgcolor: 'transparent' } }}>
+                        <ListItemIcon>
+                            <LanguageIcon fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText primary={t('Navigation.language')} />
+                        <Tooltip title={t('Navigation.switchLanguage')}>
+                            <ToggleButtonGroup
+                                value={activeLocale}
+                                exclusive
+                                onChange={handleLanguageChange}
+                                size="small"
+                                onClick={(e) => e.stopPropagation()}
+                                sx={{
+                                    height: 28,
+                                    border: '1px solid rgba(0, 188, 212, 0.3)',
+                                    borderRadius: 1.5,
+                                    overflow: 'hidden',
+                                    '& .MuiToggleButtonGroup-grouped': {
+                                        border: 'none',
+                                        borderRadius: 0,
+                                        px: 1.25,
+                                        py: 0.5,
+                                        fontSize: '0.7rem',
+                                        fontWeight: 700,
+                                        letterSpacing: 0.5,
+                                        color: 'text.secondary',
+                                        '&.Mui-selected': {
+                                            color: 'primary.light',
+                                            bgcolor: 'rgba(0, 188, 212, 0.15)',
+                                        },
+                                        '&:hover': {
+                                            bgcolor: 'rgba(0, 188, 212, 0.08)',
+                                        },
+                                    },
+                                }}
+                            >
+                                <ToggleButton value="en">EN</ToggleButton>
+                                <ToggleButton value="vi">VI</ToggleButton>
+                            </ToggleButtonGroup>
+                        </Tooltip>
+                    </MenuItem>
+
+                    <Divider />
+
+                    {/* Logout */}
+                    <MenuItem
+                        onClick={handleLogout}
+                        disabled={isPending}
+                        sx={{
+                            py: 1.25,
+                            color: 'error.main',
+                            '& .MuiListItemIcon-root': { color: 'error.main' },
+                            '&:hover': { bgcolor: 'error.main', color: '#fff', '& .MuiListItemIcon-root': { color: '#fff' } },
+                            transition: 'all 0.15s',
+                        }}
+                    >
+                        <ListItemIcon>
+                            <LogoutIcon fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText primary={t('Navigation.logout')} />
+                    </MenuItem>
+                </Menu>
+            </>
         );
     }
 
@@ -96,19 +308,16 @@ function NavAuthSection() {
 // ─── Main Layout ─────────────────────────────────────────────────────────────
 export function MainLayout() {
     const navigate = useNavigate();
-    const { mode, toggleTheme } = useThemeMode();
     const { t } = useTranslation();
 
     // Non-suspending observer used solely to derive a resetKey for ErrorBoundary.
-    // When the user logs in and invalidateQueries refetches /me successfully,
-    // `isAuthenticated` flips from false → true, which changes resetKey and
-    // forces the ErrorBoundary to reset its hasError state.
     const { data: meData } = useQuery({
         queryKey: AUTH_ME_KEY,
         queryFn: authApi.getMe,
         retry: false,
     });
     const resetKey = meData ? 'auth' : 'guest';
+    const { mode } = useThemeMode();
     const isLight = mode === 'light';
 
     return (
@@ -146,23 +355,9 @@ export function MainLayout() {
                             </Typography>
                         </Box>
 
-                        {/* Language switcher */}
-                        <LanguageSwitcher />
-
-                        {/* Theme toggle button */}
-                        <Tooltip title={isLight ? t('Navigation.switchToDark') : t('Navigation.switchToLight')}>
-                            <IconButton
-                                onClick={toggleTheme}
-                                size="small"
-                                sx={{ mr: 1, color: 'text.primary' }}
-                                aria-label="toggle color theme"
-                            >
-                                {isLight ? <DarkModeIcon fontSize="small" /> : <LightModeIcon fontSize="small" />}
-                            </IconButton>
-                        </Tooltip>
-
                         {/* Auth section – ErrorBoundary catches 401/network errors and shows unauthenticated UI */}
-                        <ErrorBoundary resetKey={resetKey}
+                        <ErrorBoundary
+                            resetKey={resetKey}
                             fallback={
                                 <Box sx={{ display: 'flex', gap: 1 }}>
                                     <Button variant="text" onClick={() => navigate({ to: '/login' })}>

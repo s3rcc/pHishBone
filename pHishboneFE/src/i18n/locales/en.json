@@ -11,6 +11,11 @@
         "login": "Login",
         "register": "Register",
         "logout": "Logout",
+        "settings": "Settings",
+        "appearance": "Appearance",
+        "language": "Language",
+        "darkMode": "Dark Mode",
+        "lightMode": "Light Mode",
         "switchToDark": "Switch to dark mode",
         "switchToLight": "Switch to light mode",
         "switchLanguage": "Switch language / Chuyển ngôn ngữ"
@@ -59,14 +64,21 @@
         "Avatar": {
             "sectionTitle": "Profile Avatar",
             "changePhoto": "Change Photo",
+            "viewPhoto": "View Photo",
+            "viewPhotoTitle": "Profile Picture",
             "uploading": "Uploading…",
             "hint": "JPG or PNG — cropped to 400 × 400 px",
             "cropTitle": "Crop Avatar",
+            "cropZoom": "Zoom",
+            "cropRotate": "Rotate",
+            "cropCancel": "Cancel",
+            "cropApply": "Apply Crop",
+            "cropApplying": "Applying…",
             "successMessage": "Avatar updated!",
             "errorMessage": "Failed to upload avatar."
         },
         "Username": {
-            "sectionTitle": "Update Username",
+            "sectionTitle": "Username",
             "fieldLabel": "Username",
             "helperText": "3–50 characters",
             "submitButton": "Save",
@@ -74,12 +86,22 @@
             "errorMessage": "Failed to update username."
         },
         "Email": {
-            "sectionTitle": "Change Email",
+            "sectionTitle": "Email Address",
             "hint": "Supabase will send a confirmation link to both your old and new address.",
             "fieldLabel": "New Email",
             "submitButton": "Request",
             "successMessage": "Check your inbox to confirm the email change.",
             "errorMessage": "Failed to request email change."
+        },
+        "Password": {
+            "sectionTitle": "Change Password",
+            "currentLabel": "Current Password",
+            "newLabel": "New Password",
+            "confirmLabel": "Confirm New Password",
+            "submitButton": "Update Password",
+            "successMessage": "Password changed successfully!",
+            "errorMessage": "Failed to change password.",
+            "mismatch": "Passwords do not match."
         }
     }
 }

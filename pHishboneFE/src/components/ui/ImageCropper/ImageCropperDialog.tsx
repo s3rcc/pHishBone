@@ -1,4 +1,5 @@
 import React, { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Cropper from 'react-easy-crop';
 import type { Area, Point } from 'react-easy-crop';
 import Box from '@mui/material/Box';
@@ -46,6 +47,7 @@ export const ImageCropperDialog: React.FC<ImageCropperDialogProps> = ({
     const [rotation, setRotation] = useState(0);
     const [croppedAreaPixels, setCroppedAreaPixels] = useState<PixelCrop | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
+    const { t } = useTranslation();
 
     const handleCropAreaChange = useCallback((_croppedArea: Area, croppedAreaPx: Area) => {
         setCroppedAreaPixels(croppedAreaPx as PixelCrop);
@@ -117,7 +119,7 @@ export const ImageCropperDialog: React.FC<ImageCropperDialogProps> = ({
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
                         <ZoomInIcon fontSize="small" sx={{ color: 'text.secondary', flexShrink: 0 }} />
                         <Typography variant="caption" color="text.secondary" sx={{ width: 44, flexShrink: 0 }}>
-                            Zoom
+                            {t('Profile.Avatar.cropZoom')}
                         </Typography>
                         <Slider
                             value={zoom}
@@ -134,7 +136,7 @@ export const ImageCropperDialog: React.FC<ImageCropperDialogProps> = ({
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                         <RotateRightIcon fontSize="small" sx={{ color: 'text.secondary', flexShrink: 0 }} />
                         <Typography variant="caption" color="text.secondary" sx={{ width: 44, flexShrink: 0 }}>
-                            Rotate
+                            {t('Profile.Avatar.cropRotate')}
                         </Typography>
                         <Slider
                             value={rotation}
@@ -151,7 +153,7 @@ export const ImageCropperDialog: React.FC<ImageCropperDialogProps> = ({
 
             <DialogActions sx={{ px: 3, pb: 2 }}>
                 <Button onClick={handleClose} variant="text" disabled={isProcessing}>
-                    Cancel
+                    {t('Profile.Avatar.cropCancel')}
                 </Button>
                 <Button
                     onClick={handleConfirm}
@@ -162,7 +164,7 @@ export const ImageCropperDialog: React.FC<ImageCropperDialogProps> = ({
                         '&:hover': { background: 'linear-gradient(135deg, #0097A7, #00BFA5)' },
                     }}
                 >
-                    {isProcessing ? 'Applying…' : 'Apply Crop'}
+                    {isProcessing ? t('Profile.Avatar.cropApplying') : t('Profile.Avatar.cropApply')}
                 </Button>
             </DialogActions>
         </Dialog>

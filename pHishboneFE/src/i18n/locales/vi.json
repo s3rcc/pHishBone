@@ -11,6 +11,11 @@
         "login": "Đăng nhập",
         "register": "Đăng ký",
         "logout": "Đăng xuất",
+        "settings": "Cài đặt",
+        "appearance": "Giao diện",
+        "language": "Ngôn ngữ",
+        "darkMode": "Chế độ tối",
+        "lightMode": "Chế độ sáng",
         "switchToDark": "Chuyển sang chế độ tối",
         "switchToLight": "Chuyển sang chế độ sáng",
         "switchLanguage": "Switch language / Chuyển ngôn ngữ"
@@ -59,14 +64,21 @@
         "Avatar": {
             "sectionTitle": "Ảnh Đại Diện",
             "changePhoto": "Đổi Ảnh",
+            "viewPhoto": "Xem Ảnh",
+            "viewPhotoTitle": "Ảnh Đại Diện",
             "uploading": "Đang tải lên…",
             "hint": "JPG hoặc PNG — cắt thành 400 × 400 px",
             "cropTitle": "Cắt Ảnh Đại Diện",
+            "cropZoom": "Thu phóng",
+            "cropRotate": "Xoay",
+            "cropCancel": "Hủy",
+            "cropApply": "Xác Nhận Cắt",
+            "cropApplying": "Đang xử lý…",
             "successMessage": "Ảnh đại diện đã được cập nhật!",
             "errorMessage": "Tải ảnh đại diện thất bại."
         },
         "Username": {
-            "sectionTitle": "Cập Nhật Tên Người Dùng",
+            "sectionTitle": "Tên Người Dùng",
             "fieldLabel": "Tên người dùng",
             "helperText": "3–50 ký tự",
             "submitButton": "Lưu",
@@ -74,12 +86,22 @@
             "errorMessage": "Cập nhật tên người dùng thất bại."
         },
         "Email": {
-            "sectionTitle": "Đổi Email",
+            "sectionTitle": "Địa Chỉ Email",
             "hint": "Supabase sẽ gửi liên kết xác nhận đến cả địa chỉ cũ và địa chỉ mới của bạn.",
             "fieldLabel": "Email mới",
             "submitButton": "Yêu cầu",
             "successMessage": "Kiểm tra hộp thư để xác nhận thay đổi email.",
             "errorMessage": "Yêu cầu đổi email thất bại."
+        },
+        "Password": {
+            "sectionTitle": "Đổi Mật Khẩu",
+            "currentLabel": "Mật khẩu hiện tại",
+            "newLabel": "Mật khẩu mới",
+            "confirmLabel": "Xác nhận mật khẩu mới",
+            "submitButton": "Cập Nhật Mật Khẩu",
+            "successMessage": "Mật khẩu đã được thay đổi thành công!",
+            "errorMessage": "Thay đổi mật khẩu thất bại.",
+            "mismatch": "Mật khẩu không khớp."
         }
     }
 }
