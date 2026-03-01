@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Supabase.Gotrue;
 using Supabase.Gotrue.Interfaces;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace Infrastructure.Services
 {
@@ -19,17 +20,20 @@ namespace Infrastructure.Services
         private readonly IMapper _mapper;
         private readonly Supabase.Client _supabaseClient;
         private readonly ILogger<SupabaseAuthService> _logger;
+        private readonly ITokenBlacklistService _tokenBlacklist;
 
         public SupabaseAuthService(
             IUnitOfWork unitOfWork,
             IMapper mapper,
             Supabase.Client supabaseClient,
-            ILogger<SupabaseAuthService> logger)
+            ILogger<SupabaseAuthService> logger,
+            ITokenBlacklistService tokenBlacklist)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _supabaseClient = supabaseClient;
             _logger = logger;
+            _tokenBlacklist = tokenBlacklist;
         }
 
         public async Task<LoginResponseDto> RegisterAsync(RegisterRequestDto request)
@@ -381,15 +385,47 @@ namespace Infrastructure.Services
             }
         }
 
-        public async Task LogoutAsync()
+        public async Task LogoutAsync(string accessToken)
         {
-            _logger.LogInformation("Attempting to logout user");
+            _logger.LogInformation("Attempting to logout user and blacklist token");
 
             try
             {
+                // Decode token (no validation — it was already validated by the JWT pipeline)
+                var handler = new JwtSecurityTokenHandler();
+                string? jti = null;
+                TimeSpan ttl = TimeSpan.FromMinutes(60); // safe fallback
+
+                if (!string.IsNullOrEmpty(accessToken) && handler.CanReadToken(accessToken))
+                {
+                    var jwt = handler.ReadJwtToken(accessToken);
+                    jti = jwt.Id; // 'jti' claim
+
+                    var expiry = jwt.ValidTo; // UTC datetime
+                    var remaining = expiry - DateTime.UtcNow;
+                    ttl = remaining > TimeSpan.Zero ? remaining : TimeSpan.FromSeconds(30);
+
+                    _logger.LogInformation(
+                        "Token decoded for blacklisting. Jti: {Jti}, ExpiresAt: {ExpiresAt}, RemainingTtl: {Ttl}",
+                        jti, expiry, ttl);
+                }
+                else
+                {
+                    _logger.LogWarning("Logout called with missing or unreadable access token — skipping blacklist step");
+                }
+
+                // Blacklist the token in Redis
+                if (jti != null)
+                    await _tokenBlacklist.BlacklistTokenAsync(jti, ttl);
+
+                // Invalidate server-side Supabase session
                 await _supabaseClient.Auth.SignOut();
 
-                _logger.LogInformation("User logged out successfully");
+                _logger.LogInformation("User logged out successfully. Jti: {Jti}", jti);
+            }
+            catch (CustomErrorException)
+            {
+                throw;
             }
             catch (Exception ex)
             {

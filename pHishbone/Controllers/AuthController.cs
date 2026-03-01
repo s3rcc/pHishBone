@@ -93,14 +93,21 @@ namespace pHishbone.Controllers
         }
 
         /// <summary>
-        /// Logout current authenticated user
+        /// Logout current authenticated user and invalidate the access token.
         /// </summary>
+        [Authorize]
         [HttpPost(ApiEndpointConstant.Auth.Logout)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Logout()
         {
-            await _authService.LogoutAsync();
+            // Extract the raw token from the Authorization header so the service can blacklist it
+            var authHeader = Request.Headers["Authorization"].FirstOrDefault();
+            var accessToken = authHeader?.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) == true
+                ? authHeader["Bearer ".Length..].Trim()
+                : string.Empty;
+
+            await _authService.LogoutAsync(accessToken);
             return Ok(ApiResponse<object>.Success(null, SuccessMessageConstant.LogoutSuccessful));
         }
 

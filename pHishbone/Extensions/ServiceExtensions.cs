@@ -1,3 +1,5 @@
+using Application.Common.Interfaces;
+using Application.Constants;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -87,7 +89,7 @@ namespace pHishbone.Extensions
                 // Map Supabase JWT claims to ASP.NET Core claims
                 options.Events = new JwtBearerEvents
                 {
-                    OnTokenValidated = context =>
+                    OnTokenValidated = async context =>
                     {
                         if (context.Principal?.Identity is ClaimsIdentity identity)
                         {
@@ -107,7 +109,22 @@ namespace pHishbone.Extensions
                                 identity.AddClaim(new Claim(ClaimTypes.Role, roleClaim.Value));
                         }
 
-                        return Task.CompletedTask;
+                        // ── Blacklist check ──────────────────────────────────
+                        var jtiClaim = context.Principal?.FindFirst("jti")
+                                    ?? context.Principal?.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti);
+
+                        if (jtiClaim != null)
+                        {
+                            var blacklistService = context.HttpContext.RequestServices
+                                .GetRequiredService<ITokenBlacklistService>();
+
+                            if (await blacklistService.IsTokenBlacklistedAsync(jtiClaim.Value))
+                            {
+                                context.Fail(ErrorMessageConstant.TokenRevoked);
+                                return;
+                            }
+                        }
+                        // ────────────────────────────────────────────────────
                     },
                     OnAuthenticationFailed = context =>
                     {

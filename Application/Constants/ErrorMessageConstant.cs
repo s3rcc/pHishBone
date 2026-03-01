@@ -17,6 +17,7 @@ namespace Application.Constants
         public const string EmailVerificationFailed = "Email verification failed.";
         public const string InvalidVerificationToken = "Invalid or expired verification token.";
         public const string LogoutFailed = "Failed to logout.";
+        public const string TokenRevoked = "Token has been revoked. Please login again.";
         public const string DuplicateUserName = "Username already exists.";
         public const string DuplicateEmail = "Email already exists.";
         public const string AvatarUploadFailed = "Failed to upload avatar. Please try again.";
