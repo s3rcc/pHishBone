@@ -45,6 +45,7 @@ namespace Application.Constants
         public const string SpeciesCreatedSuccessfully = "Species created successfully";
         public const string SpeciesUpdatedSuccessfully = "Species updated successfully";
         public const string SpeciesDeletedSuccessfully = "Species deleted successfully";
+        public const string SpeciesSearchRetrievedSuccessfully = "Species search results retrieved successfully";
         #endregion Catalog - Species
 
         #region Project - Tank

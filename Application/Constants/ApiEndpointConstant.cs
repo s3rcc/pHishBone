@@ -50,6 +50,7 @@ namespace Application.Constants
             public const string GetDetailById = "{id}/detail";
             public const string GetList = "";
             public const string GetPaginated = "paginated";
+            public const string Search = "search";
             public const string Create = "";
             public const string Update = "{id}";
             public const string Delete = "{id}";

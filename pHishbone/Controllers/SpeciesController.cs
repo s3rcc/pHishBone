@@ -72,6 +72,19 @@ namespace pHishbone.Controllers
         }
 
         /// <summary>
+        /// Bilingual hybrid search (FTS + Trigram). Handles Vietnamese, English, scientific names, and typos.
+        /// Returns up to 20 results ranked by relevance.
+        /// </summary>
+        [HttpGet(ApiEndpointConstant.Species.Search)]
+        [ProducesResponseType(typeof(ApiResponse<List<SpeciesDto>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> Search([FromQuery] string q, CancellationToken cancellationToken)
+        {
+            _logger.LogInformation("Species hybrid search requested with query: {Query}", q);
+            var results = await _speciesService.SearchHybridAsync(q, cancellationToken);
+            return Ok(ApiResponse<List<SpeciesDto>>.Success(results, SuccessMessageConstant.SpeciesSearchRetrievedSuccessfully));
+        }
+
+        /// <summary>
         /// Create a new species with environment, profile, and tags
         /// </summary>
         [HttpPost(ApiEndpointConstant.Species.Create)]
