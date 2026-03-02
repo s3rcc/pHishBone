@@ -15,6 +15,8 @@ namespace Application.Constants
             public const string ChangePassword = "change-password";
             public const string VerifyEmail = "verify-email";
             public const string ResendVerification = "resend-verification";
+            public const string MeAvatar = "me/avatar";
+            public const string ChangeEmail = "change-email";
         }
 
         public static class Tag
@@ -48,6 +50,7 @@ namespace Application.Constants
             public const string GetDetailById = "{id}/detail";
             public const string GetList = "";
             public const string GetPaginated = "paginated";
+            public const string Search = "search";
             public const string Create = "";
             public const string Update = "{id}";
             public const string Delete = "{id}";

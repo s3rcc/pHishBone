@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Grid from '@mui/material/Grid';
@@ -15,6 +16,7 @@ import type { LoginRequestDto } from '../types';
 export function LoginForm() {
     const navigate = useNavigate();
     const { mutate: login, isPending } = useLoginMutation();
+    const { t } = useTranslation();
 
     const [form, setForm] = useState<LoginRequestDto>({ email: '', password: '' });
     const [snackbar, setSnackbar] = useState<{
@@ -39,13 +41,13 @@ export function LoginForm() {
             e.preventDefault();
             login(form, {
                 onSuccess: (response) => {
-                    setSnackbar({ open: true, message: response.message ?? 'Login successful!', severity: 'success' });
+                    setSnackbar({ open: true, message: response.message ?? t('Auth.Login.successMessage'), severity: 'success' });
                     setTimeout(() => navigate({ to: '/' }), 800);
                 },
                 onError: (error: unknown) => {
                     const msg =
                         (error as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-                        'Login failed. Please try again.';
+                        t('Auth.Login.errorMessage');
                     setSnackbar({ open: true, message: msg, severity: 'error' });
                 },
             });
@@ -67,15 +69,15 @@ export function LoginForm() {
                 <Grid size={{ xs: 12, sm: 12, md: 12, lg: 12 }}>
                     <Paper elevation={4} sx={{ p: { xs: 3, md: 5 } }}>
                         <Typography variant="h4" gutterBottom sx={{ mb: 1 }}>
-                            Welcome back 👋
+                            {t('Auth.Login.title')}
                         </Typography>
                         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                            Sign in to your pHishbone account
+                            {t('Auth.Login.subtitle')}
                         </Typography>
 
                         <Box component="form" onSubmit={handleSubmit} noValidate sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                             <TextField
-                                label="Email"
+                                label={t('Auth.Login.emailLabel')}
                                 name="email"
                                 type="email"
                                 value={form.email}
@@ -85,7 +87,7 @@ export function LoginForm() {
                                 autoComplete="email"
                             />
                             <TextField
-                                label="Password"
+                                label={t('Auth.Login.passwordLabel')}
                                 name="password"
                                 type="password"
                                 value={form.password}
@@ -102,14 +104,14 @@ export function LoginForm() {
                                 fullWidth
                                 sx={{ mt: 1 }}
                             >
-                                {isPending ? <CircularProgress size={22} color="inherit" /> : 'Sign In'}
+                                {isPending ? <CircularProgress size={22} color="inherit" /> : t('Auth.Login.submitButton')}
                             </Button>
                         </Box>
 
                         <Typography variant="body2" sx={{ mt: 3, textAlign: 'center' }} color="text.secondary">
-                            Don't have an account?{' '}
+                            {t('Auth.Login.noAccount')}{' '}
                             <Button variant="text" size="small" onClick={() => navigate({ to: '/register' })}>
-                                Register
+                                {t('Auth.Login.registerLink')}
                             </Button>
                         </Typography>
                     </Paper>

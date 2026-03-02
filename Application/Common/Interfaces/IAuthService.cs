@@ -13,6 +13,6 @@ namespace Application.Common.Interfaces
         Task ChangePasswordAsync(ChangePasswordRequestDto request, string userId);
         Task VerifyEmailAsync(VerifyEmailRequestDto request);
         Task ResendVerificationEmailAsync(ResendVerificationRequestDto request);
-        Task LogoutAsync();
+        Task LogoutAsync(string accessToken);
     }
 }

@@ -9,7 +9,8 @@ namespace Application.Mappers
         public AuthMappingProfile()
         {
             CreateMap<PBUser, UserDto>()
-                .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role.ToString()));
+                .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role.ToString()))
+                .ForMember(dest => dest.AvatarUrl, opt => opt.MapFrom(src => src.AvatarUrl));
             
             CreateMap<RegisterRequestDto, PBUser>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())

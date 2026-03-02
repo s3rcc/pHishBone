@@ -58,12 +58,30 @@ namespace Infrastructure
             // Configure Cloudinary
             services.Configure<CloudinarySettings>(configuration.GetSection("CloudinarySettings"));
 
+            // Configure Redis distributed cache
+            var redisSettings = configuration.GetSection("RedisSettings").Get<RedisSettings>();
+            if (redisSettings != null && !string.IsNullOrEmpty(redisSettings.ConnectionString))
+            {
+                services.Configure<RedisSettings>(configuration.GetSection("RedisSettings"));
+                services.AddStackExchangeRedisCache(options =>
+                {
+                    options.Configuration = redisSettings.ConnectionString;
+                    options.InstanceName = redisSettings.InstanceName;
+                });
+            }
+            else
+            {
+                // Fallback to in-memory cache when Redis is not configured
+                services.AddDistributedMemoryCache();
+            }
+
             // Add Unit of Work and Repositories
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
             // Add Services
             services.AddScoped<IAuthService, SupabaseAuthService>();
+            services.AddScoped<ITokenBlacklistService, TokenBlacklistService>();
             services.AddScoped<ITagService, TagService>();
             services.AddScoped<ITypeService, TypeService>();
             services.AddScoped<ISpeciesService, SpeciesService>();
@@ -73,6 +91,7 @@ namespace Infrastructure
             services.AddScoped<ISpeciesImageService, SpeciesImageService>();
             services.AddScoped<ITankImageService, TankImageService>();
             services.AddScoped<IPhotoService, PhotoService>();
+            services.AddScoped<IUserService, UserService>();
 
             return services;
         }

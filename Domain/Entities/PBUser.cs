@@ -10,5 +10,7 @@ namespace Domain.Entities
         public string FullName { get; set; } = string.Empty;
         public string SupabaseUserId { get; set; } = string.Empty;
         public Role Role { get; set; } = Role.User;
+        public string? AvatarUrl { get; set; }
+        public string? AvatarPublicId { get; set; }
     }
 }

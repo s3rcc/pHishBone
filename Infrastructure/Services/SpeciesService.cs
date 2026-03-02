@@ -8,8 +8,10 @@ using Domain.Entities.Catalog;
 using Domain.Exceptions;
 using Infrastructure.Common.Interfaces;
 using Infrastructure.Paginate;
+using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
 
 namespace Infrastructure.Services
@@ -20,13 +22,23 @@ namespace Infrastructure.Services
         private readonly IMapper _mapper;
         private readonly ICurrentUserService _currentUserService;
         private readonly IPhotoService _photoService;
+        private readonly ApplicationDbContext _dbContext;
+        private readonly ILogger<SpeciesService> _logger;
 
-        public SpeciesService(IUnitOfWork unitOfWork, IMapper mapper, ICurrentUserService currentUserService, IPhotoService photoService)
+        public SpeciesService(
+            IUnitOfWork unitOfWork,
+            IMapper mapper,
+            ICurrentUserService currentUserService,
+            IPhotoService photoService,
+            ApplicationDbContext dbContext,
+            ILogger<SpeciesService> logger)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _currentUserService = currentUserService;
             _photoService = photoService;
+            _dbContext = dbContext;
+            _logger = logger;
         }
 
         public async Task<SpeciesDto> GetByIdAsync(string id)
@@ -343,6 +355,49 @@ namespace Infrastructure.Services
             species.DeletedBy = _currentUserService.GetUserId();
             await _unitOfWork.Repository<Species>().Update(species);
             await _unitOfWork.SaveChangesAsync();
+        }
+
+        public async Task<List<SpeciesDto>> SearchHybridAsync(string searchTerm, CancellationToken cancellationToken = default)
+        {
+            _logger.LogInformation("Executing hybrid species search for term: {SearchTerm}", searchTerm);
+
+            // If no search term, return top 20 ordered by name as a sensible default
+            if (string.IsNullOrWhiteSpace(searchTerm))
+            {
+                var defaultResults = await _unitOfWork.Repository<Species>().GetListAsync(
+                    orderBy: q => q.OrderBy(s => s.CommonName),
+                    include: q => q.Include(s => s.Type)
+                );
+                return _mapper.Map<List<SpeciesDto>>(defaultResults.Take(20).ToList());
+            }
+
+            // [Reasoning] FromSqlInterpolated is used for safe, parameterized raw SQL.
+            // EF Core converts {searchTerm} interpolation holes into $1/$2 SQL parameters — NOT string concatenation.
+            // Logic:
+            //   1. FTS match via websearch_to_tsquery('simple') — handles multi-word, bilingual, scientific names.
+            //      'simple' dict is used instead of 'english' to avoid mangling Vietnamese words.
+            //   2. Trigram similarity > 0.15 — deliberately low to catch short typos (e.g. "cá ho" → "cá hề").
+            //      Default PG threshold (0.3) is too strict for short Vietnamese tokens.
+            //   3. Ranking: FTS rank * 2.0 ensures exact word matches always outrank fuzzy trigram matches.
+            var results = await _dbContext.Species
+                .FromSqlInterpolated($@"
+                    SELECT * FROM catalog.""Species""
+                    WHERE 
+                        ""FtsVector"" @@ websearch_to_tsquery('simple', {searchTerm})
+                        OR similarity(""CommonName"", {searchTerm}) > 0.15
+                        OR similarity(""ScientificName"", {searchTerm}) > 0.15
+                    ORDER BY 
+                    (
+                        COALESCE(ts_rank(""FtsVector"", websearch_to_tsquery('simple', {searchTerm})), 0) * 2.0
+                        + COALESCE(similarity(""CommonName"", {searchTerm}), 0)
+                    ) DESC
+                    LIMIT 20")
+                .Include(s => s.Type)
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+
+            _logger.LogInformation("Hybrid search for '{SearchTerm}' returned {Count} results", searchTerm, results.Count);
+            return _mapper.Map<List<SpeciesDto>>(results);
         }
 
         #region Private Helper Methods

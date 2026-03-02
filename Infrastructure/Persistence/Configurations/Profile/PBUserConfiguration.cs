@@ -33,6 +33,12 @@ namespace Infrastructure.Persistence.Configurations.Profile
                 .HasConversion<string>()
                 .HasMaxLength(20);
 
+            builder.Property(u => u.AvatarUrl)
+                .HasMaxLength(500);
+
+            builder.Property(u => u.AvatarPublicId)
+                .HasMaxLength(200);
+
             // Indexes
             builder.HasIndex(u => u.SupabaseUserId)
                 .IsUnique();

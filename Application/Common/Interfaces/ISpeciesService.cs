@@ -47,5 +47,12 @@ namespace Application.Common.Interfaces
         /// Physical deletion is not allowed to preserve historical data.
         /// </summary>
         Task DeleteAsync(string id);
+
+        /// <summary>
+        /// Performs a bilingual hybrid search combining FTS (simple dictionary) and Trigram similarity.
+        /// Handles exact matches, Vietnamese text, scientific names, and typos in a single query.
+        /// Returns up to 20 results ranked by relevance (FTS score weighted 2x over trigram).
+        /// </summary>
+        Task<List<SpeciesDto>> SearchHybridAsync(string searchTerm, CancellationToken cancellationToken = default);
     }
 }

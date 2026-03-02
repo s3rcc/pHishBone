@@ -3,10 +3,13 @@ import { Component, type ErrorInfo, type ReactNode } from 'react';
 interface Props {
     children: ReactNode;
     fallback: ReactNode;
+    /** Change this value to force-reset the error boundary after recovery (e.g. after login). */
+    resetKey?: unknown;
 }
 
 interface State {
     hasError: boolean;
+    resetKey?: unknown;
 }
 
 /**
@@ -23,6 +26,14 @@ export class ErrorBoundary extends Component<Props, State> {
 
     static getDerivedStateFromError(_error: Error): State {
         return { hasError: true };
+    }
+
+    /** Reset the error state when the resetKey prop changes (e.g. after a successful login). */
+    static getDerivedStateFromProps(props: Props, state: State): Partial<State> | null {
+        if (props.resetKey !== state.resetKey) {
+            return { hasError: false, resetKey: props.resetKey };
+        }
+        return null;
     }
 
     componentDidCatch(error: Error, info: ErrorInfo) {
