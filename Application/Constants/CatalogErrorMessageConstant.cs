@@ -11,6 +11,9 @@ namespace Application.Constants
         public const string TagCodeDuplicate = "A tag with this code already exists";
         public const string TagNameDuplicate = "A tag with this name already exists";
         public const string TagNotFoundMessage = "Tag not found";
+        public const string TagCodeInvalidFormat = "Tag code must contain only uppercase letters (A-Z), digits (0-9), and underscores (_) after normalization. Input like 'high light' becomes 'HIGH_LIGHT'.";
+        public const string TagCodeMustStartWithLetter = "Tag code must start with a letter (A-Z) after normalization.";
+        public const string TagCodePatternHint = "Input is automatically normalized: 'high light' → 'HIGH_LIGHT'. Use letters, digits, spaces, or hyphens only.";
         #endregion Tag Errors
 
         #region Type Errors

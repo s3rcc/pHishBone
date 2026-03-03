@@ -146,6 +146,32 @@
         "Tags": {
             "pageTitle": "Tags",
             "pageSubtitle": "Manage searchable labels for species discovery",
+            "newEntry": "New Tag",
+            "searchPlaceholder": "Search tags\u2026",
+            "colCode": "Code",
+            "colName": "Name",
+            "colDescription": "Description",
+            "colCreatedAt": "Created",
+            "colActions": "Actions",
+            "editTooltip": "Edit",
+            "deleteTooltip": "Delete",
+            "noResults": "No tags found. Add the first one.",
+            "dialogCreateTitle": "New Tag",
+            "dialogEditTitle": "Edit Tag",
+            "fieldCode": "Code (auto-normalized)",
+            "fieldCodeHint": "Type naturally \u2014 \u2018high light\u2019 becomes HIGH_LIGHT",
+            "fieldCodeRequired": "Code is required",
+            "fieldCodePattern": "Code must start with a letter and contain only letters, digits, spaces, hyphens, or underscores.",
+            "fieldName": "Display Name",
+            "fieldDescription": "Description",
+            "fieldNameRequired": "Name is required",
+            "codePreviewLabel": "Will be saved as:",
+            "deleteTitle": "Delete Tag?",
+            "deleteConfirm": "Are you sure you want to delete \"{{code}}\"? Species using this tag will lose it. This cannot be undone.",
+            "deleteButton": "Delete",
+            "deleting": "Deleting\u2026",
+            "saving": "Saving\u2026",
+            "save": "Save",
             "comingSoon": "Tag management coming soon."
         },
         "Types": {
@@ -229,6 +255,26 @@
             "0": "Carnivore",
             "1": "Herbivore",
             "2": "Omnivore"
+        }
+    },
+    "Errors": {
+        "goHome": "Go Home",
+        "NotFound": {
+            "code": "404",
+            "title": "Page Not Found",
+            "subtitle": "The page you're looking for doesn't exist or has been moved."
+        },
+        "Unauthorized": {
+            "code": "401",
+            "title": "Unauthorized",
+            "subtitle": "You need to be logged in to access this page.",
+            "loginButton": "Sign In"
+        },
+        "ServerError": {
+            "code": "500",
+            "title": "Server Error",
+            "subtitle": "Something went wrong on our end. Please try again later.",
+            "retryButton": "Try Again"
         }
     }
 }

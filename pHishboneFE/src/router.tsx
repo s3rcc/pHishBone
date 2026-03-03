@@ -8,6 +8,11 @@ import { LoginForm, RegisterForm } from './features/auth';
 const HomePage = lazy(() => import('./routes/index'));
 const ProfilePage = lazy(() => import('./features/profile/components/ProfilePage'));
 
+// ─── Error Pages (lazy) ───────────────────────────────────────────────────────
+const NotFoundPage = lazy(() => import('./routes/errors/404'));
+const UnauthorizedPage = lazy(() => import('./routes/errors/401'));
+const ServerErrorPage = lazy(() => import('./routes/errors/500'));
+
 // ─── Catalog / Workspace (lazy) ───────────────────────────────────────────────
 const WorkspaceLayout = lazy(() =>
     import('./features/catalog-management').then((m) => ({ default: m.WorkspaceLayout })),
@@ -30,6 +35,16 @@ const rootRoute = createRootRoute({
     component: () => (
         <Suspense fallback={<SuspenseLoader />}>
             <MainLayout />
+        </Suspense>
+    ),
+    notFoundComponent: () => (
+        <Suspense fallback={<SuspenseLoader />}>
+            <NotFoundPage />
+        </Suspense>
+    ),
+    errorComponent: () => (
+        <Suspense fallback={<SuspenseLoader />}>
+            <ServerErrorPage />
         </Suspense>
     ),
 });
@@ -134,12 +149,23 @@ const catalogTypesRoute = createRoute({
     ),
 });
 
+const unauthorizedRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/401',
+    component: () => (
+        <Suspense fallback={<SuspenseLoader />}>
+            <UnauthorizedPage />
+        </Suspense>
+    ),
+});
+
 // ─── Route Tree & Router ──────────────────────────────────────────────────────
 const routeTree = rootRoute.addChildren([
     indexRoute,
     loginRoute,
     registerRoute,
     profileRoute,
+    unauthorizedRoute,
     catalogRoute.addChildren([
         catalogSpeciesRoute,
         catalogSpeciesCreateRoute,

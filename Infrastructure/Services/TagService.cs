@@ -71,8 +71,54 @@ namespace Infrastructure.Services
             };
         }
 
+        // ─── Code Normalizer ──────────────────────────────────────────────
+        /// <summary>
+        /// Normalises a raw tag code input into SCREAMING_SNAKE_CASE.
+        /// "high light" → "HIGH_LIGHT", "easy-care!" → "EASY_CARE"
+        /// Rules:
+        ///   1. Trim surrounding whitespace.
+        ///   2. Replace any run of non-alphanumeric-ASCII characters with '_'.
+        ///   3. Uppercase.
+        ///   4. Strip leading / trailing underscores.
+        ///   5. Collapse consecutive underscores into one.
+        /// Throws if the result is empty or does not match ^[A-Z][A-Z0-9_]*$.
+        /// </summary>
+        private static string NormalizeCode(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+                throw new CustomErrorException(
+                    StatusCodes.Status400BadRequest,
+                    ErrorCode.VALIDATION_ERROR,
+                    CatalogErrorMessageConstant.TagCodeRequired);
+
+            // Replace any char that is not A-Z / a-z / 0-9 with '_'
+            var replaced = System.Text.RegularExpressions.Regex.Replace(raw.Trim(), @"[^A-Za-z0-9]+", "_");
+
+            // Uppercase, strip leading/trailing underscores, collapse doubles
+            var normalized = System.Text.RegularExpressions.Regex.Replace(
+                replaced.Trim('_').ToUpperInvariant(), @"_+", "_");
+
+            if (string.IsNullOrEmpty(normalized))
+                throw new CustomErrorException(
+                    StatusCodes.Status400BadRequest,
+                    ErrorCode.VALIDATION_ERROR,
+                    CatalogErrorMessageConstant.TagCodeInvalidFormat);
+
+            // Ensure it starts with a letter
+            if (!char.IsLetter(normalized[0]))
+                throw new CustomErrorException(
+                    StatusCodes.Status400BadRequest,
+                    ErrorCode.VALIDATION_ERROR,
+                    CatalogErrorMessageConstant.TagCodeMustStartWithLetter);
+
+            return normalized;
+        }
+
         public async Task<TagDto> CreateAsync(CreateTagDto dto)
         {
+            // Normalize code before any validation or persistence
+            dto.Code = NormalizeCode(dto.Code);
+
             // Check for duplicate code
             var existingWithCode = await _unitOfWork.Repository<Tag>().SingleOrDefaultAsync(
                 predicate: t => t.Code == dto.Code
@@ -108,6 +154,10 @@ namespace Infrastructure.Services
 
         public async Task<ICollection<TagDto>> CreateRangeAsync(List<CreateTagDto> dtos)
         {
+            // Normalize all codes first
+            foreach (var dto in dtos)
+                dto.Code = NormalizeCode(dto.Code);
+
             // Check for duplicate codes in batch
             var codes = dtos.Select(d => d.Code).ToList();
             var existingCodes = await _unitOfWork.Repository<Tag>().GetListAsync(
@@ -147,6 +197,9 @@ namespace Infrastructure.Services
 
         public async Task<TagDto> UpdateAsync(string id, UpdateTagDto dto)
         {
+            // Normalize code before any checks
+            dto.Code = NormalizeCode(dto.Code);
+
             var tag = await _unitOfWork.Repository<Tag>().SingleOrDefaultAsync(
                 predicate: t => t.Id == id
             );

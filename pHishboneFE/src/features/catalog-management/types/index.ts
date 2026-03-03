@@ -64,6 +64,8 @@ export interface TagFilter {
     page?: number;
     size?: number;
     searchTerm?: string;
+    sortBy?: string;
+    isAscending?: boolean;
 }
 
 // ─── Type DTOs ───────────────────────────────────────────────────────────────
