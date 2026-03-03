@@ -217,3 +217,14 @@ export interface SpeciesFormValues {
     // Indexing tab
     tagIds: string[];
 }
+
+// ─── Image DTOs ──────────────────────────────────────────────────────────────
+
+export interface ImageResponseDto {
+    id: string;
+    imageUrl: string;
+    publicId?: string;
+    caption?: string;
+    sortOrder: number;
+    createdTime: string;
+}

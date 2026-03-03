@@ -19,6 +19,7 @@ import { TaxonomyTab } from './TaxonomyTab';
 import { BioTab } from './BioTab';
 import { BehaviorTab } from './BehaviorTab';
 import { IndexingTab } from './IndexingTab';
+import { GalleryTab } from './GalleryTab';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -115,6 +116,7 @@ export const SpeciesForm: React.FC<SpeciesFormProps> = ({ mode, speciesId, defau
         t('Catalog.form.tabBio'),
         t('Catalog.form.tabBehavior'),
         t('Catalog.form.tabIndexing'),
+        ...(mode === 'edit' ? [t('Catalog.form.tabGallery')] : []),
     ];
 
     const methods = useForm<SpeciesFormValues>({
@@ -244,6 +246,16 @@ export const SpeciesForm: React.FC<SpeciesFormProps> = ({ mode, speciesId, defau
                             <IndexingTab />
                         </Suspense>
                     </TabPanel>
+                    {mode === 'edit' && speciesId && (
+                        <TabPanel value={activeTab} index={4}>
+                            <Suspense fallback={<SuspenseLoader />}>
+                                <GalleryTab
+                                    speciesId={speciesId}
+                                    currentThumbnailUrl={defaultValues?.thumbnailUrl}
+                                />
+                            </Suspense>
+                        </TabPanel>
+                    )}
                 </Paper>
             </Box>
         </FormProvider>

@@ -238,7 +238,27 @@
             "fieldTags": "Tags",
             "fieldMinGroupSize": "Min Group Size",
             "required": "{{field}} is required",
-            "errorUnexpected": "An unexpected error occurred."
+            "errorUnexpected": "An unexpected error occurred.",
+            "tabGallery": "Gallery"
+        },
+        "Gallery": {
+            "title": "Species Gallery",
+            "subtitle": "Upload and manage images for this species",
+            "dropzoneText": "Drag & drop images here, or click to browse",
+            "dropzoneHint": "Accepted formats: JPG, PNG, WebP (max 5 MB each)",
+            "uploading": "Uploading…",
+            "uploadButton": "Upload",
+            "deleteTooltip": "Remove image",
+            "thumbnailTooltip": "Set as thumbnail",
+            "thumbnailCurrent": "Current thumbnail",
+            "deleteTitle": "Remove Image?",
+            "deleteConfirm": "Are you sure you want to remove this image? This cannot be undone.",
+            "deleteButton": "Remove",
+            "deleting": "Removing…",
+            "noImages": "No images yet. Upload the first one above.",
+            "editModeOnly": "Image gallery is only available after saving the species. Please save the species first, then return to add images.",
+            "uploadError": "Failed to upload image.",
+            "setThumbnailSuccess": "Thumbnail updated."
         },
         "waterType": {
             "0": "Fresh",

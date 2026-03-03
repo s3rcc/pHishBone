@@ -238,7 +238,27 @@
             "fieldTags": "Nhãn",
             "fieldMinGroupSize": "Số Lượng Tối Thiểu Trong Đàn",
             "required": "{{field}} là bắt buộc",
-            "errorUnexpected": "Đã xảy ra lỗi không mong muốn."
+            "errorUnexpected": "Đã xảy ra lỗi không mong muốn.",
+            "tabGallery": "Thư Viện Ảnh"
+        },
+        "Gallery": {
+            "title": "Thư Viện Ảnh Loài",
+            "subtitle": "Tải lên và quản lý hình ảnh cho loài này",
+            "dropzoneText": "Kéo thả hình ảnh vào đây, hoặc nhấp để duyệt",
+            "dropzoneHint": "Định dạng chấp nhận: JPG, PNG, WebP (tối đa 5 MB mỗi ảnh)",
+            "uploading": "Đang tải lên\u2026",
+            "uploadButton": "Tải Lên",
+            "deleteTooltip": "Xóa ảnh",
+            "thumbnailTooltip": "Đặt làm ảnh đại diện",
+            "thumbnailCurrent": "Ảnh đại diện hiện tại",
+            "deleteTitle": "Xóa Ảnh?",
+            "deleteConfirm": "Bạn có chắc chắn muốn xóa ảnh này? Thao tác này không thể hoàn tác.",
+            "deleteButton": "Xóa",
+            "deleting": "Đang xóa\u2026",
+            "noImages": "Chưa có ảnh nào. Hãy tải lên ảnh đầu tiên.",
+            "editModeOnly": "Thư viện ảnh chỉ khả dụng sau khi lưu loài. Hãy lưu loài trước, sau đó quay lại để thêm ảnh.",
+            "uploadError": "Tải ảnh lên thất bại.",
+            "setThumbnailSuccess": "Đã cập nhật ảnh đại diện."
         },
         "waterType": {
             "0": "Nước Ngọt",
