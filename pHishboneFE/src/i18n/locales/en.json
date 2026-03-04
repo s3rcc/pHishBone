@@ -141,7 +141,16 @@
             "tagsHelperText": "Tags improve search visibility. Select all that apply.",
             "bioLoadHelperText": "Relative waste output multiplier",
             "schoolingLabel": "Schooling species (requires group)",
-            "minGroupSizeError": "Must be at least 2"
+            "minGroupSizeError": "Must be at least 2",
+            "createDraft": "Create Draft",
+            "createDraftTitle": "New Species — Quick Entry",
+            "cloneTooltip": "Clone",
+            "cloneSuccess": "Species cloned successfully!",
+            "draftCreated": "Draft created! Complete the details below.",
+            "typeCreated": "Type '{{name}}' created.",
+            "tagCreated": "Tag '{{name}}' created.",
+            "validationFailed": "Validation failed. Please check the highlighted fields.",
+            "unsavedChanges": "Unsaved changes"
         },
         "Tags": {
             "pageTitle": "Tags",
@@ -172,7 +181,9 @@
             "deleting": "Deleting\u2026",
             "saving": "Saving\u2026",
             "save": "Save",
-            "comingSoon": "Tag management coming soon."
+            "comingSoon": "Tag management coming soon.",
+            "compatibilityTitle": "Compatibility Preview",
+            "compatibilityNote": "Tags applied: {{tags}}. The system will automatically flag incompatibilities based on global compatibility rules."
         },
         "Types": {
             "pageTitle": "Types",
@@ -239,7 +250,14 @@
             "fieldMinGroupSize": "Min Group Size",
             "required": "{{field}} is required",
             "errorUnexpected": "An unexpected error occurred.",
-            "tabGallery": "Gallery"
+            "tabGallery": "Gallery",
+            "tabEnvironment": "Environment",
+            "tabProfile": "Profile & Behavior",
+            "tabTags": "Tags",
+            "phRange": "pH Range",
+            "tempRange": "Temperature Range (°C)",
+            "addType": "Add '{{name}}'",
+            "addTag": "Add '{{name}}'"
         },
         "Gallery": {
             "title": "Species Gallery",
@@ -258,7 +276,9 @@
             "noImages": "No images yet. Upload the first one above.",
             "editModeOnly": "Image gallery is only available after saving the species. Please save the species first, then return to add images.",
             "uploadError": "Failed to upload image.",
-            "setThumbnailSuccess": "Thumbnail updated."
+            "setThumbnailSuccess": "Thumbnail updated.",
+            "pendingBadge": "Pending",
+            "stagedHint": "Staged images (will upload on save)"
         },
         "waterType": {
             "0": "Fresh",
@@ -275,6 +295,10 @@
             "0": "Carnivore",
             "1": "Herbivore",
             "2": "Omnivore"
+        },
+        "Snackbar": {
+            "saved": "Changes saved successfully.",
+            "error": "Something went wrong. Please try again."
         }
     },
     "Errors": {

@@ -141,7 +141,16 @@
             "tagsHelperText": "Nhãn giúp cải thiện khả năng tìm kiếm. Chọn tất cả các nhãn phù hợp.",
             "bioLoadHelperText": "Hệ số rác thải tương đối",
             "schoolingLabel": "Loài sống theo đàn (cần nhóm tối thiểu)",
-            "minGroupSizeError": "Phải có ít nhất 2 con"
+            "minGroupSizeError": "Phải có ít nhất 2 con",
+            "createDraft": "Tạo Bản Nháp",
+            "createDraftTitle": "Thêm Loài — Nhập Nhanh",
+            "cloneTooltip": "Nhân bản",
+            "cloneSuccess": "Nhân bản loài thành công!",
+            "draftCreated": "Bản nháp đã tạo! Hoàn thiện chi tiết bên dưới.",
+            "typeCreated": "Đã tạo loại '{{name}}'.",
+            "tagCreated": "Đã tạo nhãn '{{name}}'.",
+            "validationFailed": "Xác thực thất bại. Vui lòng kiểm tra các trường được đánh dấu.",
+            "unsavedChanges": "Có thay đổi chưa lưu"
         },
         "Tags": {
             "pageTitle": "Nhãn",
@@ -172,7 +181,9 @@
             "deleting": "Đang xóa…",
             "saving": "Đang lưu…",
             "save": "Lưu",
-            "comingSoon": "Chức năng quản lý nhãn sắp ra mắt."
+            "comingSoon": "Chức năng quản lý nhãn sắp ra mắt.",
+            "compatibilityTitle": "Xem Trước Tương Thích",
+            "compatibilityNote": "Nhãn đã áp dụng: {{tags}}. Hệ thống sẽ tự động cảnh báo xung đột dựa trên quy tắc tương thích toàn cục."
         },
         "Types": {
             "pageTitle": "Loại",
@@ -239,7 +250,14 @@
             "fieldMinGroupSize": "Số Lượng Tối Thiểu Trong Đàn",
             "required": "{{field}} là bắt buộc",
             "errorUnexpected": "Đã xảy ra lỗi không mong muốn.",
-            "tabGallery": "Thư Viện Ảnh"
+            "tabGallery": "Thư Viện Ảnh",
+            "tabEnvironment": "Môi Trường",
+            "tabProfile": "Hồ Sơ & Hành Vi",
+            "tabTags": "Nhãn",
+            "phRange": "Khoảng pH",
+            "tempRange": "Khoảng Nhiệt Độ (°C)",
+            "addType": "Thêm '{{name}}'",
+            "addTag": "Thêm '{{name}}'"
         },
         "Gallery": {
             "title": "Thư Viện Ảnh Loài",
@@ -258,7 +276,9 @@
             "noImages": "Chưa có ảnh nào. Hãy tải lên ảnh đầu tiên.",
             "editModeOnly": "Thư viện ảnh chỉ khả dụng sau khi lưu loài. Hãy lưu loài trước, sau đó quay lại để thêm ảnh.",
             "uploadError": "Tải ảnh lên thất bại.",
-            "setThumbnailSuccess": "Đã cập nhật ảnh đại diện."
+            "setThumbnailSuccess": "Đã cập nhật ảnh đại diện.",
+            "pendingBadge": "Đang chờ",
+            "stagedHint": "Ảnh chờ xử lý (sẽ tải lên khi lưu)"
         },
         "waterType": {
             "0": "Nước Ngọt",
@@ -275,6 +295,10 @@
             "0": "Ăn Thịt",
             "1": "Ăn Cỏ",
             "2": "Ăn Tạp"
+        },
+        "Snackbar": {
+            "saved": "Đã lưu thay đổi thành công.",
+            "error": "Đã xảy ra lỗi. Vui lòng thử lại."
         }
     },
     "Errors": {
