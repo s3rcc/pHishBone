@@ -45,7 +45,7 @@ namespace Application.Validators.Catalog
                 .GreaterThanOrEqualTo(0).WithMessage("Bio load factor must be greater than or equal to 0");
 
             RuleFor(x => x.Profile.MinGroupSize)
-                .GreaterThanOrEqualTo(1).WithMessage("Minimum group size must be at least 1");
+                .GreaterThanOrEqualTo(0).WithMessage("Minimum group size must be at least 1");
 
             // TagIds validation
             RuleForEach(x => x.TagIds)

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { speciesApi, tagsApi, typesApi } from '../api/catalogApi';
+import { speciesApi, speciesImageApi, tagsApi, typesApi } from '../api/catalogApi';
 import type {
     CreateSpeciesPayload,
     CreateTagPayload,
@@ -17,6 +17,7 @@ import type {
 export const CATALOG_KEYS = {
     speciesPaginated: (filter: SpeciesFilter) => ['catalog', 'species', 'paginated', filter] as const,
     speciesDetail: (id: string) => ['catalog', 'species', 'detail', id] as const,
+    speciesImages: (id: string) => ['catalog', 'species', 'images', id] as const,
     typesList: ['catalog', 'types', 'list'] as const,
     typesPaginated: (filter: TypeFilter) => ['catalog', 'types', 'paginated', filter] as const,
     tagsList: ['catalog', 'tags', 'list'] as const,
@@ -36,6 +37,15 @@ export function useSpeciesDetail(id: string) {
     return useSuspenseQuery({
         queryKey: CATALOG_KEYS.speciesDetail(id),
         queryFn: () => speciesApi.getDetailById(id),
+    });
+}
+
+// ─── Species Images Query ─────────────────────────────────────────────────────
+
+export function useSpeciesImages(speciesId: string) {
+    return useSuspenseQuery({
+        queryKey: CATALOG_KEYS.speciesImages(speciesId),
+        queryFn: () => speciesImageApi.getAll(speciesId),
     });
 }
 
@@ -100,6 +110,54 @@ export function useDeleteSpecies() {
     return useMutation({
         mutationFn: (id: string) => speciesApi.delete(id),
         onSuccess: () => { void qc.invalidateQueries({ queryKey: ['catalog', 'species'] }); },
+    });
+}
+
+// ─── Species Image Mutations ──────────────────────────────────────────────────
+
+export function useUploadSpeciesImage() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: ({ speciesId, file, caption, sortOrder }: {
+            speciesId: string; file: File; caption?: string; sortOrder?: number;
+        }) => speciesImageApi.upload(speciesId, file, caption, sortOrder),
+        onSuccess: (_data, { speciesId }) => {
+            void qc.invalidateQueries({ queryKey: CATALOG_KEYS.speciesImages(speciesId) });
+        },
+    });
+}
+
+export function useUploadSpeciesImageBatch() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: ({ speciesId, files }: { speciesId: string; files: File[] }) =>
+            speciesImageApi.uploadBatch(speciesId, files),
+        onSuccess: (_data, { speciesId }) => {
+            void qc.invalidateQueries({ queryKey: CATALOG_KEYS.speciesImages(speciesId) });
+        },
+    });
+}
+
+export function useRemoveSpeciesImage() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: ({ speciesId, imageId }: { speciesId: string; imageId: string }) =>
+            speciesImageApi.remove(speciesId, imageId),
+        onSuccess: (_data, { speciesId }) => {
+            void qc.invalidateQueries({ queryKey: CATALOG_KEYS.speciesImages(speciesId) });
+        },
+    });
+}
+
+export function useSetSpeciesThumbnail() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: ({ speciesId, file }: { speciesId: string; file: File }) =>
+            speciesImageApi.setThumbnail(speciesId, file),
+        onSuccess: (_data, { speciesId }) => {
+            void qc.invalidateQueries({ queryKey: CATALOG_KEYS.speciesImages(speciesId) });
+            void qc.invalidateQueries({ queryKey: ['catalog', 'species'] });
+        },
     });
 }
 

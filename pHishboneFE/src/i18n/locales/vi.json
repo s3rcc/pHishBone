@@ -141,12 +141,49 @@
             "tagsHelperText": "Nhãn giúp cải thiện khả năng tìm kiếm. Chọn tất cả các nhãn phù hợp.",
             "bioLoadHelperText": "Hệ số rác thải tương đối",
             "schoolingLabel": "Loài sống theo đàn (cần nhóm tối thiểu)",
-            "minGroupSizeError": "Phải có ít nhất 2 con"
+            "minGroupSizeError": "Phải có ít nhất 2 con",
+            "createDraft": "Tạo Bản Nháp",
+            "createDraftTitle": "Thêm Loài — Nhập Nhanh",
+            "cloneTooltip": "Nhân bản",
+            "cloneSuccess": "Nhân bản loài thành công!",
+            "draftCreated": "Bản nháp đã tạo! Hoàn thiện chi tiết bên dưới.",
+            "typeCreated": "Đã tạo loại '{{name}}'.",
+            "tagCreated": "Đã tạo nhãn '{{name}}'.",
+            "validationFailed": "Xác thực thất bại. Vui lòng kiểm tra các trường được đánh dấu.",
+            "unsavedChanges": "Có thay đổi chưa lưu"
         },
         "Tags": {
             "pageTitle": "Nhãn",
             "pageSubtitle": "Quản lý các nhãn tìm kiếm cho loài",
-            "comingSoon": "Chức năng quản lý nhãn sắp ra mắt."
+            "newEntry": "Thêm Nhãn Mới",
+            "searchPlaceholder": "Tìm kiếm nhãn…",
+            "colCode": "Mã",
+            "colName": "Tên",
+            "colDescription": "Mô Tả",
+            "colCreatedAt": "Ngày Tạo",
+            "colActions": "Thao Tác",
+            "editTooltip": "Chỉnh sửa",
+            "deleteTooltip": "Xóa",
+            "noResults": "Không tìm thấy nhãn nào. Hãy thêm nhãn đầu tiên.",
+            "dialogCreateTitle": "Thêm Nhãn Mới",
+            "dialogEditTitle": "Chỉnh Sửa Nhãn",
+            "fieldCode": "Mã (tự chuẩn hóa)",
+            "fieldCodeHint": "Nhập tự nhiên — 'high light' sẽ thành HIGH_LIGHT",
+            "fieldCodeRequired": "Mã là bắt buộc",
+            "fieldCodePattern": "Mã phải bắt đầu bằng chữ cái và chỉ chứa chữ, số, khoảng trắng, dấu gạch ngang hoặc gạch dưới.",
+            "fieldName": "Tên Hiển Thị",
+            "fieldDescription": "Mô Tả",
+            "fieldNameRequired": "Tên là bắt buộc",
+            "codePreviewLabel": "Sẽ lưu thành:",
+            "deleteTitle": "Xóa Nhãn?",
+            "deleteConfirm": "Bạn có chắc chắn muốn xóa \"{{code}}\"? Các loài sử dụng nhãn này sẽ bị mất nhãn. Thao tác này không thể hoàn tác.",
+            "deleteButton": "Xóa",
+            "deleting": "Đang xóa…",
+            "saving": "Đang lưu…",
+            "save": "Lưu",
+            "comingSoon": "Chức năng quản lý nhãn sắp ra mắt.",
+            "compatibilityTitle": "Xem Trước Tương Thích",
+            "compatibilityNote": "Nhãn đã áp dụng: {{tags}}. Hệ thống sẽ tự động cảnh báo xung đột dựa trên quy tắc tương thích toàn cục."
         },
         "Types": {
             "pageTitle": "Loại",
@@ -212,7 +249,36 @@
             "fieldTags": "Nhãn",
             "fieldMinGroupSize": "Số Lượng Tối Thiểu Trong Đàn",
             "required": "{{field}} là bắt buộc",
-            "errorUnexpected": "Đã xảy ra lỗi không mong muốn."
+            "errorUnexpected": "Đã xảy ra lỗi không mong muốn.",
+            "tabGallery": "Thư Viện Ảnh",
+            "tabEnvironment": "Môi Trường",
+            "tabProfile": "Hồ Sơ & Hành Vi",
+            "tabTags": "Nhãn",
+            "phRange": "Khoảng pH",
+            "tempRange": "Khoảng Nhiệt Độ (°C)",
+            "addType": "Thêm '{{name}}'",
+            "addTag": "Thêm '{{name}}'"
+        },
+        "Gallery": {
+            "title": "Thư Viện Ảnh Loài",
+            "subtitle": "Tải lên và quản lý hình ảnh cho loài này",
+            "dropzoneText": "Kéo thả hình ảnh vào đây, hoặc nhấp để duyệt",
+            "dropzoneHint": "Định dạng chấp nhận: JPG, PNG, WebP (tối đa 5 MB mỗi ảnh)",
+            "uploading": "Đang tải lên\u2026",
+            "uploadButton": "Tải Lên",
+            "deleteTooltip": "Xóa ảnh",
+            "thumbnailTooltip": "Đặt làm ảnh đại diện",
+            "thumbnailCurrent": "Ảnh đại diện hiện tại",
+            "deleteTitle": "Xóa Ảnh?",
+            "deleteConfirm": "Bạn có chắc chắn muốn xóa ảnh này? Thao tác này không thể hoàn tác.",
+            "deleteButton": "Xóa",
+            "deleting": "Đang xóa\u2026",
+            "noImages": "Chưa có ảnh nào. Hãy tải lên ảnh đầu tiên.",
+            "editModeOnly": "Thư viện ảnh chỉ khả dụng sau khi lưu loài. Hãy lưu loài trước, sau đó quay lại để thêm ảnh.",
+            "uploadError": "Tải ảnh lên thất bại.",
+            "setThumbnailSuccess": "Đã cập nhật ảnh đại diện.",
+            "pendingBadge": "Đang chờ",
+            "stagedHint": "Ảnh chờ xử lý (sẽ tải lên khi lưu)"
         },
         "waterType": {
             "0": "Nước Ngọt",
@@ -229,6 +295,30 @@
             "0": "Ăn Thịt",
             "1": "Ăn Cỏ",
             "2": "Ăn Tạp"
+        },
+        "Snackbar": {
+            "saved": "Đã lưu thay đổi thành công.",
+            "error": "Đã xảy ra lỗi. Vui lòng thử lại."
+        }
+    },
+    "Errors": {
+        "goHome": "Về Trang Chủ",
+        "NotFound": {
+            "code": "404",
+            "title": "Không Tìm Thấy Trang",
+            "subtitle": "Trang bạn đang tìm kiếm không tồn tại hoặc đã được di chuyển."
+        },
+        "Unauthorized": {
+            "code": "401",
+            "title": "Chưa Đăng Nhập",
+            "subtitle": "Bạn cần đăng nhập để truy cập trang này.",
+            "loginButton": "Đăng Nhập"
+        },
+        "ServerError": {
+            "code": "500",
+            "title": "Lỗi Máy Chủ",
+            "subtitle": "Đã xảy ra sự cố ở phía máy chủ. Vui lòng thử lại sau.",
+            "retryButton": "Thử Lại"
         }
     }
 }

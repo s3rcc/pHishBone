@@ -26,10 +26,14 @@ import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import AddIcon from '@mui/icons-material/Add';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import SearchIcon from '@mui/icons-material/Search';
-import { useDeleteSpecies, useSpeciesPaginated, useTypesList } from '../hooks/useCatalog';
+import { useMuiSnackbar } from '../../../hooks/useMuiSnackbar';
+import { speciesApi } from '../api/catalogApi';
+import { useCreateSpecies, useDeleteSpecies, useSpeciesPaginated, useTypesList } from '../hooks/useCatalog';
+import { CreateSpeciesDialog } from './CreateSpeciesDialog';
 import type { SpeciesDto, SpeciesFilter } from '../types';
 
 // ─── Species Table (Suspense boundary) ───────────────────────────────────────
@@ -38,6 +42,7 @@ interface SpeciesTableProps {
     filter: SpeciesFilter;
     onEdit: (id: string) => void;
     onDelete: (species: SpeciesDto) => void;
+    onClone: (species: SpeciesDto) => void;
     onPageChange: (page: number) => void;
     onRowsPerPageChange: (size: number) => void;
     sortBy: string;
@@ -49,6 +54,7 @@ function SpeciesTable({
     filter,
     onEdit,
     onDelete,
+    onClone,
     onPageChange,
     onRowsPerPageChange,
     sortBy,
@@ -154,6 +160,11 @@ function SpeciesTable({
                                             <EditIcon fontSize="small" />
                                         </IconButton>
                                     </Tooltip>
+                                    <Tooltip title={t('Catalog.Species.cloneTooltip')}>
+                                        <IconButton size="small" onClick={() => onClone(species)}>
+                                            <ContentCopyIcon fontSize="small" />
+                                        </IconButton>
+                                    </Tooltip>
                                     <Tooltip title={t('Catalog.Species.deleteTooltip')}>
                                         <IconButton
                                             size="small"
@@ -218,6 +229,7 @@ function TypeFilterSelect({
 export const SpeciesIndexPage: React.FC = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const { showSnackbar } = useMuiSnackbar();
 
     const [searchTerm, setSearchTerm] = useState('');
     const [typeId, setTypeId] = useState('');
@@ -227,8 +239,10 @@ export const SpeciesIndexPage: React.FC = () => {
     const [isAscending, setIsAscending] = useState(true);
     const [deleteTarget, setDeleteTarget] = useState<SpeciesDto | null>(null);
     const [deleteError, setDeleteError] = useState<string | null>(null);
+    const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
     const { mutateAsync: deleteSpecies, isPending: isDeleting } = useDeleteSpecies();
+    const { mutateAsync: createSpecies } = useCreateSpecies();
 
     const filter = useMemo<SpeciesFilter>(
         () => ({ page, size, searchTerm: searchTerm || undefined, typeId: typeId || undefined, sortBy, isAscending }),
@@ -275,6 +289,35 @@ export const SpeciesIndexPage: React.FC = () => {
         }
     }, [deleteTarget, deleteSpecies, t]);
 
+    const handleClone = useCallback(
+        async (species: SpeciesDto) => {
+            try {
+                const detail = await speciesApi.getDetailById(species.id);
+                const result = await createSpecies({
+                    commonName: `Copy of ${detail.commonName}`,
+                    scientificName: detail.scientificName,
+                    typeId: detail.typeId,
+                    thumbnailUrl: detail.thumbnailUrl,
+                    environment: detail.environment ?? {
+                        phMin: 6.5, phMax: 7.5, tempMin: 22, tempMax: 28,
+                        minTankVolume: 40, waterType: 0,
+                    },
+                    profile: detail.profile ?? {
+                        adultSize: 5, bioLoadFactor: 1, swimLevel: 1, dietType: 2,
+                        isSchooling: false, minGroupSize: 0,
+                    },
+                    tagIds: detail.tags?.map((tag) => tag.id) ?? [],
+                });
+                showSnackbar(t('Catalog.Species.cloneSuccess'), 'success');
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                void navigate({ to: '/catalog/species/$id' as any, params: { id: result.id } as any });
+            } catch {
+                showSnackbar(t('Catalog.form.errorUnexpected'), 'error');
+            }
+        },
+        [createSpecies, navigate, showSnackbar, t],
+    );
+
     return (
         <Box sx={{ p: 3 }}>
             {/* Page header */}
@@ -291,8 +334,7 @@ export const SpeciesIndexPage: React.FC = () => {
                     variant="contained"
                     size="small"
                     startIcon={<AddIcon />}
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    onClick={() => void navigate({ to: '/catalog/species/create' as any })}
+                    onClick={() => setCreateDialogOpen(true)}
                     sx={{ bgcolor: 'primary.dark', '&:hover': { bgcolor: 'primary.main' }, borderRadius: '4px' }}
                 >
                     {t('Catalog.Species.newEntry')}
@@ -346,6 +388,7 @@ export const SpeciesIndexPage: React.FC = () => {
                         filter={filter}
                         onEdit={handleEdit}
                         onDelete={setDeleteTarget}
+                        onClone={(s) => void handleClone(s)}
                         onPageChange={setPage}
                         onRowsPerPageChange={(s) => { setSize(s); setPage(1); }}
                         sortBy={sortBy}
@@ -396,6 +439,9 @@ export const SpeciesIndexPage: React.FC = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            {/* Draft creation dialog */}
+            <CreateSpeciesDialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} />
         </Box>
     );
 };

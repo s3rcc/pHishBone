@@ -6,5 +6,5 @@ export { SpeciesIndexPage } from './components/SpeciesIndexPage';
 export { SpeciesCreatePage } from './components/SpeciesCreatePage';
 export { SpeciesEditPage } from './components/SpeciesEditPage';
 export { TypesPage } from './components/TypesPage';
-export { TagsPage } from './components/PlaceholderPages';
+export { TagsPage } from './components/TagsPage';
 export type * from './types';

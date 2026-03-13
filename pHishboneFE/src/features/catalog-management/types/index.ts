@@ -64,6 +64,8 @@ export interface TagFilter {
     page?: number;
     size?: number;
     searchTerm?: string;
+    sortBy?: string;
+    isAscending?: boolean;
 }
 
 // ─── Type DTOs ───────────────────────────────────────────────────────────────
@@ -214,4 +216,15 @@ export interface SpeciesFormValues {
     description: string;
     // Indexing tab
     tagIds: string[];
+}
+
+// ─── Image DTOs ──────────────────────────────────────────────────────────────
+
+export interface ImageResponseDto {
+    id: string;
+    imageUrl: string;
+    publicId?: string;
+    caption?: string;
+    sortOrder: number;
+    createdTime: string;
 }

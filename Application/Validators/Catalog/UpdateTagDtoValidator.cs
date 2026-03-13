@@ -10,7 +10,9 @@ namespace Application.Validators.Catalog
         {
             RuleFor(x => x.Code)
                 .NotEmpty().WithMessage(CatalogErrorMessageConstant.TagCodeRequired)
-                .MaximumLength(50).WithMessage("Tag code cannot exceed 50 characters");
+                .MaximumLength(100).WithMessage("Tag code input cannot exceed 100 characters")
+                .Matches(@"^[A-Za-z][A-Za-z0-9 _\-]*$")
+                    .WithMessage("Tag code may only contain English letters, digits, spaces, hyphens, or underscores and must start with a letter. It will be saved as SCREAMING_SNAKE_CASE (e.g. 'high light' → 'HIGH_LIGHT').");
 
             RuleFor(x => x.Name)
                 .NotEmpty().WithMessage(CatalogErrorMessageConstant.TagNameRequired)

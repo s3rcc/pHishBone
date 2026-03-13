@@ -1,42 +1,123 @@
-import React, { Suspense } from 'react';
-import { useFormContext } from 'react-hook-form';
+import React, { Suspense, useCallback } from 'react';
+import { useController, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
 import Grid from '@mui/material/Grid';
-import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { SuspenseLoader } from '../../../../components/layout/SuspenseLoader';
-import { useTypesList } from '../../hooks/useCatalog';
-import type { SpeciesFormValues } from '../../types';
+import { useMuiSnackbar } from '../../../../hooks/useMuiSnackbar';
+import { useCreateType, useTypesList } from '../../hooks/useCatalog';
+import type { SpeciesFormValues, SpeciesTypeDto } from '../../types';
 
-function TypeSelectInner() {
+// ─── Creatable Type Autocomplete ──────────────────────────────────────────────
+
+interface TypeOption extends SpeciesTypeDto {
+    inputValue?: string;
+    isNew?: boolean;
+}
+
+const typeFilter = createFilterOptions<TypeOption>();
+
+function TypeAutocompleteInner() {
     const { t } = useTranslation();
+    const { showSnackbar } = useMuiSnackbar();
+    const { control, formState: { errors } } = useFormContext<SpeciesFormValues>();
+    const { field } = useController({ name: 'typeId', control, rules: { required: t('Catalog.form.required', { field: t('Catalog.form.fieldType') }) } });
+
     const { data: types } = useTypesList();
-    const {
-        register,
-        formState: { errors },
-    } = useFormContext<SpeciesFormValues>();
+    const { mutateAsync: createType, isPending: isCreatingType } = useCreateType();
+
+    const typeOptions: TypeOption[] = (types ?? []).map((tp) => ({ ...tp }));
+    const selectedOption = typeOptions.find((tp) => tp.id === field.value) ?? null;
+
+    const handleChange = useCallback(
+        async (_: React.SyntheticEvent, newValue: TypeOption | string | null) => {
+            if (typeof newValue === 'string') return;
+            if (!newValue) {
+                field.onChange('');
+                return;
+            }
+
+            if (newValue.isNew && newValue.inputValue) {
+                try {
+                    const created = await createType({ name: newValue.inputValue });
+                    field.onChange(created.id);
+                    showSnackbar(t('Catalog.Species.typeCreated', { name: created.name }), 'success');
+                } catch {
+                    showSnackbar(t('Catalog.form.errorUnexpected'), 'error');
+                }
+                return;
+            }
+
+            field.onChange(newValue.id);
+        },
+        [field, createType, showSnackbar, t],
+    );
 
     return (
-        <TextField
-            {...register('typeId', { required: t('Catalog.form.required', { field: t('Catalog.form.fieldType') }) })}
-            select
-            label={t('Catalog.form.fieldType')}
+        <Autocomplete<TypeOption, false, false, true>
+            freeSolo
+            id="field-typeId"
+            options={typeOptions}
+            value={selectedOption}
+            onChange={handleChange}
+            getOptionLabel={(option) => {
+                if (typeof option === 'string') return option;
+                if (option.isNew) return option.inputValue ?? '';
+                return option.name;
+            }}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            filterOptions={(options, params) => {
+                const filtered = typeFilter(options, params);
+                const { inputValue } = params;
+                const exists = options.some((o) => o.name.toLowerCase() === inputValue.toLowerCase());
+                if (inputValue !== '' && !exists) {
+                    filtered.push({
+                        inputValue,
+                        isNew: true,
+                        id: '',
+                        name: t('Catalog.form.addType', { name: inputValue }),
+                        createdTime: '',
+                    });
+                }
+                return filtered;
+            }}
+            renderOption={(props, option) => {
+                const { key, ...rest } = props;
+                return (
+                    <Box component="li" key={key} {...rest} sx={{ fontStyle: option.isNew ? 'italic' : 'normal' }}>
+                        {option.isNew ? t('Catalog.form.addType', { name: option.inputValue }) : option.name}
+                    </Box>
+                );
+            }}
+            renderInput={(params) => (
+                <TextField
+                    {...params}
+                    label={t('Catalog.form.fieldType')}
+                    size="small"
+                    error={!!errors.typeId}
+                    helperText={errors.typeId?.message as string}
+                    InputProps={{
+                        ...params.InputProps,
+                        endAdornment: (
+                            <>
+                                {isCreatingType ? <CircularProgress size={18} /> : null}
+                                {params.InputProps.endAdornment}
+                            </>
+                        ),
+                    }}
+                />
+            )}
+            loading={isCreatingType}
             size="small"
-            fullWidth
-            error={!!errors.typeId}
-            helperText={errors.typeId?.message}
-            defaultValue=""
-        >
-            {types.map((tp) => (
-                <MenuItem key={tp.id} value={tp.id}>
-                    {tp.name}
-                </MenuItem>
-            ))}
-        </TextField>
+        />
     );
 }
+
+// ─── Main Tab ─────────────────────────────────────────────────────────────────
 
 export const TaxonomyTab: React.FC = () => {
     const { t } = useTranslation();
@@ -90,19 +171,8 @@ export const TaxonomyTab: React.FC = () => {
 
                 <Grid size={{ xs: 12, md: 6 }}>
                     <Suspense fallback={<SuspenseLoader />}>
-                        <TypeSelectInner />
+                        <TypeAutocompleteInner />
                     </Suspense>
-                </Grid>
-
-                <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField
-                        {...register('thumbnailUrl')}
-                        label={t('Catalog.form.fieldThumbnailUrl')}
-                        size="small"
-                        fullWidth
-                        placeholder={t('Catalog.Species.thumbnailUrlPlaceholder')}
-                        inputProps={{ id: 'field-thumbnailUrl' }}
-                    />
                 </Grid>
             </Grid>
         </Box>

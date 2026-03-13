@@ -1,4 +1,4 @@
-import React, { Suspense, useCallback, useMemo, useState } from 'react';
+import React, { Suspense, useCallback, useMemo, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
@@ -13,12 +13,15 @@ import Typography from '@mui/material/Typography';
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { SuspenseLoader } from '../../../../components/layout/SuspenseLoader';
-import { useCreateSpecies, useUpdateSpecies } from '../../hooks/useCatalog';
+import { useMuiSnackbar } from '../../../../hooks/useMuiSnackbar';
+import { parseValidationErrors, getValidationSummary } from '../../../../lib/parseValidationErrors';
+import { useCreateSpecies, useUpdateSpecies, useUploadSpeciesImageBatch } from '../../hooks/useCatalog';
 import type { CreateSpeciesPayload, SpeciesDetailDto, SpeciesFormValues, UpdateSpeciesPayload } from '../../types';
 import { TaxonomyTab } from './TaxonomyTab';
-import { BioTab } from './BioTab';
-import { BehaviorTab } from './BehaviorTab';
+import { EnvironmentTab } from './EnvironmentTab';
+import { ProfileTab } from './ProfileTab';
 import { IndexingTab } from './IndexingTab';
+import { GalleryTab } from './GalleryTab';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -40,9 +43,9 @@ function buildDefaultValues(detail?: SpeciesDetailDto): SpeciesFormValues {
         phMax: detail?.environment?.phMax ?? 7.5,
         tempMin: detail?.environment?.tempMin ?? 22,
         tempMax: detail?.environment?.tempMax ?? 28,
-        minTankVolume: detail?.environment?.minTankVolume ?? 0,
+        minTankVolume: detail?.environment?.minTankVolume ?? 40,
         waterType: detail?.environment?.waterType ?? 0,
-        adultSize: detail?.profile?.adultSize ?? 0,
+        adultSize: detail?.profile?.adultSize ?? 5,
         bioLoadFactor: detail?.profile?.bioLoadFactor ?? 1,
         swimLevel: detail?.profile?.swimLevel ?? 1,
         dietType: detail?.profile?.dietType ?? 2,
@@ -103,18 +106,22 @@ const TabPanel: React.FC<TabPanelProps> = ({ value, index, children }) => (
 export const SpeciesForm: React.FC<SpeciesFormProps> = ({ mode, speciesId, defaultValues }) => {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const { showSnackbar } = useMuiSnackbar();
     const [activeTab, setActiveTab] = useState(0);
     const [submitError, setSubmitError] = useState<string | null>(null);
+    const stagedFilesRef = useRef<File[]>([]);
 
     const { mutateAsync: createSpecies, isPending: isCreating } = useCreateSpecies();
     const { mutateAsync: updateSpecies, isPending: isUpdating } = useUpdateSpecies();
-    const isPending = isCreating || isUpdating;
+    const { mutateAsync: uploadBatch, isPending: isUploading } = useUploadSpeciesImageBatch();
+    const isPending = isCreating || isUpdating || isUploading;
 
     const TAB_LABELS = [
         t('Catalog.form.tabTaxonomy'),
-        t('Catalog.form.tabBio'),
-        t('Catalog.form.tabBehavior'),
-        t('Catalog.form.tabIndexing'),
+        t('Catalog.form.tabEnvironment'),
+        t('Catalog.form.tabProfile'),
+        t('Catalog.form.tabTags'),
+        t('Catalog.form.tabGallery'),
     ];
 
     const methods = useForm<SpeciesFormValues>({
@@ -122,40 +129,81 @@ export const SpeciesForm: React.FC<SpeciesFormProps> = ({ mode, speciesId, defau
         mode: 'onTouched',
     });
 
+    const { isDirty } = methods.formState;
+
     const handleTabChange = useCallback((_: React.SyntheticEvent, newValue: number) => {
         setActiveTab(newValue);
+    }, []);
+
+    const handleStagedFilesChange = useCallback((files: File[]) => {
+        stagedFilesRef.current = files;
     }, []);
 
     const handleSubmit = methods.handleSubmit(async (values) => {
         setSubmitError(null);
         try {
             const payload: CreateSpeciesPayload | UpdateSpeciesPayload = toPayload(values);
+            let resultId = speciesId;
+
             if (mode === 'create') {
-                await createSpecies(payload);
+                const result = await createSpecies(payload);
+                resultId = result.id;
             } else if (speciesId) {
                 await updateSpecies({ id: speciesId, payload });
             }
-            void navigate({ to: '/catalog/species' as any }); // eslint-disable-line @typescript-eslint/no-explicit-any
+
+            // Upload staged gallery files if any
+            if (resultId && stagedFilesRef.current.length > 0) {
+                try {
+                    await uploadBatch({ speciesId: resultId, files: stagedFilesRef.current });
+                    stagedFilesRef.current = [];
+                } catch {
+                    showSnackbar(t('Catalog.Gallery.uploadError'), 'warning');
+                }
+            }
+
+            showSnackbar(t('Catalog.Snackbar.saved'), 'success');
+
+            if (mode === 'create' && resultId) {
+                // Navigate to edit page for the newly created species
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                void navigate({ to: '/catalog/species/$id' as any, params: { id: resultId } as any });
+            } else {
+                methods.reset(values);
+            }
         } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : t('Catalog.form.errorUnexpected');
-            setSubmitError(msg);
+            // Parse backend validation errors and set them on individual fields
+            const fieldErrors = parseValidationErrors(err);
+            if (fieldErrors) {
+                for (const [fieldName, message] of Object.entries(fieldErrors)) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    methods.setError(fieldName as any, { type: 'server', message });
+                }
+                setSubmitError(t('Catalog.Species.validationFailed'));
+            } else {
+                const msg = getValidationSummary(err, t('Catalog.form.errorUnexpected'));
+                setSubmitError(msg);
+            }
         }
     });
 
     return (
         <FormProvider {...methods}>
             <Box component="form" onSubmit={handleSubmit} noValidate>
-                {/* Header */}
+                {/* Sticky header / save bar */}
                 <Box
                     sx={{
                         px: 3,
-                        py: 2,
+                        py: 1.5,
                         borderBottom: '1px solid',
                         borderColor: 'divider',
                         display: 'flex',
                         alignItems: 'center',
                         gap: 2,
                         bgcolor: 'background.paper',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 10,
                     }}
                 >
                     <Button
@@ -172,6 +220,11 @@ export const SpeciesForm: React.FC<SpeciesFormProps> = ({ mode, speciesId, defau
                         {mode === 'create' ? t('Catalog.Species.newEntry') : t('Catalog.Species.editEntry')}
                     </Typography>
                     <Box sx={{ flexGrow: 1 }} />
+                    {(isDirty || stagedFilesRef.current.length > 0) && (
+                        <Typography variant="caption" color="warning.main" sx={{ mr: 1 }}>
+                            {t('Catalog.Species.unsavedChanges')}
+                        </Typography>
+                    )}
                     <Button
                         type="submit"
                         variant="contained"
@@ -202,6 +255,8 @@ export const SpeciesForm: React.FC<SpeciesFormProps> = ({ mode, speciesId, defau
                         onChange={handleTabChange}
                         textColor="inherit"
                         indicatorColor="primary"
+                        variant="scrollable"
+                        scrollButtons="auto"
                     >
                         {TAB_LABELS.map((label, i) => (
                             <Tab
@@ -234,14 +289,23 @@ export const SpeciesForm: React.FC<SpeciesFormProps> = ({ mode, speciesId, defau
                         </Suspense>
                     </TabPanel>
                     <TabPanel value={activeTab} index={1}>
-                        <BioTab />
+                        <EnvironmentTab />
                     </TabPanel>
                     <TabPanel value={activeTab} index={2}>
-                        <BehaviorTab />
+                        <ProfileTab />
                     </TabPanel>
                     <TabPanel value={activeTab} index={3}>
                         <Suspense fallback={<SuspenseLoader />}>
                             <IndexingTab />
+                        </Suspense>
+                    </TabPanel>
+                    <TabPanel value={activeTab} index={4}>
+                        <Suspense fallback={<SuspenseLoader />}>
+                            <GalleryTab
+                                speciesId={speciesId}
+                                currentThumbnailUrl={defaultValues?.thumbnailUrl}
+                                onStagedFilesChange={handleStagedFilesChange}
+                            />
                         </Suspense>
                     </TabPanel>
                 </Paper>

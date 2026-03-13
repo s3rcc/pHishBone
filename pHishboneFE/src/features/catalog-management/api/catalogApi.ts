@@ -163,3 +163,59 @@ export const typesApi = {
         await axiosInstance.delete(`/api/catalog/types/${id}`);
     },
 };
+
+// ─── Species Images ──────────────────────────────────────────────────────────
+
+import type { ImageResponseDto } from '../types';
+
+export const speciesImageApi = {
+    getAll: async (speciesId: string): Promise<ImageResponseDto[]> => {
+        const { data } = await axiosInstance.get<ApiResponse<ImageResponseDto[]>>(
+            `/api/catalog/species/${speciesId}/images`,
+        );
+        return data.data;
+    },
+
+    upload: async (
+        speciesId: string,
+        file: File,
+        caption?: string,
+        sortOrder?: number,
+    ): Promise<ImageResponseDto> => {
+        const formData = new FormData();
+        formData.append('File', file);
+        if (caption) formData.append('Caption', caption);
+        if (sortOrder !== undefined) formData.append('SortOrder', String(sortOrder));
+        const { data } = await axiosInstance.post<ApiResponse<ImageResponseDto>>(
+            `/api/catalog/species/${speciesId}/images`,
+            formData,
+            { headers: { 'Content-Type': 'multipart/form-data' } },
+        );
+        return data.data;
+    },
+
+    uploadBatch: async (speciesId: string, files: File[]): Promise<ImageResponseDto[]> => {
+        const formData = new FormData();
+        files.forEach((file) => formData.append('files', file));
+        const { data } = await axiosInstance.post<ApiResponse<ImageResponseDto[]>>(
+            `/api/catalog/species/${speciesId}/images/batch`,
+            formData,
+            { headers: { 'Content-Type': 'multipart/form-data' } },
+        );
+        return data.data;
+    },
+
+    remove: async (speciesId: string, imageId: string): Promise<void> => {
+        await axiosInstance.delete(`/api/catalog/species/${speciesId}/images/${imageId}`);
+    },
+
+    setThumbnail: async (speciesId: string, file: File): Promise<void> => {
+        const formData = new FormData();
+        formData.append('File', file);
+        await axiosInstance.patch(
+            `/api/catalog/species/${speciesId}/set-thumbnail`,
+            formData,
+            { headers: { 'Content-Type': 'multipart/form-data' } },
+        );
+    },
+};

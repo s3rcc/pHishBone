@@ -6,6 +6,7 @@ import { RouterProvider } from '@tanstack/react-router';
 import CssBaseline from '@mui/material/CssBaseline';
 import { router } from './router.tsx';
 import { ThemeContextProvider } from './context/ThemeContext';
+import { SnackbarProvider } from './hooks/useMuiSnackbar';
 import './index.css';
 
 const queryClient = new QueryClient({
@@ -27,8 +28,10 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <ThemeContextProvider>
-        <CssBaseline />
-        <RouterProvider router={router} />
+        <SnackbarProvider>
+          <CssBaseline />
+          <RouterProvider router={router} />
+        </SnackbarProvider>
       </ThemeContextProvider>
     </QueryClientProvider>
   </StrictMode>,

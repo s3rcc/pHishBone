@@ -141,12 +141,49 @@
             "tagsHelperText": "Tags improve search visibility. Select all that apply.",
             "bioLoadHelperText": "Relative waste output multiplier",
             "schoolingLabel": "Schooling species (requires group)",
-            "minGroupSizeError": "Must be at least 2"
+            "minGroupSizeError": "Must be at least 2",
+            "createDraft": "Create Draft",
+            "createDraftTitle": "New Species — Quick Entry",
+            "cloneTooltip": "Clone",
+            "cloneSuccess": "Species cloned successfully!",
+            "draftCreated": "Draft created! Complete the details below.",
+            "typeCreated": "Type '{{name}}' created.",
+            "tagCreated": "Tag '{{name}}' created.",
+            "validationFailed": "Validation failed. Please check the highlighted fields.",
+            "unsavedChanges": "Unsaved changes"
         },
         "Tags": {
             "pageTitle": "Tags",
             "pageSubtitle": "Manage searchable labels for species discovery",
-            "comingSoon": "Tag management coming soon."
+            "newEntry": "New Tag",
+            "searchPlaceholder": "Search tags\u2026",
+            "colCode": "Code",
+            "colName": "Name",
+            "colDescription": "Description",
+            "colCreatedAt": "Created",
+            "colActions": "Actions",
+            "editTooltip": "Edit",
+            "deleteTooltip": "Delete",
+            "noResults": "No tags found. Add the first one.",
+            "dialogCreateTitle": "New Tag",
+            "dialogEditTitle": "Edit Tag",
+            "fieldCode": "Code (auto-normalized)",
+            "fieldCodeHint": "Type naturally \u2014 \u2018high light\u2019 becomes HIGH_LIGHT",
+            "fieldCodeRequired": "Code is required",
+            "fieldCodePattern": "Code must start with a letter and contain only letters, digits, spaces, hyphens, or underscores.",
+            "fieldName": "Display Name",
+            "fieldDescription": "Description",
+            "fieldNameRequired": "Name is required",
+            "codePreviewLabel": "Will be saved as:",
+            "deleteTitle": "Delete Tag?",
+            "deleteConfirm": "Are you sure you want to delete \"{{code}}\"? Species using this tag will lose it. This cannot be undone.",
+            "deleteButton": "Delete",
+            "deleting": "Deleting\u2026",
+            "saving": "Saving\u2026",
+            "save": "Save",
+            "comingSoon": "Tag management coming soon.",
+            "compatibilityTitle": "Compatibility Preview",
+            "compatibilityNote": "Tags applied: {{tags}}. The system will automatically flag incompatibilities based on global compatibility rules."
         },
         "Types": {
             "pageTitle": "Types",
@@ -212,7 +249,36 @@
             "fieldTags": "Tags",
             "fieldMinGroupSize": "Min Group Size",
             "required": "{{field}} is required",
-            "errorUnexpected": "An unexpected error occurred."
+            "errorUnexpected": "An unexpected error occurred.",
+            "tabGallery": "Gallery",
+            "tabEnvironment": "Environment",
+            "tabProfile": "Profile & Behavior",
+            "tabTags": "Tags",
+            "phRange": "pH Range",
+            "tempRange": "Temperature Range (°C)",
+            "addType": "Add '{{name}}'",
+            "addTag": "Add '{{name}}'"
+        },
+        "Gallery": {
+            "title": "Species Gallery",
+            "subtitle": "Upload and manage images for this species",
+            "dropzoneText": "Drag & drop images here, or click to browse",
+            "dropzoneHint": "Accepted formats: JPG, PNG, WebP (max 5 MB each)",
+            "uploading": "Uploading…",
+            "uploadButton": "Upload",
+            "deleteTooltip": "Remove image",
+            "thumbnailTooltip": "Set as thumbnail",
+            "thumbnailCurrent": "Current thumbnail",
+            "deleteTitle": "Remove Image?",
+            "deleteConfirm": "Are you sure you want to remove this image? This cannot be undone.",
+            "deleteButton": "Remove",
+            "deleting": "Removing…",
+            "noImages": "No images yet. Upload the first one above.",
+            "editModeOnly": "Image gallery is only available after saving the species. Please save the species first, then return to add images.",
+            "uploadError": "Failed to upload image.",
+            "setThumbnailSuccess": "Thumbnail updated.",
+            "pendingBadge": "Pending",
+            "stagedHint": "Staged images (will upload on save)"
         },
         "waterType": {
             "0": "Fresh",
@@ -229,6 +295,30 @@
             "0": "Carnivore",
             "1": "Herbivore",
             "2": "Omnivore"
+        },
+        "Snackbar": {
+            "saved": "Changes saved successfully.",
+            "error": "Something went wrong. Please try again."
+        }
+    },
+    "Errors": {
+        "goHome": "Go Home",
+        "NotFound": {
+            "code": "404",
+            "title": "Page Not Found",
+            "subtitle": "The page you're looking for doesn't exist or has been moved."
+        },
+        "Unauthorized": {
+            "code": "401",
+            "title": "Unauthorized",
+            "subtitle": "You need to be logged in to access this page.",
+            "loginButton": "Sign In"
+        },
+        "ServerError": {
+            "code": "500",
+            "title": "Server Error",
+            "subtitle": "Something went wrong on our end. Please try again later.",
+            "retryButton": "Try Again"
         }
     }
 }
