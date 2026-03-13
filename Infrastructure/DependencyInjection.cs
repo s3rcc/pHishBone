@@ -92,6 +92,7 @@ namespace Infrastructure
             services.AddScoped<ITankImageService, TankImageService>();
             services.AddScoped<IPhotoService, PhotoService>();
             services.AddScoped<IUserService, UserService>();
+            services.AddScoped<ICompatibilityRuleService, CompatibilityRuleService>();
 
             return services;
         }

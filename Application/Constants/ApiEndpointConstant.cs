@@ -95,6 +95,16 @@ namespace Application.Constants
             public const string Delete = "{imageId}";
             public const string SetThumbnail = "set-thumbnail";
         }
+
+        public static class CompatibilityRule
+        {
+            public const string Base = "api/catalog/compatibility-rules";
+            public const string GetById = "{id}";
+            public const string GetPaginated = "paginated";
+            public const string Create = "";
+            public const string Update = "{id}";
+            public const string Delete = "{id}";
+        }
     }
 }
 
