@@ -29,6 +29,9 @@ const TagsPage = lazy(() =>
 const TypesPage = lazy(() =>
     import('./features/catalog-management').then((m) => ({ default: m.TypesPage })),
 );
+const CompatibilityRulesPage = lazy(() =>
+    import('./features/catalog-management').then((m) => ({ default: m.CompatibilityRulesPage })),
+);
 
 // ─── Root Route ───────────────────────────────────────────────────────────────
 const rootRoute = createRootRoute({
@@ -149,6 +152,16 @@ const catalogTypesRoute = createRoute({
     ),
 });
 
+const catalogCompatibilityRoute = createRoute({
+    getParentRoute: () => catalogRoute,
+    path: '/compatibility',
+    component: () => (
+        <Suspense fallback={<SuspenseLoader />}>
+            <CompatibilityRulesPage />
+        </Suspense>
+    ),
+});
+
 const unauthorizedRoute = createRoute({
     getParentRoute: () => rootRoute,
     path: '/401',
@@ -172,6 +185,7 @@ const routeTree = rootRoute.addChildren([
         catalogSpeciesEditRoute,
         catalogTagsRoute,
         catalogTypesRoute,
+        catalogCompatibilityRoute,
     ]),
 ]);
 

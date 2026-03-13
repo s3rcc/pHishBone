@@ -12,6 +12,7 @@ import Typography from '@mui/material/Typography';
 import BiotechIcon from '@mui/icons-material/Biotech';
 import LabelIcon from '@mui/icons-material/Label';
 import CategoryIcon from '@mui/icons-material/Category';
+import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 
 interface NavItem {
@@ -24,6 +25,7 @@ const NAV_ITEMS: NavItem[] = [
     { labelKey: 'Catalog.nav.species', path: '/catalog/species', icon: <BiotechIcon fontSize="small" /> },
     { labelKey: 'Catalog.nav.types', path: '/catalog/types', icon: <CategoryIcon fontSize="small" /> },
     { labelKey: 'Catalog.nav.tags', path: '/catalog/tags', icon: <LabelIcon fontSize="small" /> },
+    { labelKey: 'Catalog.nav.rules', path: '/catalog/compatibility', icon: <CompareArrowsIcon fontSize="small" /> },
 ];
 
 export const WorkspaceSidebar: React.FC = () => {

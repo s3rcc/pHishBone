@@ -212,12 +212,47 @@
         "nav": {
             "species": "Loài",
             "types": "Loại",
-            "tags": "Nhãn"
+            "tags": "Nhãn",
+            "rules": "Tương Thích"
         },
         "info": {
             "species": "Một bản ghi Loài là một loài cá, sinh vật không xương sống hoặc cây thủy sinh trong danh mục hệ thống. Nó bao gồm phân loại (tên thường gọi & tên khoa học), yêu cầu thông số nước, hồ sơ hành vi và nhãn tìm kiếm. Mỗi Loài phải thuộc một Loại duy nhất.",
             "types": "Loại là các danh mục phân loại cấp cao nhất dành cho các loài — ví dụ: \"Cá Nước Ngọt\", \"Cichlid\", \"Sinh Vật Không Xương Sống\" hoặc \"Cây Thủy Sinh\". Mỗi loài phải thuộc một Loại. Loại có tác dụng trong bộ lọc danh mục loài.",
-            "tags": "Nhãn là các từ khóa tự do gắn vào loài — ví dụ: \"thích hợp người mới\", \"hung hăng\", \"sống theo đàn\", \"bể có cây\". Chúng hỗ trợ công cụ tìm kiếm và kiểm tra khả năng tương thích. Hãy sử dụng mã ngắn, có thể tái sử dụng và có ý nghĩa."
+            "tags": "Nhãn là các từ khóa tự do gắn vào loài — ví dụ: \"thích hợp người mới\", \"hung hăng\", \"sống theo đàn\", \"bể có cây\". Chúng hỗ trợ công cụ tìm kiếm và kiểm tra khả năng tương thích. Hãy sử dụng mã ngắn, có thể tái sử dụng và có ý nghĩa.",
+            "rules": "Quy Tắc Tương Thích xác định các ràng buộc sinh học giữa các loài được gắn nhãn — ví dụ: cá ăn thịt với cá nhỏ. Mỗi quy tắc liên kết hai nhãn với mức độ nghiêm trọng (Thông tin, Cảnh báo, Nguy hiểm) và một thông điệp giải thích. Hệ thống sẽ sử dụng các quy tắc này để cảnh báo khi bạn ghép cá không tương thích."
+        },
+        "Rules": {
+            "pageTitle": "Quy Tắc Tương Thích",
+            "pageSubtitle": "Xác định ràng buộc sinh học giữa các loài được gắn nhãn",
+            "newRule": "Quy Tắc Mới",
+            "searchPlaceholder": "Tìm theo tên nhãn hoặc nội dung…",
+            "noResults": "Chưa có quy tắc tương thích nào. Hãy tạo quy tắc đầu tiên.",
+            "colSubject": "Nhãn Chủ Thể",
+            "colDirection": "",
+            "colObject": "Nhãn Đối Tượng",
+            "colSeverity": "Mức Độ",
+            "colMessage": "Nội Dung",
+            "colActions": "Hành Động",
+            "editTooltip": "Sửa quy tắc",
+            "deleteTooltip": "Xóa quy tắc",
+            "dialogCreateTitle": "Tạo Quy Tắc Tương Thích",
+            "dialogEditTitle": "Sửa Quy Tắc Tương Thích",
+            "fieldSubjectTag": "Nhãn Chủ Thể",
+            "fieldObjectTag": "Nhãn Đối Tượng",
+            "fieldSeverity": "Mức Độ",
+            "fieldMessage": "Nội Dung / Lý Do",
+            "fieldMessagePlaceholder": "Mô tả lý do hai nhãn này không tương thích…",
+            "severityInfo": "Thông Tin",
+            "severityWarning": "Cảnh Báo",
+            "severityDanger": "Nguy Hiểm",
+            "selfReferenceError": "Một nhãn không thể có quy tắc tương thích với chính nó.",
+            "tagsDisabledHint": "Nhãn không thể thay đổi sau khi tạo. Hãy xóa và tạo lại nếu muốn thay đổi nhãn.",
+            "save": "Lưu",
+            "saving": "Đang lưu…",
+            "deleteTitle": "Xóa Quy Tắc?",
+            "deleteConfirm": "Bạn có chắc chắn muốn xóa quy tắc tương thích giữa {{subject}} và {{object}}? Thao tác này không thể hoàn tác.",
+            "deleteButton": "Xóa",
+            "deleting": "Đang xóa…"
         },
         "form": {
             "tabTaxonomy": "Phân Loại & Danh Tính",

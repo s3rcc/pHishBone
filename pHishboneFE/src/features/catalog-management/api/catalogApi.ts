@@ -219,3 +219,49 @@ export const speciesImageApi = {
         );
     },
 };
+
+// ─── Compatibility Rules ─────────────────────────────────────────────────────
+
+import type {
+    CompatibilityRuleDto,
+    CompatibilityRuleFilter,
+    CreateCompatibilityRulePayload,
+    UpdateCompatibilityRulePayload,
+} from '../types';
+
+export const compatibilityRuleApi = {
+    getPaginated: async (filter: CompatibilityRuleFilter): Promise<PaginationResponse<CompatibilityRuleDto>> => {
+        const { data } = await axiosInstance.get<ApiResponse<PaginationResponse<CompatibilityRuleDto>>>(
+            '/api/catalog/compatibility-rules/paginated',
+            { params: filter },
+        );
+        return data.data;
+    },
+
+    getById: async (id: string): Promise<CompatibilityRuleDto> => {
+        const { data } = await axiosInstance.get<ApiResponse<CompatibilityRuleDto>>(
+            `/api/catalog/compatibility-rules/${id}`,
+        );
+        return data.data;
+    },
+
+    create: async (payload: CreateCompatibilityRulePayload): Promise<CompatibilityRuleDto> => {
+        const { data } = await axiosInstance.post<ApiResponse<CompatibilityRuleDto>>(
+            '/api/catalog/compatibility-rules',
+            payload,
+        );
+        return data.data;
+    },
+
+    update: async (id: string, payload: UpdateCompatibilityRulePayload): Promise<CompatibilityRuleDto> => {
+        const { data } = await axiosInstance.put<ApiResponse<CompatibilityRuleDto>>(
+            `/api/catalog/compatibility-rules/${id}`,
+            payload,
+        );
+        return data.data;
+    },
+
+    delete: async (id: string): Promise<void> => {
+        await axiosInstance.delete(`/api/catalog/compatibility-rules/${id}`);
+    },
+};
