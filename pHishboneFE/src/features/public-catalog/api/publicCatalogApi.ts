@@ -4,6 +4,7 @@ import type {
     SpeciesDto,
     SpeciesDetailDto,
     ImageResponseDto,
+    PaginationResponse,
 } from '../../catalog-management/types';
 
 // ─── Public Catalog API (Read-Only) ──────────────────────────────────────────
@@ -14,11 +15,11 @@ export const publicCatalogApi = {
      * When query is empty, returns top 20 species ordered by common name.
      */
     searchSpecies: async (q: string): Promise<SpeciesDto[]> => {
-        const { data } = await axiosInstance.get<ApiResponse<SpeciesDto[]>>(
+        const { data } = await axiosInstance.get<ApiResponse<PaginationResponse<SpeciesDto>>>(
             '/api/catalog/species/search',
             { params: { q } },
         );
-        return data.data;
+        return data.data.items;
     },
 
     /**

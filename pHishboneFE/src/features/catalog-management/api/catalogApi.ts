@@ -48,11 +48,11 @@ export const speciesApi = {
     },
 
     search: async (q: string): Promise<SpeciesDto[]> => {
-        const { data } = await axiosInstance.get<ApiResponse<SpeciesDto[]>>(
+        const { data } = await axiosInstance.get<ApiResponse<PaginationResponse<SpeciesDto>>>(
             '/api/catalog/species/search',
             { params: { q } },
         );
-        return data.data;
+        return data.data.items;
     },
 
     create: async (payload: CreateSpeciesPayload): Promise<SpeciesDetailDto> => {
