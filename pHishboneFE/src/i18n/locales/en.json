@@ -336,6 +336,30 @@
             "error": "Something went wrong. Please try again."
         }
     },
+    "PublicCatalog": {
+        "title": "Species Explorer",
+        "subtitle": "Discover the fascinating world of aquatic life. Browse our curated database of species.",
+        "searchPlaceholder": "Search by name, scientific name, or keyword…",
+        "noResults": "No species found. Try a different search term.",
+        "backToCatalog": "Back to Catalog",
+        "Detail": {
+            "envTitle": "Water Parameters",
+            "phRange": "pH Range",
+            "tempRange": "Temperature Range",
+            "profileTitle": "Profile & Behavior",
+            "diet": "Diet",
+            "swimLevel": "Swim Level",
+            "schooling": "Schooling",
+            "origin": "Origin",
+            "preferredFood": "Preferred Food",
+            "description": "Keeper Notes",
+            "bioLoad": "Bio-Load",
+            "tagsTitle": "Tags",
+            "galleryTitle": "Photo Gallery",
+            "yes": "Yes",
+            "no": "No"
+        }
+    },
     "Errors": {
         "goHome": "Go Home",
         "NotFound": {

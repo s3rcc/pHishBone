@@ -84,6 +84,30 @@ namespace Infrastructure.Services
             return _mapper.Map<SpeciesDetailDto>(species);
         }
 
+        public async Task<SpeciesDetailDto> GetDetailBySlugAsync(string slug)
+        {
+            var species = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
+                predicate: s => s.Slug == slug,
+                include: q => q
+                    .Include(s => s.Type)
+                    .Include(s => s.SpeciesEnvironment)
+                    .Include(s => s.SpeciesProfile)
+                    .Include(s => s.SpeciesTags)
+                        .ThenInclude(st => st.Tag)
+            );
+
+            if (species == null)
+            {
+                throw new CustomErrorException(
+                    StatusCodes.Status404NotFound,
+                    ErrorCode.NOT_FOUND,
+                    CatalogErrorMessageConstant.SpeciesNotFound
+                );
+            }
+
+            return _mapper.Map<SpeciesDetailDto>(species);
+        }
+
         public async Task<ICollection<SpeciesDto>> GetListAsync()
         {
             var species = await _unitOfWork.Repository<Species>().GetListAsync(
@@ -357,18 +381,15 @@ namespace Infrastructure.Services
             await _unitOfWork.SaveChangesAsync();
         }
 
-        public async Task<List<SpeciesDto>> SearchHybridAsync(string searchTerm, CancellationToken cancellationToken = default)
+        public async Task<PaginationResponse<SpeciesDto>> SearchHybridAsync(SpeciesFilterDto filter, CancellationToken cancellationToken = default)
         {
-            _logger.LogInformation("Executing hybrid species search for term: {SearchTerm}", searchTerm);
+            var searchTerm = filter.SearchTerm;
+            _logger.LogInformation("Executing hybrid species search for term: {SearchTerm}, Page: {Page}, Size: {Size}", searchTerm, filter.Page, filter.Size);
 
-            // If no search term, return top 20 ordered by name as a sensible default
+            // If no search term, return gracefully paginated list as a sensible default
             if (string.IsNullOrWhiteSpace(searchTerm))
             {
-                var defaultResults = await _unitOfWork.Repository<Species>().GetListAsync(
-                    orderBy: q => q.OrderBy(s => s.CommonName),
-                    include: q => q.Include(s => s.Type)
-                );
-                return _mapper.Map<List<SpeciesDto>>(defaultResults.Take(20).ToList());
+                return await GetPaginatedListAsync(filter);
             }
 
             // [Reasoning] FromSqlInterpolated is used for safe, parameterized raw SQL.
@@ -379,7 +400,7 @@ namespace Infrastructure.Services
             //   2. Trigram similarity > 0.15 — deliberately low to catch short typos (e.g. "cá ho" → "cá hề").
             //      Default PG threshold (0.3) is too strict for short Vietnamese tokens.
             //   3. Ranking: FTS rank * 2.0 ensures exact word matches always outrank fuzzy trigram matches.
-            var results = await _dbContext.Species
+            var query = _dbContext.Species
                 .FromSqlInterpolated($@"
                     SELECT * FROM catalog.""Species""
                     WHERE 
@@ -390,14 +411,27 @@ namespace Infrastructure.Services
                     (
                         COALESCE(ts_rank(""FtsVector"", websearch_to_tsquery('simple', {searchTerm})), 0) * 2.0
                         + COALESCE(similarity(""CommonName"", {searchTerm}), 0)
-                    ) DESC
-                    LIMIT 20")
+                    ) DESC");
+
+            var totalCount = await query.CountAsync(cancellationToken);
+
+            var results = await query
                 .Include(s => s.Type)
                 .AsNoTracking()
+                .Skip((filter.Page - 1) * filter.Size)
+                .Take(filter.Size)
                 .ToListAsync(cancellationToken);
 
-            _logger.LogInformation("Hybrid search for '{SearchTerm}' returned {Count} results", searchTerm, results.Count);
-            return _mapper.Map<List<SpeciesDto>>(results);
+            _logger.LogInformation("Hybrid search for '{SearchTerm}' returned {Count} total results", searchTerm, totalCount);
+
+            return new PaginationResponse<SpeciesDto>
+            {
+                Size = filter.Size,
+                Page = filter.Page,
+                Total = totalCount,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)filter.Size),
+                Items = _mapper.Map<IList<SpeciesDto>>(results)
+            };
         }
 
         #region Private Helper Methods

@@ -33,6 +33,14 @@ const CompatibilityRulesPage = lazy(() =>
     import('./features/catalog-management').then((m) => ({ default: m.CompatibilityRulesPage })),
 );
 
+// ─── Public Catalog (lazy) ────────────────────────────────────────────────────
+const CatalogPage = lazy(() =>
+    import('./features/public-catalog').then((m) => ({ default: m.CatalogPage })),
+);
+const SpeciesDetailPage = lazy(() =>
+    import('./features/public-catalog').then((m) => ({ default: m.SpeciesDetailPage })),
+);
+
 // ─── Root Route ───────────────────────────────────────────────────────────────
 const rootRoute = createRootRoute({
     component: () => (
@@ -162,6 +170,30 @@ const catalogCompatibilityRoute = createRoute({
     ),
 });
 
+// ─── Public Catalog Routes ────────────────────────────────────────────────────
+const exploreRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/explore',
+    component: () => (
+        <Suspense fallback={<SuspenseLoader />}>
+            <CatalogPage />
+        </Suspense>
+    ),
+});
+
+const exploreDetailRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/explore/$slug',
+    component: function ExploreDetailRoute() {
+        const { slug } = exploreDetailRoute.useParams();
+        return (
+            <Suspense fallback={<SuspenseLoader />}>
+                <SpeciesDetailPage slug={slug} />
+            </Suspense>
+        );
+    },
+});
+
 const unauthorizedRoute = createRoute({
     getParentRoute: () => rootRoute,
     path: '/401',
@@ -179,6 +211,8 @@ const routeTree = rootRoute.addChildren([
     registerRoute,
     profileRoute,
     unauthorizedRoute,
+    exploreRoute,
+    exploreDetailRoute,
     catalogRoute.addChildren([
         catalogSpeciesRoute,
         catalogSpeciesCreateRoute,

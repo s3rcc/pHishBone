@@ -72,16 +72,28 @@ namespace pHishbone.Controllers
         }
 
         /// <summary>
+        /// Get full species details by slug for public catalog SEO-friendly URLs
+        /// </summary>
+        [HttpGet(ApiEndpointConstant.Species.GetBySlug)]
+        [ProducesResponseType(typeof(ApiResponse<SpeciesDetailDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetBySlug([FromRoute] string slug)
+        {
+            var species = await _speciesService.GetDetailBySlugAsync(slug);
+            return Ok(ApiResponse<SpeciesDetailDto>.Success(species, SuccessMessageConstant.SpeciesDetailsRetrievedSuccessfully));
+        }
+
+        /// <summary>
         /// Bilingual hybrid search (FTS + Trigram). Handles Vietnamese, English, scientific names, and typos.
-        /// Returns up to 20 results ranked by relevance.
+        /// Returns paginated results ranked by relevance.
         /// </summary>
         [HttpGet(ApiEndpointConstant.Species.Search)]
-        [ProducesResponseType(typeof(ApiResponse<List<SpeciesDto>>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> Search([FromQuery] string q, CancellationToken cancellationToken)
+        [ProducesResponseType(typeof(ApiResponse<PaginationResponse<SpeciesDto>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> Search([FromQuery] SpeciesFilterDto filter, CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Species hybrid search requested with query: {Query}", q);
-            var results = await _speciesService.SearchHybridAsync(q, cancellationToken);
-            return Ok(ApiResponse<List<SpeciesDto>>.Success(results, SuccessMessageConstant.SpeciesSearchRetrievedSuccessfully));
+            _logger.LogInformation("Species hybrid search requested with query: {Query}", filter.SearchTerm);
+            var results = await _speciesService.SearchHybridAsync(filter, cancellationToken);
+            return Ok(ApiResponse<PaginationResponse<SpeciesDto>>.Success(results, SuccessMessageConstant.SpeciesSearchRetrievedSuccessfully));
         }
 
         /// <summary>

@@ -7,11 +7,13 @@ namespace pHishbone.Middleware
     {
         private readonly RequestDelegate _next;
         private readonly ILogger<ExceptionHandlingMiddleware> _logger;
+        private readonly IWebHostEnvironment _env;
 
-        public ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
+        public ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger, IWebHostEnvironment env)
         {
             _next = next;
             _logger = logger;
+            _env = env;
         }
 
         public async Task InvokeAsync(HttpContext context)
@@ -29,7 +31,7 @@ namespace pHishbone.Middleware
             catch (Exception ex)
             {
                 // Log as Error since this is an unexpected crash
-                _logger.LogError(ex, "An unhandled exception occurred.");
+                _logger.LogError(ex, "An unhandled exception occurred during {Method} {Path}", context.Request.Method, context.Request.Path);
                 await HandleGeneralExceptionAsync(context, ex);
             }
         }
@@ -46,16 +48,17 @@ namespace pHishbone.Middleware
             return context.Response.WriteAsync(result);
         }
 
-        private static Task HandleGeneralExceptionAsync(HttpContext context, Exception ex)
+        private Task HandleGeneralExceptionAsync(HttpContext context, Exception ex)
         {
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = StatusCodes.Status500InternalServerError;
 
-            // Security: Hiding the real ex.Message
             var errorDetail = new ErrorDetail
             {
                 ErrorCode = "INTERNAL_SERVER_ERROR",
-                Message = "An unexpected error occurred on the server."
+                Message = _env.IsDevelopment() 
+                    ? new { message = ex.Message, stackTrace = ex.StackTrace } 
+                    : "An unexpected error server-side."
             };
 
             var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };

@@ -336,6 +336,30 @@
             "error": "Đã xảy ra lỗi. Vui lòng thử lại."
         }
     },
+    "PublicCatalog": {
+        "title": "Khám Phá Loài",
+        "subtitle": "Khám phá thế giới kỳ thú của sinh vật thủy sinh. Duyệt qua cơ sở dữ liệu loài được chọn lọc.",
+        "searchPlaceholder": "Tìm theo tên, tên khoa học, hoặc từ khóa…",
+        "noResults": "Không tìm thấy loài nào. Hãy thử từ khóa khác.",
+        "backToCatalog": "Quay Lại Danh Mục",
+        "Detail": {
+            "envTitle": "Thông Số Nước",
+            "phRange": "Khoảng pH",
+            "tempRange": "Khoảng Nhiệt Độ",
+            "profileTitle": "Hồ Sơ & Tập Tính",
+            "diet": "Chế Độ Ăn",
+            "swimLevel": "Tầng Bơi",
+            "schooling": "Bầy Đàn",
+            "origin": "Xuất Xứ",
+            "preferredFood": "Thức Ăn Yêu Thích",
+            "description": "Ghi Chú Người Nuôi",
+            "bioLoad": "Tải Sinh Học",
+            "tagsTitle": "Nhãn",
+            "galleryTitle": "Thư Viện Ảnh",
+            "yes": "Có",
+            "no": "Không"
+        }
+    },
     "Errors": {
         "goHome": "Về Trang Chủ",
         "NotFound": {
