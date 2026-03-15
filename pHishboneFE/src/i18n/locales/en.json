@@ -360,6 +360,32 @@
             "no": "No"
         }
     },
+    "TankBuilder": {
+        "title": "Tank Builder",
+        "subtitle": "Design and simulate your aquatic ecosystem.",
+        "dimensionsSection": "1. Setup Dimensions",
+        "speciesSection": "2. Build Ecosystem",
+        "analysisSection": "Analysis",
+        "length": "Length",
+        "width": "Width",
+        "height": "Height",
+        "totalVolume": "Total Estimated Volume:",
+        "liters": "Liters",
+        "emptyTank": "Your tank is empty. Add some species!",
+        "speciesCount": "{{count}} species in tank",
+        "addSpecies": "Add Species",
+        "searchSpecies": "Search Species",
+        "searchPlaceholder": "e.g., Neon Tetra...",
+        "noResults": "No species found.",
+        "addSpeciesToAnalyze": "Add species to the tank to see analysis.",
+        "bioLoadCapacity": "BioLoad Capacity",
+        "statusSafe": "Safe Baseline",
+        "statusWarning": "Nearing Capacity",
+        "statusOverstocked": "Overstocked!",
+        "safeRanges": "Target Environment Ranges",
+        "noEnvironmentOverlap": "CRITICAL: The selected species require conflicting water parameters (pH/Temperature) and cannot co-exist in the same environment.",
+        "compatibilityIssues": "Compatibility Alerts"
+    },
     "Errors": {
         "goHome": "Go Home",
         "NotFound": {

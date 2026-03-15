@@ -17,7 +17,7 @@ export const publicCatalogApi = {
     searchSpecies: async (q: string): Promise<SpeciesDto[]> => {
         const { data } = await axiosInstance.get<ApiResponse<PaginationResponse<SpeciesDto>>>(
             '/api/catalog/species/search',
-            { params: { q } },
+            { params: { searchTerm: q } },
         );
         return data.data.items;
     },

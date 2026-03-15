@@ -385,6 +385,16 @@ namespace Infrastructure.Services
         {
             var searchTerm = filter.SearchTerm;
             _logger.LogInformation("Executing hybrid species search for term: {SearchTerm}, Page: {Page}, Size: {Size}", searchTerm, filter.Page, filter.Size);
+            
+            // Debug log to verify search term is received correctly
+            if (string.IsNullOrWhiteSpace(searchTerm))
+            {
+                _logger.LogWarning("Search term is empty or null");
+            }
+            else
+            {
+                _logger.LogDebug("Search term received: '{SearchTerm}'", searchTerm);
+            }
 
             // If no search term, return gracefully paginated list as a sensible default
             if (string.IsNullOrWhiteSpace(searchTerm))
@@ -405,12 +415,13 @@ namespace Infrastructure.Services
                     SELECT * FROM catalog.""Species""
                     WHERE 
                         ""FtsVector"" @@ websearch_to_tsquery('simple', {searchTerm})
-                        OR similarity(""CommonName"", {searchTerm}) > 0.15
-                        OR similarity(""ScientificName"", {searchTerm}) > 0.15
+                        OR similarity(""CommonName"", {searchTerm}) > 0.1
+                        OR similarity(""ScientificName"", {searchTerm}) > 0.1
                     ORDER BY 
                     (
-                        COALESCE(ts_rank(""FtsVector"", websearch_to_tsquery('simple', {searchTerm})), 0) * 2.0
-                        + COALESCE(similarity(""CommonName"", {searchTerm}), 0)
+                        COALESCE(ts_rank(""FtsVector"", websearch_to_tsquery('simple', {searchTerm})), 0) * 3.0
+                        + COALESCE(similarity(""CommonName"", {searchTerm}), 0) * 1.5
+                        + COALESCE(similarity(""ScientificName"", {searchTerm}), 0)
                     ) DESC");
 
             var totalCount = await query.CountAsync(cancellationToken);

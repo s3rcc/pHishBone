@@ -360,6 +360,32 @@
             "no": "Không"
         }
     },
+    "TankBuilder": {
+        "title": "Trình Dựng Bể",
+        "subtitle": "Thiết kế và mô phỏng hệ sinh thái thủy sinh của bạn.",
+        "dimensionsSection": "1. Cài đặt Kích thước",
+        "speciesSection": "2. Xây dựng Hệ sinh thái",
+        "analysisSection": "Phân tích",
+        "length": "Chiều dài",
+        "width": "Chiều rộng",
+        "height": "Chiều cao",
+        "totalVolume": "Tổng Thể Tích Ước Tính:",
+        "liters": "Lít",
+        "emptyTank": "Bể của bạn đang trống. Hãy thêm vài loài sinh vật!",
+        "speciesCount": "{{count}} loài trong bể",
+        "addSpecies": "Thêm Loài",
+        "searchSpecies": "Tìm Kiếm Loài",
+        "searchPlaceholder": "VD: Cá Neon...",
+        "noResults": "Không tìm thấy loài nào.",
+        "addSpeciesToAnalyze": "Thêm loài vào bể để xem phân tích.",
+        "bioLoadCapacity": "Tải Sinh Học",
+        "statusSafe": "Mức An Toàn",
+        "statusWarning": "Gần Đạt Ngưỡng",
+        "statusOverstocked": "Quá Tải!",
+        "safeRanges": "Môi Trường Mục Tiêu",
+        "noEnvironmentOverlap": "NGUY HIỂM: Các loài đã chọn yêu cầu thông số nước (pH/Nhiệt độ) xung đột và không thể sống chung trong cùng một môi trường.",
+        "compatibilityIssues": "Cảnh Báo Tương Thích"
+    },
     "Errors": {
         "goHome": "Về Trang Chủ",
         "NotFound": {

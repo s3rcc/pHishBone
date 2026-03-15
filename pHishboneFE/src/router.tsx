@@ -41,6 +41,11 @@ const SpeciesDetailPage = lazy(() =>
     import('./features/public-catalog').then((m) => ({ default: m.SpeciesDetailPage })),
 );
 
+// ─── Tank Builder (lazy) ──────────────────────────────────────────────────────
+const TankBuilderDashboard = lazy(() =>
+    import('./features/tank-builder').then((m) => ({ default: m.TankBuilderDashboard })),
+);
+
 // ─── Root Route ───────────────────────────────────────────────────────────────
 const rootRoute = createRootRoute({
     component: () => (
@@ -194,7 +199,18 @@ const exploreDetailRoute = createRoute({
     },
 });
 
+const tankBuilderRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/tank-builder',
+    component: () => (
+        <Suspense fallback={<SuspenseLoader />}>
+            <TankBuilderDashboard />
+        </Suspense>
+    ),
+});
+
 const unauthorizedRoute = createRoute({
+
     getParentRoute: () => rootRoute,
     path: '/401',
     component: () => (
@@ -213,6 +229,7 @@ const routeTree = rootRoute.addChildren([
     unauthorizedRoute,
     exploreRoute,
     exploreDetailRoute,
+    tankBuilderRoute,
     catalogRoute.addChildren([
         catalogSpeciesRoute,
         catalogSpeciesCreateRoute,
