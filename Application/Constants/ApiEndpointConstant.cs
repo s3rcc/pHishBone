@@ -66,6 +66,7 @@ namespace Application.Constants
             public const string Update = "{tankId}";
             public const string Delete = "{tankId}";
             public const string LatestSnapshot = "{tankId}/snapshot";
+            public const string Analysis = "{tankId}/analysis";
         }
 
         public static class TankItem

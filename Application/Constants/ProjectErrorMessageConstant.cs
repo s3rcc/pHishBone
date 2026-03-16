@@ -19,5 +19,6 @@ namespace Application.Constants
         public const string SpeciesNotFoundInCatalog = "The specified species does not exist in the catalog.";
         public const string ProductNotFoundInCatalog = "The specified product does not exist in the catalog.";
         public const string AllUploadsFailedMessage = "All image uploads failed. Please try again.";
+        public const string SpeciesDataIncompleteForAnalysis = "Species data is incomplete for analysis.";
     }
 }
