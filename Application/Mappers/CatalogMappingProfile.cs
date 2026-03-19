@@ -141,6 +141,23 @@ namespace Application.Mappers
 
             // SpeciesImage mappings
             CreateMap<SpeciesImage, DTOs.ImageDTOs.ImageResponseDto>();
+
+            // CompatibilityRule mappings
+            CreateMap<CompatibilityRule, CompatibilityRuleDto>()
+                .ForMember(dest => dest.SubjectTagName, opt => opt.MapFrom(src => src.SubjectTag.Name))
+                .ForMember(dest => dest.ObjectTagName, opt => opt.MapFrom(src => src.ObjectTag.Name))
+                .ForMember(dest => dest.Severity, opt => opt.MapFrom(src => src.Severity.ToString()));
+
+            CreateMap<CreateCompatibilityRuleDto, CompatibilityRule>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedTime, opt => opt.Ignore())
+                .ForMember(dest => dest.LastUpdatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.LastUpdatedTime, opt => opt.Ignore())
+                .ForMember(dest => dest.DeletedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.DeletedTime, opt => opt.Ignore())
+                .ForMember(dest => dest.SubjectTag, opt => opt.Ignore())
+                .ForMember(dest => dest.ObjectTag, opt => opt.Ignore());
         }
     }
 }

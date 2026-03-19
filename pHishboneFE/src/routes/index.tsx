@@ -102,7 +102,7 @@ export default function HomePage() {
                         <Button
                             variant="contained"
                             size="large"
-                            onClick={() => navigate({ to: '/' })}
+                            onClick={() => navigate({ to: '/tank-builder' })}
                             sx={{
                                 px: 4,
                                 py: 1.75,

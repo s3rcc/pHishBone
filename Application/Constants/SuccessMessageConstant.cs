@@ -65,6 +65,14 @@ namespace Application.Constants
         public const string ImagesRetrievedSuccessfully = "Images retrieved successfully";
         public const string ThumbnailSetSuccessfully = "Thumbnail set successfully";
         #endregion Images
+
+        #region Catalog - CompatibilityRule
+        public const string RuleRetrievedSuccessfully = "Compatibility rule retrieved successfully";
+        public const string RulesRetrievedSuccessfully = "Compatibility rules retrieved successfully";
+        public const string RuleCreatedSuccessfully = "Compatibility rule created successfully";
+        public const string RuleUpdatedSuccessfully = "Compatibility rule updated successfully";
+        public const string RuleDeletedSuccessfully = "Compatibility rule deleted successfully";
+        #endregion Catalog - CompatibilityRule
     }
 }
 

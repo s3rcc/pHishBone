@@ -45,6 +45,14 @@ namespace Application.Constants
         public const string FileRequired = "Image file is required";
         public const string AllUploadsFailedMessage = "All image uploads failed. Please try again.";
         #endregion Image Errors
+
+        #region CompatibilityRule Errors
+        public const string RuleNotFound = "Compatibility rule not found.";
+        public const string RuleSelfReference = "A tag cannot have a compatibility rule with itself. Subject and object tags must be different.";
+        public const string RuleDuplicate = "A compatibility rule between these two tags already exists (in either direction). Consider updating the existing rule instead.";
+        public const string RuleSubjectTagNotFound = "The specified subject tag does not exist.";
+        public const string RuleObjectTagNotFound = "The specified object tag does not exist.";
+        #endregion CompatibilityRule Errors
     }
 }
 

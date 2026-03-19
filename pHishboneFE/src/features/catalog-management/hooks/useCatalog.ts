@@ -1,12 +1,15 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { speciesApi, speciesImageApi, tagsApi, typesApi } from '../api/catalogApi';
+import { speciesApi, speciesImageApi, tagsApi, typesApi, compatibilityRuleApi } from '../api/catalogApi';
 import type {
+    CompatibilityRuleFilter,
+    CreateCompatibilityRulePayload,
     CreateSpeciesPayload,
     CreateTagPayload,
     CreateTypePayload,
     SpeciesFilter,
     TagFilter,
     TypeFilter,
+    UpdateCompatibilityRulePayload,
     UpdateSpeciesPayload,
     UpdateTagPayload,
     UpdateTypePayload,
@@ -22,6 +25,7 @@ export const CATALOG_KEYS = {
     typesPaginated: (filter: TypeFilter) => ['catalog', 'types', 'paginated', filter] as const,
     tagsList: ['catalog', 'tags', 'list'] as const,
     tagsPaginated: (filter: TagFilter) => ['catalog', 'tags', 'paginated', filter] as const,
+    rulesPaginated: (filter: CompatibilityRuleFilter) => ['catalog', 'rules', 'paginated', filter] as const,
 } as const;
 
 // ─── Species Queries ──────────────────────────────────────────────────────────
@@ -212,5 +216,41 @@ export function useDeleteTag() {
     return useMutation({
         mutationFn: (id: string) => tagsApi.delete(id),
         onSuccess: () => { void qc.invalidateQueries({ queryKey: ['catalog', 'tags'] }); },
+    });
+}
+
+// ─── Compatibility Rule Queries ───────────────────────────────────────────────
+
+export function useCompatibilityRulesPaginated(filter: CompatibilityRuleFilter) {
+    return useSuspenseQuery({
+        queryKey: CATALOG_KEYS.rulesPaginated(filter),
+        queryFn: () => compatibilityRuleApi.getPaginated(filter),
+    });
+}
+
+// ─── Compatibility Rule Mutations ─────────────────────────────────────────────
+
+export function useCreateCompatibilityRule() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (payload: CreateCompatibilityRulePayload) => compatibilityRuleApi.create(payload),
+        onSuccess: () => { void qc.invalidateQueries({ queryKey: ['catalog', 'rules'] }); },
+    });
+}
+
+export function useUpdateCompatibilityRule() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, payload }: { id: string; payload: UpdateCompatibilityRulePayload }) =>
+            compatibilityRuleApi.update(id, payload),
+        onSuccess: () => { void qc.invalidateQueries({ queryKey: ['catalog', 'rules'] }); },
+    });
+}
+
+export function useDeleteCompatibilityRule() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (id: string) => compatibilityRuleApi.delete(id),
+        onSuccess: () => { void qc.invalidateQueries({ queryKey: ['catalog', 'rules'] }); },
     });
 }

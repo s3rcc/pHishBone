@@ -20,6 +20,11 @@ namespace Application.Common.Interfaces
         Task<SpeciesDetailDto> GetDetailByIdAsync(string id);
 
         /// <summary>
+        /// Get full species details by slug for public catalog SEO-friendly URLs.
+        /// </summary>
+        Task<SpeciesDetailDto> GetDetailBySlugAsync(string slug);
+
+        /// <summary>
         /// Get all species as a basic list.
         /// </summary>
         Task<ICollection<SpeciesDto>> GetListAsync();
@@ -51,8 +56,8 @@ namespace Application.Common.Interfaces
         /// <summary>
         /// Performs a bilingual hybrid search combining FTS (simple dictionary) and Trigram similarity.
         /// Handles exact matches, Vietnamese text, scientific names, and typos in a single query.
-        /// Returns up to 20 results ranked by relevance (FTS score weighted 2x over trigram).
+        /// Returns paginated results ranked by relevance (FTS score weighted 2x over trigram).
         /// </summary>
-        Task<List<SpeciesDto>> SearchHybridAsync(string searchTerm, CancellationToken cancellationToken = default);
+        Task<PaginationResponse<SpeciesDto>> SearchHybridAsync(SpeciesFilterDto filter, CancellationToken cancellationToken = default);
     }
 }

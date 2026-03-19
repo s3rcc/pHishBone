@@ -29,6 +29,22 @@ const TagsPage = lazy(() =>
 const TypesPage = lazy(() =>
     import('./features/catalog-management').then((m) => ({ default: m.TypesPage })),
 );
+const CompatibilityRulesPage = lazy(() =>
+    import('./features/catalog-management').then((m) => ({ default: m.CompatibilityRulesPage })),
+);
+
+// ─── Public Catalog (lazy) ────────────────────────────────────────────────────
+const CatalogPage = lazy(() =>
+    import('./features/public-catalog').then((m) => ({ default: m.CatalogPage })),
+);
+const SpeciesDetailPage = lazy(() =>
+    import('./features/public-catalog').then((m) => ({ default: m.SpeciesDetailPage })),
+);
+
+// ─── Tank Builder (lazy) ──────────────────────────────────────────────────────
+const TankBuilderDashboard = lazy(() =>
+    import('./features/tank-builder').then((m) => ({ default: m.TankBuilderDashboard })),
+);
 
 // ─── Root Route ───────────────────────────────────────────────────────────────
 const rootRoute = createRootRoute({
@@ -149,7 +165,52 @@ const catalogTypesRoute = createRoute({
     ),
 });
 
+const catalogCompatibilityRoute = createRoute({
+    getParentRoute: () => catalogRoute,
+    path: '/compatibility',
+    component: () => (
+        <Suspense fallback={<SuspenseLoader />}>
+            <CompatibilityRulesPage />
+        </Suspense>
+    ),
+});
+
+// ─── Public Catalog Routes ────────────────────────────────────────────────────
+const exploreRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/explore',
+    component: () => (
+        <Suspense fallback={<SuspenseLoader />}>
+            <CatalogPage />
+        </Suspense>
+    ),
+});
+
+const exploreDetailRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/explore/$slug',
+    component: function ExploreDetailRoute() {
+        const { slug } = exploreDetailRoute.useParams();
+        return (
+            <Suspense fallback={<SuspenseLoader />}>
+                <SpeciesDetailPage slug={slug} />
+            </Suspense>
+        );
+    },
+});
+
+const tankBuilderRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/tank-builder',
+    component: () => (
+        <Suspense fallback={<SuspenseLoader />}>
+            <TankBuilderDashboard />
+        </Suspense>
+    ),
+});
+
 const unauthorizedRoute = createRoute({
+
     getParentRoute: () => rootRoute,
     path: '/401',
     component: () => (
@@ -166,12 +227,16 @@ const routeTree = rootRoute.addChildren([
     registerRoute,
     profileRoute,
     unauthorizedRoute,
+    exploreRoute,
+    exploreDetailRoute,
+    tankBuilderRoute,
     catalogRoute.addChildren([
         catalogSpeciesRoute,
         catalogSpeciesCreateRoute,
         catalogSpeciesEditRoute,
         catalogTagsRoute,
         catalogTypesRoute,
+        catalogCompatibilityRoute,
     ]),
 ]);
 

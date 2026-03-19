@@ -228,3 +228,36 @@ export interface ImageResponseDto {
     sortOrder: number;
     createdTime: string;
 }
+
+// ─── Compatibility Rule DTOs ─────────────────────────────────────────────────
+
+export interface CompatibilityRuleDto {
+    id: string;
+    subjectTagId: string;
+    subjectTagName: string;
+    objectTagId: string;
+    objectTagName: string;
+    severity: string;
+    message: string;
+    createdTime: string;
+}
+
+export interface CompatibilityRuleFilter {
+    page?: number;
+    size?: number;
+    searchTerm?: string;
+    sortBy?: string;
+    isAscending?: boolean;
+}
+
+export interface CreateCompatibilityRulePayload {
+    subjectTagId: string;
+    objectTagId: string;
+    severity: string;
+    message: string;
+}
+
+export interface UpdateCompatibilityRulePayload {
+    severity: string;
+    message: string;
+}
