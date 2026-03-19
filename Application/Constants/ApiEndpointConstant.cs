@@ -107,6 +107,12 @@ namespace Application.Constants
             public const string Update = "{id}";
             public const string Delete = "{id}";
         }
+
+        public static class GuestTank
+        {
+            public const string Base = "api/guest/tanks";
+            public const string Analysis = "analysis";
+        }
     }
 }
 

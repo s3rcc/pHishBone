@@ -74,6 +74,10 @@ namespace Application.Constants
         public const string RuleUpdatedSuccessfully = "Compatibility rule updated successfully";
         public const string RuleDeletedSuccessfully = "Compatibility rule deleted successfully";
         #endregion Catalog - CompatibilityRule
+
+        #region Guest
+        public const string GuestTankAnalysisRetrievedSuccessfully = "Guest tank analysis retrieved successfully";
+        #endregion Guest
     }
 }
 

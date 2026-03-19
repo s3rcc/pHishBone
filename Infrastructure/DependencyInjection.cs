@@ -89,6 +89,7 @@ namespace Infrastructure
             services.AddScoped<ITankService, TankService>();
             services.AddScoped<ITankItemService, TankItemService>();
             services.AddScoped<ITankAnalysisService, TankAnalysisService>();
+            services.AddScoped<IGuestTankAnalysisService, GuestTankAnalysisService>();
             services.AddScoped<ISpeciesImageService, SpeciesImageService>();
             services.AddScoped<ITankImageService, TankImageService>();
             services.AddScoped<IPhotoService, PhotoService>();
