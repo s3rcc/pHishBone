@@ -17,15 +17,18 @@ namespace pHishbone.Controllers
     public class TankController : ControllerBase
     {
         private readonly ITankService _tankService;
+        private readonly ITankAnalysisService _tankAnalysisService;
         private readonly ICurrentUserService _currentUserService;
         private readonly ILogger<TankController> _logger;
 
         public TankController(
             ITankService tankService,
+            ITankAnalysisService tankAnalysisService,
             ICurrentUserService currentUserService,
             ILogger<TankController> logger)
         {
             _tankService = tankService;
+            _tankAnalysisService = tankAnalysisService;
             _currentUserService = currentUserService;
             _logger = logger;
         }
@@ -145,6 +148,25 @@ namespace pHishbone.Controllers
             }
 
             return Ok(ApiResponse<TankSnapshotResponseDto>.Success(snapshot, "Snapshot retrieved successfully."));
+        }
+
+        /// <summary>
+        /// Get a real-time analysis report for a tank.
+        /// </summary>
+        [HttpGet(ApiEndpointConstant.Tank.Analysis)]
+        [ProducesResponseType(typeof(ApiResponse<TankAnalysisReportDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> GetTankAnalysis([FromRoute] string tankId, CancellationToken cancellationToken)
+        {
+            var userId = _currentUserService.GetUserId();
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+
+            var report = await _tankAnalysisService.GetTankAnalysisAsync(tankId, userId, cancellationToken);
+            return Ok(ApiResponse<TankAnalysisReportDto>.Success(report, SuccessMessageConstant.TankAnalysisRetrievedSuccessfully));
         }
     }
 }

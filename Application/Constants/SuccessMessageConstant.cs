@@ -57,6 +57,7 @@ namespace Application.Constants
         public const string TankItemAddedSuccessfully = "Item added to tank successfully";
         public const string TankItemUpdatedSuccessfully = "Tank item updated successfully";
         public const string TankItemRemovedSuccessfully = "Item removed from tank successfully";
+        public const string TankAnalysisRetrievedSuccessfully = "Tank analysis retrieved successfully";
         #endregion Project - Tank
 
         #region Images
@@ -73,6 +74,10 @@ namespace Application.Constants
         public const string RuleUpdatedSuccessfully = "Compatibility rule updated successfully";
         public const string RuleDeletedSuccessfully = "Compatibility rule deleted successfully";
         #endregion Catalog - CompatibilityRule
+
+        #region Guest
+        public const string GuestTankAnalysisRetrievedSuccessfully = "Guest tank analysis retrieved successfully";
+        #endregion Guest
     }
 }
 
