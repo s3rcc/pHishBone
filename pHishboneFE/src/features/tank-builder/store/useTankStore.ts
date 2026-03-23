@@ -1,78 +1,184 @@
 import { create } from 'zustand';
-import type { TankDimensions, TankItem } from '../types';
-import type { SpeciesDto } from '../../catalog-management/types';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import {
+    appendSceneFishInstance,
+    clampSceneFishToDimensions,
+    reconcileSceneFish,
+    removeSceneFishInstances,
+} from '../helpers/scene';
+import type {
+    TankDimensions,
+    TankSceneFishInstance,
+    TankSceneViewMode,
+    TankSpeciesDraft,
+} from '../types';
 
 interface TankStoreState {
     dimensions: TankDimensions;
-    items: TankItem[];
-    
-    // Derived value
+    inventory: TankSpeciesDraft[];
+    sceneFish: TankSceneFishInstance[];
+    viewMode: TankSceneViewMode;
+    selectedSpeciesId: string | null;
     getVolumeLiters: () => number;
-
-    // Actions
     setDimensions: (dimensions: Partial<TankDimensions>) => void;
-    addSpecies: (species: SpeciesDto, defaultQuantity?: number) => void;
+    upsertSpecies: (item: TankSpeciesDraft) => void;
+    incrementSpecies: (speciesId: string) => void;
+    decrementSpecies: (speciesId: string) => void;
     removeSpecies: (speciesId: string) => void;
-    updateQuantity: (speciesId: string, quantity: number) => void;
-    resetTank: () => void;
+    selectSpecies: (speciesId: string | null) => void;
+    setViewMode: (viewMode: TankSceneViewMode) => void;
+    syncSceneFish: () => void;
+    clearDraft: () => void;
 }
 
 const DEFAULT_DIMENSIONS: TankDimensions = {
-    length: 100,
-    width: 50,
-    height: 50,
+    length: 90,
+    width: 45,
+    height: 45,
 };
 
-export const useTankStore = create<TankStoreState>((set, get) => ({
+const DEFAULT_STATE = {
     dimensions: DEFAULT_DIMENSIONS,
-    items: [],
+    inventory: [] as TankSpeciesDraft[],
+    sceneFish: [] as TankSceneFishInstance[],
+    viewMode: '3d' as TankSceneViewMode,
+    selectedSpeciesId: null as string | null,
+};
 
-    getVolumeLiters: () => {
-        const { length, width, height } = get().dimensions;
-        // cm^3 to Liters = divide by 1000
-        return (length * width * height) / 1000;
-    },
+export const useTankStore = create<TankStoreState>()(
+    persist(
+        (set, get) => ({
+            ...DEFAULT_STATE,
+            getVolumeLiters: () => {
+                const { length, width, height } = get().dimensions;
+                return (length * width * height) / 1000;
+            },
+            setDimensions: (nextDimensions) =>
+                set((state) => ({
+                    ...(() => {
+                        const dimensions = {
+                            ...state.dimensions,
+                            ...nextDimensions,
+                        };
 
-    setDimensions: (newDimensions) =>
-        set((state) => ({
-            dimensions: { ...state.dimensions, ...newDimensions },
-        })),
+                        return {
+                            dimensions,
+                            sceneFish: state.sceneFish.map((entry) => {
+                                const species = state.inventory.find((item) => item.speciesId === entry.speciesId);
 
-    addSpecies: (species, defaultQuantity = 1) =>
-        set((state) => {
-            const existing = state.items.find((i) => i.speciesId === species.id);
-            if (existing) {
-                return {
-                    items: state.items.map((i) =>
-                        i.speciesId === species.id
-                            ? { ...i, quantity: i.quantity + defaultQuantity }
-                            : i,
-                    ),
-                };
-            }
-            return {
-                items: [...state.items, { speciesId: species.id, quantity: defaultQuantity, species }],
-            };
+                                return species
+                                    ? clampSceneFishToDimensions(entry, species.swimLevel, dimensions)
+                                    : entry;
+                            }),
+                        };
+                    })(),
+                })),
+            upsertSpecies: (item) =>
+                set((state) => {
+                    const existing = state.inventory.find((entry) => entry.speciesId === item.speciesId);
+
+                    if (existing) {
+                        return {
+                            inventory: state.inventory.map((entry) =>
+                                entry.speciesId === item.speciesId
+                                    ? { ...entry, quantity: entry.quantity + 1 }
+                                    : entry,
+                            ),
+                            sceneFish: appendSceneFishInstance(
+                                state.sceneFish,
+                                item.speciesId,
+                                item.swimLevel,
+                                state.dimensions,
+                            ),
+                            selectedSpeciesId: item.speciesId,
+                        };
+                    }
+
+                    return {
+                        inventory: [...state.inventory, item],
+                        sceneFish: appendSceneFishInstance(
+                            state.sceneFish,
+                            item.speciesId,
+                            item.swimLevel,
+                            state.dimensions,
+                        ),
+                        selectedSpeciesId: item.speciesId,
+                    };
+                }),
+            incrementSpecies: (speciesId) =>
+                set((state) => {
+                    const species = state.inventory.find((entry) => entry.speciesId === speciesId);
+
+                    if (!species) {
+                        return state;
+                    }
+
+                    return {
+                        inventory: state.inventory.map((entry) =>
+                            entry.speciesId === speciesId
+                                ? { ...entry, quantity: entry.quantity + 1 }
+                                : entry,
+                        ),
+                        sceneFish: appendSceneFishInstance(
+                            state.sceneFish,
+                            speciesId,
+                            species.swimLevel,
+                            state.dimensions,
+                        ),
+                        selectedSpeciesId: speciesId,
+                    };
+                }),
+            decrementSpecies: (speciesId) =>
+                set((state) => {
+                    const nextInventory = state.inventory
+                        .map((entry) =>
+                            entry.speciesId === speciesId
+                                ? { ...entry, quantity: entry.quantity - 1 }
+                                : entry,
+                        )
+                        .filter((entry) => entry.quantity > 0);
+
+                    return {
+                        inventory: nextInventory,
+                        sceneFish: removeSceneFishInstances(state.sceneFish, speciesId, 1),
+                        selectedSpeciesId:
+                            state.selectedSpeciesId === speciesId && !nextInventory.some((entry) => entry.speciesId === speciesId)
+                                ? null
+                                : state.selectedSpeciesId,
+                    };
+                }),
+            removeSpecies: (speciesId) =>
+                set((state) => ({
+                    inventory: state.inventory.filter((entry) => entry.speciesId !== speciesId),
+                    sceneFish: state.sceneFish.filter((entry) => entry.speciesId !== speciesId),
+                    selectedSpeciesId: state.selectedSpeciesId === speciesId ? null : state.selectedSpeciesId,
+                })),
+            selectSpecies: (speciesId) =>
+                set({
+                    selectedSpeciesId: speciesId,
+                }),
+            setViewMode: (viewMode) =>
+                set({
+                    viewMode,
+                }),
+            syncSceneFish: () =>
+                set((state) => ({
+                    sceneFish: reconcileSceneFish(state.sceneFish, state.inventory, state.dimensions),
+                })),
+            clearDraft: () =>
+                set({
+                    ...DEFAULT_STATE,
+                }),
         }),
-
-    removeSpecies: (speciesId) =>
-        set((state) => ({
-            items: state.items.filter((i) => i.speciesId !== speciesId),
-        })),
-
-    updateQuantity: (speciesId, quantity) =>
-        set((state) => {
-            if (quantity <= 0) {
-                return {
-                    items: state.items.filter((i) => i.speciesId !== speciesId),
-                };
-            }
-            return {
-                items: state.items.map((i) =>
-                    i.speciesId === speciesId ? { ...i, quantity } : i,
-                ),
-            };
-        }),
-
-    resetTank: () => set({ dimensions: DEFAULT_DIMENSIONS, items: [] }),
-}));
+        {
+            name: 'phishbone-guest-tank-draft',
+            storage: createJSONStorage(() => localStorage),
+            partialize: (state) => ({
+                dimensions: state.dimensions,
+                inventory: state.inventory,
+                sceneFish: state.sceneFish,
+                viewMode: state.viewMode,
+            }),
+        },
+    ),
+);
