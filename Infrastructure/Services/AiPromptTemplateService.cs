@@ -15,30 +15,25 @@ namespace Infrastructure.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ICurrentUserService _currentUserService;
-        private readonly IAdminAuthorizationService _adminAuthorizationService;
 
         public AiPromptTemplateService(
             IUnitOfWork unitOfWork,
             IMapper mapper,
-            ICurrentUserService currentUserService,
-            IAdminAuthorizationService adminAuthorizationService)
+            ICurrentUserService currentUserService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _currentUserService = currentUserService;
-            _adminAuthorizationService = adminAuthorizationService;
         }
 
         public async Task<AiPromptTemplateDto> GetByIdAsync(string id, CancellationToken cancellationToken = default)
         {
-            await _adminAuthorizationService.EnsureCurrentUserIsAdminAsync(cancellationToken);
             var entity = await GetEntityByIdAsync(id);
             return _mapper.Map<AiPromptTemplateDto>(entity);
         }
 
         public async Task<ICollection<AiPromptTemplateDto>> GetListAsync(CancellationToken cancellationToken = default)
         {
-            await _adminAuthorizationService.EnsureCurrentUserIsAdminAsync(cancellationToken);
             var items = await _unitOfWork.Repository<AiPromptTemplate>().GetListAsync(
                 predicate: x => x.DeletedTime == null,
                 orderBy: q => q.OrderBy(x => x.Name)
@@ -49,7 +44,6 @@ namespace Infrastructure.Services
 
         public async Task<PaginationResponse<AiPromptTemplateDto>> GetPaginatedListAsync(AiPromptTemplateFilterDto filter, CancellationToken cancellationToken = default)
         {
-            await _adminAuthorizationService.EnsureCurrentUserIsAdminAsync(cancellationToken);
             var paging = await _unitOfWork.Repository<AiPromptTemplate>().GetPagingListAsync(
                 predicate: BuildFilterPredicate(filter),
                 page: filter.Page,
@@ -70,7 +64,6 @@ namespace Infrastructure.Services
 
         public async Task<AiPromptTemplateDto> CreateAsync(CreateAiPromptTemplateDto dto, CancellationToken cancellationToken = default)
         {
-            await _adminAuthorizationService.EnsureCurrentUserIsAdminAsync(cancellationToken);
             Normalize(dto);
             await EnsurePromptNameUniquenessAsync(dto.Name, null);
 
@@ -90,7 +83,6 @@ namespace Infrastructure.Services
 
         public async Task<AiPromptTemplateDto> UpdateAsync(string id, UpdateAiPromptTemplateDto dto, CancellationToken cancellationToken = default)
         {
-            await _adminAuthorizationService.EnsureCurrentUserIsAdminAsync(cancellationToken);
             Normalize(dto);
 
             var entity = await GetEntityByIdAsync(id);
@@ -122,8 +114,6 @@ namespace Infrastructure.Services
 
         public async Task DeleteAsync(string id, CancellationToken cancellationToken = default)
         {
-            await _adminAuthorizationService.EnsureCurrentUserIsAdminAsync(cancellationToken);
-
             var entity = await GetEntityByIdAsync(id);
             entity.DeletedBy = _currentUserService.GetUserId();
             entity.DeletedTime = DateTime.UtcNow;

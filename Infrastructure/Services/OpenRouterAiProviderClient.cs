@@ -5,13 +5,14 @@ using Domain.Exceptions;
 using Infrastructure.Settings;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.AI;
-using Microsoft.Extensions.AI.OpenAI;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OpenAI;
-using OpenAI.Chat;
 using System.ClientModel;
 using System.Text.Json;
+using MicrosoftChatMessage = Microsoft.Extensions.AI.ChatMessage;
+using MicrosoftChatRole = Microsoft.Extensions.AI.ChatRole;
+using OpenAiChatClient = OpenAI.Chat.ChatClient;
 
 namespace Infrastructure.Services
 {
@@ -65,8 +66,8 @@ namespace Infrastructure.Services
 
                 var messages = new[]
                 {
-                    new ChatMessage(ChatRole.System, systemPrompt),
-                    new ChatMessage(ChatRole.User, userPrompt)
+                    new MicrosoftChatMessage(MicrosoftChatRole.System, systemPrompt),
+                    new MicrosoftChatMessage(MicrosoftChatRole.User, userPrompt)
                 };
 
                 using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -122,7 +123,7 @@ namespace Infrastructure.Services
             };
 
             var openAiClient = new OpenAIClient(new ApiKeyCredential(settings.ApiKey), options);
-            ChatClient chatClient = openAiClient.GetChatClient(modelId);
+            OpenAiChatClient chatClient = openAiClient.GetChatClient(modelId);
             return chatClient.AsIChatClient();
         }
     }

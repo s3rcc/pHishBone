@@ -20,7 +20,6 @@ namespace Application.Constants
         public const string AiPromptDisabled = "The active AI prompt for this use case is disabled.";
         public const string AiPromptActiveMissing = "No active AI prompt is configured for this use case.";
         public const string AiPromptActiveRequiresEnabled = "An active prompt must also be enabled.";
-        public const string AiUnauthorizedAdminOnly = "This action is restricted to administrators.";
         public const string AiProviderNotConfigured = "The AI provider is not configured correctly.";
         public const string AiProviderUnsupported = "The selected AI provider is not supported.";
         public const string AiResponseEmpty = "The AI provider returned an empty response.";

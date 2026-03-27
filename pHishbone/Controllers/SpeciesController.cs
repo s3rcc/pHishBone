@@ -5,7 +5,6 @@ using Application.DTOs.AiDTOs;
 using Application.DTOs.CatalogDTOs;
 using Application.DTOs.ImageDTOs;
 using Application.Services;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 namespace pHishbone.Controllers
 {
@@ -105,7 +104,6 @@ namespace pHishbone.Controllers
         /// Generate preview-only fish information using the configured AI provider.
         /// Returns an existing species when an exact common or scientific name match already exists.
         /// </summary>
-        [Authorize]
         [HttpPost(ApiEndpointConstant.Species.GenerateFishInformation)]
         [ProducesResponseType(typeof(ApiResponse<AiFishInformationResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]

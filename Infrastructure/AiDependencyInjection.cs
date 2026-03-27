@@ -23,7 +23,6 @@ namespace Infrastructure
                 }
             });
 
-            services.AddScoped<IAdminAuthorizationService, AdminAuthorizationService>();
             services.AddScoped<IAiModelConfigService, AiModelConfigService>();
             services.AddScoped<IAiPromptTemplateService, AiPromptTemplateService>();
             services.AddScoped<IAiFishInformationService, AiFishInformationService>();

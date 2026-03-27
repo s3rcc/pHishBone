@@ -2,13 +2,11 @@ using Application.Common;
 using Application.Common.Interfaces;
 using Application.Constants;
 using Application.DTOs.AiDTOs;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace pHishbone.Controllers
 {
     [ApiController]
-    [Authorize]
     [Route(ApiEndpointConstant.AiModelAdmin.Base)]
     public class AiModelController : ControllerBase
     {

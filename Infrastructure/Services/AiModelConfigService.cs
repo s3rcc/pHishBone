@@ -15,30 +15,25 @@ namespace Infrastructure.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ICurrentUserService _currentUserService;
-        private readonly IAdminAuthorizationService _adminAuthorizationService;
 
         public AiModelConfigService(
             IUnitOfWork unitOfWork,
             IMapper mapper,
-            ICurrentUserService currentUserService,
-            IAdminAuthorizationService adminAuthorizationService)
+            ICurrentUserService currentUserService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _currentUserService = currentUserService;
-            _adminAuthorizationService = adminAuthorizationService;
         }
 
         public async Task<AiModelConfigDto> GetByIdAsync(string id, CancellationToken cancellationToken = default)
         {
-            await _adminAuthorizationService.EnsureCurrentUserIsAdminAsync(cancellationToken);
             var entity = await GetEntityByIdAsync(id);
             return _mapper.Map<AiModelConfigDto>(entity);
         }
 
         public async Task<ICollection<AiModelConfigDto>> GetListAsync(CancellationToken cancellationToken = default)
         {
-            await _adminAuthorizationService.EnsureCurrentUserIsAdminAsync(cancellationToken);
             var items = await _unitOfWork.Repository<AiModelConfig>().GetListAsync(
                 predicate: x => x.DeletedTime == null,
                 orderBy: q => q.OrderBy(x => x.DisplayName)
@@ -49,7 +44,6 @@ namespace Infrastructure.Services
 
         public async Task<PaginationResponse<AiModelConfigDto>> GetPaginatedListAsync(AiModelConfigFilterDto filter, CancellationToken cancellationToken = default)
         {
-            await _adminAuthorizationService.EnsureCurrentUserIsAdminAsync(cancellationToken);
             var paging = await _unitOfWork.Repository<AiModelConfig>().GetPagingListAsync(
                 predicate: BuildFilterPredicate(filter),
                 page: filter.Page,
@@ -80,7 +74,6 @@ namespace Infrastructure.Services
 
         public async Task<AiModelConfigDto> CreateAsync(CreateAiModelConfigDto dto, CancellationToken cancellationToken = default)
         {
-            await _adminAuthorizationService.EnsureCurrentUserIsAdminAsync(cancellationToken);
             Normalize(dto);
             await EnsureModelUniquenessAsync(dto.DisplayName, dto.ProviderModelId, dto.Provider, null);
 
@@ -95,7 +88,6 @@ namespace Infrastructure.Services
 
         public async Task<AiModelConfigDto> UpdateAsync(string id, UpdateAiModelConfigDto dto, CancellationToken cancellationToken = default)
         {
-            await _adminAuthorizationService.EnsureCurrentUserIsAdminAsync(cancellationToken);
             Normalize(dto);
 
             var entity = await GetEntityByIdAsync(id);
@@ -113,8 +105,6 @@ namespace Infrastructure.Services
 
         public async Task DeleteAsync(string id, CancellationToken cancellationToken = default)
         {
-            await _adminAuthorizationService.EnsureCurrentUserIsAdminAsync(cancellationToken);
-
             var entity = await GetEntityByIdAsync(id);
             entity.DeletedBy = _currentUserService.GetUserId();
             entity.DeletedTime = DateTime.UtcNow;
