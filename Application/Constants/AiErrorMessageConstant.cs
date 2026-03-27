@@ -22,6 +22,8 @@ namespace Application.Constants
         public const string AiPromptActiveRequiresEnabled = "An active prompt must also be enabled.";
         public const string AiProviderNotConfigured = "The AI provider is not configured correctly.";
         public const string AiProviderUnsupported = "The selected AI provider is not supported.";
+        public const string AiProviderModelUnavailable = "The selected provider model could not be found or is not available.";
+        public const string AiProviderRequestFailed = "The AI provider request failed.";
         public const string AiResponseEmpty = "The AI provider returned an empty response.";
         public const string AiResponseMalformed = "The AI provider returned malformed structured data.";
         public const string AiRequestTimedOut = "The AI provider request timed out.";

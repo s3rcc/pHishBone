@@ -34,9 +34,11 @@ namespace Infrastructure.Persistence.Configurations.Ai
                 .HasMaxLength(1000);
 
             builder.HasIndex(x => x.DisplayName)
+                .HasFilter("\"DeletedTime\" IS NULL")
                 .IsUnique();
 
             builder.HasIndex(x => new { x.Provider, x.ProviderModelId })
+                .HasFilter("\"DeletedTime\" IS NULL")
                 .IsUnique();
         }
     }

@@ -57,12 +57,9 @@ namespace Application.DTOs.AiDTOs
 
     public class AiFishInformationResponseDto
     {
-        public string Source { get; set; } = string.Empty;
-        public bool IsReadyForCreate { get; set; }
         public string ModelConfigId { get; set; } = string.Empty;
         public string? PromptTemplateId { get; set; }
         public SpeciesDetailDto? ExistingSpecies { get; set; }
         public AiGeneratedSpeciesDraftDto? GeneratedDraft { get; set; }
-        public List<AiGenerationIssueDto> Issues { get; set; } = new();
     }
 }

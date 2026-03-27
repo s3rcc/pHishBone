@@ -9,7 +9,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OpenAI;
 using System.ClientModel;
+using System.Diagnostics;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using MicrosoftChatMessage = Microsoft.Extensions.AI.ChatMessage;
 using MicrosoftChatRole = Microsoft.Extensions.AI.ChatRole;
 using OpenAiChatClient = OpenAI.Chat.ChatClient;
@@ -20,7 +22,8 @@ namespace Infrastructure.Services
     {
         private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web)
         {
-            PropertyNameCaseInsensitive = true
+            PropertyNameCaseInsensitive = true,
+            TypeInfoResolver = new DefaultJsonTypeInfoResolver()
         };
 
         private readonly AiProviderSettings _settings;
@@ -73,12 +76,22 @@ namespace Infrastructure.Services
                 using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 linkedCts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
 
+                var requestStopwatch = Stopwatch.StartNew();
                 var response = await client.GetResponseAsync<T>(
                     messages,
                     SerializerOptions,
                     options,
                     useJsonSchemaResponseFormat: false,
                     cancellationToken: linkedCts.Token);
+                requestStopwatch.Stop();
+
+                _logger.LogInformation(
+                    "OpenRouter structured output completed in {ElapsedMs} ms for model {ModelId}. MaxOutputTokens={MaxOutputTokens}, Temperature={Temperature}, TimeoutSeconds={TimeoutSeconds}",
+                    requestStopwatch.ElapsedMilliseconds,
+                    modelId,
+                    maxOutputTokens,
+                    temperature,
+                    timeoutSeconds);
 
                 return response.Result;
             }
@@ -100,6 +113,24 @@ namespace Infrastructure.Services
                     AiErrorMessageConstant.AiResponseMalformed
                 );
             }
+            catch (ClientResultException ex) when (ex.Status == 404)
+            {
+                _logger.LogError(ex, "OpenRouter could not find model {ModelId} at base URL {BaseUrl}", modelId, openRouter.BaseUrl);
+                throw new CustomErrorException(
+                    StatusCodes.Status502BadGateway,
+                    ErrorCode.FAILED,
+                    AiErrorMessageConstant.AiProviderModelUnavailable
+                );
+            }
+            catch (ClientResultException ex)
+            {
+                _logger.LogError(ex, "OpenRouter request failed for model {ModelId} with status code {StatusCode}", modelId, ex.Status);
+                throw new CustomErrorException(
+                    StatusCodes.Status502BadGateway,
+                    ErrorCode.FAILED,
+                    AiErrorMessageConstant.AiProviderRequestFailed
+                );
+            }
             catch (CustomErrorException)
             {
                 throw;
@@ -119,11 +150,10 @@ namespace Infrastructure.Services
         {
             var options = new OpenAIClientOptions
             {
-                Endpoint = new Uri(settings.BaseUrl.TrimEnd('/'))
+                Endpoint = new Uri(settings.BaseUrl.TrimEnd('/') + "/")
             };
 
-            var openAiClient = new OpenAIClient(new ApiKeyCredential(settings.ApiKey), options);
-            OpenAiChatClient chatClient = openAiClient.GetChatClient(modelId);
+            OpenAiChatClient chatClient = new(modelId, new ApiKeyCredential(settings.ApiKey), options);
             return chatClient.AsIChatClient();
         }
     }

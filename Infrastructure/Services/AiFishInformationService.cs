@@ -12,92 +12,105 @@ using Infrastructure.Common.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 
 namespace Infrastructure.Services
 {
     public class AiFishInformationService : IAiFishInformationService
     {
-        private const string ExistingCatalogSource = "ExistingCatalog";
-        private const string AiGeneratedSource = "AiGenerated";
+        //private const string ExistingCatalogSource = "ExistingCatalog";
+        //private const string AiGeneratedSource = "AiGenerated";
 
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILogger<AiFishInformationService> _logger;
         private readonly IEnumerable<IAiProviderClient> _providerClients;
-        private readonly IValidator<AiGeneratedSpeciesDraftDto> _draftValidator;
-        private readonly IValidator<CreateSpeciesDto> _createSpeciesValidator;
 
         public AiFishInformationService(
             IUnitOfWork unitOfWork,
             IMapper mapper,
             ILogger<AiFishInformationService> logger,
-            IEnumerable<IAiProviderClient> providerClients,
-            IValidator<AiGeneratedSpeciesDraftDto> draftValidator,
-            IValidator<CreateSpeciesDto> createSpeciesValidator)
+            IEnumerable<IAiProviderClient> providerClients)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _logger = logger;
             _providerClients = providerClients;
-            _draftValidator = draftValidator;
-            _createSpeciesValidator = createSpeciesValidator;
         }
 
         public async Task<AiFishInformationResponseDto> GenerateFishInformationAsync(GenerateFishInformationRequestDto dto, CancellationToken cancellationToken = default)
         {
+            var totalStopwatch = Stopwatch.StartNew();
             var normalizedFishName = NormalizeFishName(dto.FishName);
             _logger.LogInformation("Generating fish information for fish name {FishName} using model config {ModelConfigId}", normalizedFishName, dto.ModelConfigId);
 
+            var existingSpeciesStopwatch = Stopwatch.StartNew();
             var existingSpecies = await TryGetExistingSpeciesAsync(normalizedFishName);
+            existingSpeciesStopwatch.Stop();
+            _logger.LogInformation("Fish information stage ExistingSpeciesCheck completed in {ElapsedMs} ms", existingSpeciesStopwatch.ElapsedMilliseconds);
             if (existingSpecies != null)
             {
+                totalStopwatch.Stop();
+                _logger.LogInformation("Fish information request resolved from existing catalog in {ElapsedMs} ms", totalStopwatch.ElapsedMilliseconds);
                 return new AiFishInformationResponseDto
                 {
-                    Source = ExistingCatalogSource,
-                    IsReadyForCreate = false,
                     ModelConfigId = dto.ModelConfigId,
                     ExistingSpecies = _mapper.Map<SpeciesDetailDto>(existingSpecies)
                 };
             }
 
+            var dependencyLoadStopwatch = Stopwatch.StartNew();
             var modelConfig = await GetEnabledModelAsync(dto.ModelConfigId);
             var promptTemplate = await GetActivePromptAsync(AiPromptUseCase.FishInformation);
+            var vocabulary = await LoadVocabularyAsync();
+            dependencyLoadStopwatch.Stop();
+            _logger.LogInformation("Fish information stage DependencyLoad completed in {ElapsedMs} ms", dependencyLoadStopwatch.ElapsedMilliseconds);
+
             var providerClient = ResolveProviderClient(modelConfig.Provider);
 
-            var vocabulary = await LoadVocabularyAsync();
             var systemPrompt = BuildSystemPrompt(promptTemplate.SystemPrompt, vocabulary);
             var userPrompt = BuildUserPrompt(normalizedFishName);
+            var effectiveMaxOutputTokens = modelConfig.MaxOutputTokens;
+            _logger.LogInformation(
+                "Fish information AI request prepared for provider {Provider} model {ModelId}. MaxOutputTokens={MaxOutputTokens}, Temperature={Temperature}, TimeoutSeconds={TimeoutSeconds}, SystemPromptLength={SystemPromptLength}, UserPromptLength={UserPromptLength}",
+                modelConfig.Provider,
+                modelConfig.ProviderModelId,
+                effectiveMaxOutputTokens,
+                modelConfig.Temperature,
+                modelConfig.TimeoutSeconds,
+                systemPrompt.Length,
+                userPrompt.Length);
 
+            var aiCallStopwatch = Stopwatch.StartNew();
             var aiResponse = await providerClient.GenerateStructuredOutputAsync<AiFishInformationStructuredResponse>(
                 modelConfig.ProviderModelId,
                 systemPrompt,
                 userPrompt,
-                modelConfig.MaxOutputTokens,
+                effectiveMaxOutputTokens,
                 modelConfig.Temperature,
                 modelConfig.TimeoutSeconds,
                 cancellationToken);
+            aiCallStopwatch.Stop();
+            _logger.LogInformation("Fish information stage AiProviderCall completed in {ElapsedMs} ms", aiCallStopwatch.ElapsedMilliseconds);
 
             EnsureAiResponseNotEmpty(aiResponse);
 
+            //var postProcessingStopwatch = Stopwatch.StartNew();
             var issues = new List<AiGenerationIssueDto>();
             var generatedDraft = BuildDraft(aiResponse, vocabulary, issues);
 
-            var draftValidation = await _draftValidator.ValidateAsync(generatedDraft, cancellationToken);
-            AddValidationIssues(draftValidation.Errors.Select(x => (x.PropertyName, x.ErrorMessage, (string?)null)), issues);
+            //postProcessingStopwatch.Stop();
+            //_logger.LogInformation("Fish information stage DraftMapping completed in {ElapsedMs} ms with {IssueCount} issues", postProcessingStopwatch.ElapsedMilliseconds, issues.Count);
 
-            var createDto = MapToCreateSpeciesDto(generatedDraft);
-            var createValidation = await _createSpeciesValidator.ValidateAsync(createDto, cancellationToken);
-            AddValidationIssues(createValidation.Errors.Select(x => (x.PropertyName, x.ErrorMessage, (string?)null)), issues);
+            totalStopwatch.Stop();
+            _logger.LogInformation("Fish information request completed in {ElapsedMs} ms", totalStopwatch.ElapsedMilliseconds);
 
             return new AiFishInformationResponseDto
             {
-                Source = AiGeneratedSource,
-                IsReadyForCreate = issues.Count == 0,
                 ModelConfigId = modelConfig.Id,
                 PromptTemplateId = promptTemplate.Id,
-                GeneratedDraft = generatedDraft,
-                Issues = issues
+                GeneratedDraft = generatedDraft
             };
         }
 
@@ -202,29 +215,24 @@ namespace Infrastructure.Services
             return $"""
 {template}
 
-Return only valid JSON matching the requested fish information structure.
-Use semantic values only and never invent internal database IDs.
-Allowed type names: {typeNames}
-Allowed tag codes: {tagCodes}
-Allowed WaterType values: {waterTypes}
-Allowed SwimLevel values: {swimLevels}
-Allowed DietType values: {dietTypes}
-If uncertain, choose the most conservative value and keep text concise.
+Return only valid JSON.
+Never invent internal database IDs.
+Use only these semantic values when applicable.
+Type names: {typeNames}
+Tag codes: {tagCodes}
+WaterType values: {waterTypes}
+SwimLevel values: {swimLevels}
+DietType values: {dietTypes}
+Keep every text field concise.
 """;
         }
 
         private static string BuildUserPrompt(string fishName)
         {
             return $"""
-Generate a fish information draft for the aquarium species named "{fishName}".
-Return a complete draft for species creation with:
-- commonName
-- scientificName
-- typeName
-- tagCodes
-- environment
-- profile
-Use enum names, not numbers, for waterType, swimLevel, and dietType.
+Generate aquarium fish information for "{fishName}".
+Return only the JSON object with all required fields filled.
+Use enum names, not numbers.
 """;
         }
 
@@ -333,53 +341,6 @@ Use enum names, not numbers, for waterType, swimLevel, and dietType.
             }
 
             return draft;
-        }
-
-        private static CreateSpeciesDto MapToCreateSpeciesDto(AiGeneratedSpeciesDraftDto draft)
-        {
-            return new CreateSpeciesDto
-            {
-                CommonName = draft.CommonName,
-                ScientificName = draft.ScientificName,
-                TypeId = draft.TypeId,
-                ThumbnailUrl = draft.ThumbnailUrl,
-                TagIds = draft.TagIds,
-                Environment = new CreateSpeciesDto.EnvironmentDto
-                {
-                    PhMin = draft.Environment.PhMin,
-                    PhMax = draft.Environment.PhMax,
-                    TempMin = draft.Environment.TempMin,
-                    TempMax = draft.Environment.TempMax,
-                    MinTankVolume = draft.Environment.MinTankVolume,
-                    WaterType = Enum.IsDefined(typeof(WaterType), draft.Environment.WaterType)
-                        ? (WaterType)draft.Environment.WaterType
-                        : default
-                },
-                Profile = new CreateSpeciesDto.ProfileDto
-                {
-                    AdultSize = draft.Profile.AdultSize,
-                    BioLoadFactor = draft.Profile.BioLoadFactor,
-                    SwimLevel = Enum.IsDefined(typeof(SwimLevel), draft.Profile.SwimLevel)
-                        ? (SwimLevel)draft.Profile.SwimLevel
-                        : default,
-                    DietType = Enum.IsDefined(typeof(DietType), draft.Profile.DietType)
-                        ? (DietType)draft.Profile.DietType
-                        : default,
-                    PreferredFood = draft.Profile.PreferredFood,
-                    IsSchooling = draft.Profile.IsSchooling,
-                    MinGroupSize = draft.Profile.MinGroupSize,
-                    Origin = draft.Profile.Origin,
-                    Description = draft.Profile.Description
-                }
-            };
-        }
-
-        private static void AddValidationIssues(IEnumerable<(string Field, string Message, string? AttemptedValue)> validationErrors, List<AiGenerationIssueDto> issues)
-        {
-            foreach (var error in validationErrors)
-            {
-                issues.Add(CreateIssue(error.Field, "VALIDATION_ERROR", error.Message, error.AttemptedValue));
-            }
         }
 
         private static AiGenerationIssueDto CreateIssue(string field, string code, string message, string? attemptedValue)
