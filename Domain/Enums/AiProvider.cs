@@ -5,6 +5,7 @@ namespace Domain.Enums
     /// </summary>
     public enum AiProvider
     {
-        OpenRouter = 0
+        OpenRouter = 0,
+        Groq = 1
     }
 }

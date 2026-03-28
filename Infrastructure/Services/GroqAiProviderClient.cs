@@ -9,7 +9,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OpenAI;
 using System.ClientModel;
-using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 using MicrosoftChatMessage = Microsoft.Extensions.AI.ChatMessage;
@@ -18,7 +17,7 @@ using OpenAiChatClient = OpenAI.Chat.ChatClient;
 
 namespace Infrastructure.Services
 {
-    public class OpenRouterAiProviderClient : IAiProviderClient
+    public class GroqAiProviderClient : IAiProviderClient
     {
         private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web)
         {
@@ -27,17 +26,17 @@ namespace Infrastructure.Services
         };
 
         private readonly AiProviderSettings _settings;
-        private readonly ILogger<OpenRouterAiProviderClient> _logger;
+        private readonly ILogger<GroqAiProviderClient> _logger;
 
-        public OpenRouterAiProviderClient(
+        public GroqAiProviderClient(
             IOptions<AiProviderSettings> settings,
-            ILogger<OpenRouterAiProviderClient> logger)
+            ILogger<GroqAiProviderClient> logger)
         {
             _settings = settings.Value;
             _logger = logger;
         }
 
-        public AiProvider Provider => AiProvider.OpenRouter;
+        public AiProvider Provider => AiProvider.Groq;
 
         public async Task<T> GenerateStructuredOutputAsync<T>(
             string modelId,
@@ -48,8 +47,8 @@ namespace Infrastructure.Services
             int timeoutSeconds,
             CancellationToken cancellationToken = default)
         {
-            var openRouter = _settings.OpenRouter;
-            if (string.IsNullOrWhiteSpace(openRouter.ApiKey) || string.IsNullOrWhiteSpace(openRouter.BaseUrl))
+            var groq = _settings.Groq;
+            if (string.IsNullOrWhiteSpace(groq.ApiKey) || string.IsNullOrWhiteSpace(groq.BaseUrl))
             {
                 throw new CustomErrorException(
                     StatusCodes.Status500InternalServerError,
@@ -60,7 +59,7 @@ namespace Infrastructure.Services
 
             try
             {
-                var client = CreateChatClient(openRouter, modelId);
+                var client = CreateChatClient(groq, modelId);
                 var options = new ChatOptions
                 {
                     MaxOutputTokens = maxOutputTokens,
@@ -76,27 +75,17 @@ namespace Infrastructure.Services
                 using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 linkedCts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
 
-                var requestStopwatch = Stopwatch.StartNew();
                 var response = await GetStructuredResponseAsync<T>(
                     client,
                     messages,
                     options,
                     linkedCts.Token);
-                requestStopwatch.Stop();
-
-                _logger.LogInformation(
-                    "OpenRouter structured output completed in {ElapsedMs} ms for model {ModelId}. MaxOutputTokens={MaxOutputTokens}, Temperature={Temperature}, TimeoutSeconds={TimeoutSeconds}",
-                    requestStopwatch.ElapsedMilliseconds,
-                    modelId,
-                    maxOutputTokens,
-                    temperature,
-                    timeoutSeconds);
 
                 return response.Result;
             }
             catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
             {
-                _logger.LogError(ex, "OpenRouter request timed out for model {ModelId}", modelId);
+                _logger.LogError(ex, "Groq request timed out for model {ModelId}", modelId);
                 throw new CustomErrorException(
                     StatusCodes.Status504GatewayTimeout,
                     ErrorCode.FAILED,
@@ -105,7 +94,7 @@ namespace Infrastructure.Services
             }
             catch (JsonException ex)
             {
-                _logger.LogError(ex, "OpenRouter returned malformed structured output for model {ModelId}", modelId);
+                _logger.LogError(ex, "Groq returned malformed structured output for model {ModelId}", modelId);
                 throw new CustomErrorException(
                     StatusCodes.Status502BadGateway,
                     ErrorCode.FAILED,
@@ -114,7 +103,7 @@ namespace Infrastructure.Services
             }
             catch (ClientResultException ex) when (ex.Status == 404)
             {
-                _logger.LogError(ex, "OpenRouter could not find model {ModelId} at base URL {BaseUrl}", modelId, openRouter.BaseUrl);
+                _logger.LogError(ex, "Groq could not find model {ModelId} at base URL {BaseUrl}", modelId, groq.BaseUrl);
                 throw new CustomErrorException(
                     StatusCodes.Status502BadGateway,
                     ErrorCode.FAILED,
@@ -123,7 +112,7 @@ namespace Infrastructure.Services
             }
             catch (ClientResultException ex)
             {
-                _logger.LogError(ex, "OpenRouter request failed for model {ModelId} with status code {StatusCode}", modelId, ex.Status);
+                _logger.LogError(ex, "Groq request failed for model {ModelId} with status code {StatusCode}", modelId, ex.Status);
                 throw new CustomErrorException(
                     StatusCodes.Status502BadGateway,
                     ErrorCode.FAILED,
@@ -136,7 +125,7 @@ namespace Infrastructure.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "OpenRouter request failed for model {ModelId}", modelId);
+                _logger.LogError(ex, "Groq request failed for model {ModelId}", modelId);
                 throw new CustomErrorException(
                     StatusCodes.Status502BadGateway,
                     ErrorCode.FAILED,
@@ -145,7 +134,7 @@ namespace Infrastructure.Services
             }
         }
 
-        private static IChatClient CreateChatClient(OpenRouterSettings settings, string modelId)
+        private static IChatClient CreateChatClient(GroqSettings settings, string modelId)
         {
             var options = new OpenAIClientOptions
             {
@@ -173,7 +162,7 @@ namespace Infrastructure.Services
             }
             catch (ClientResultException ex) when (ex.Status is 400 or 422)
             {
-                _logger.LogWarning(ex, "OpenRouter rejected JSON schema response format. Falling back to non-schema structured output mode.");
+                _logger.LogWarning(ex, "Groq rejected JSON schema response format. Falling back to non-schema structured output mode.");
 
                 return await client.GetResponseAsync<T>(
                     messages,

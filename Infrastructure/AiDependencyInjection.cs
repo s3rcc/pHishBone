@@ -22,11 +22,19 @@ namespace Infrastructure
                     client.BaseAddress = new Uri(aiSettings.OpenRouter.BaseUrl.TrimEnd('/') + "/");
                 }
             });
+            services.AddHttpClient("Groq", client =>
+            {
+                if (!string.IsNullOrWhiteSpace(aiSettings.Groq.BaseUrl))
+                {
+                    client.BaseAddress = new Uri(aiSettings.Groq.BaseUrl.TrimEnd('/') + "/");
+                }
+            });
 
             services.AddScoped<IAiModelConfigService, AiModelConfigService>();
             services.AddScoped<IAiPromptTemplateService, AiPromptTemplateService>();
             services.AddScoped<IAiFishInformationService, AiFishInformationService>();
             services.AddScoped<IAiProviderClient, OpenRouterAiProviderClient>();
+            services.AddScoped<IAiProviderClient, GroqAiProviderClient>();
 
             return services;
         }

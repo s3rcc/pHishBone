@@ -6,6 +6,7 @@ namespace Infrastructure.Settings
     public class AiProviderSettings
     {
         public OpenRouterSettings OpenRouter { get; set; } = new();
+        public GroqSettings Groq { get; set; } = new();
     }
 
     public class OpenRouterSettings
@@ -14,5 +15,11 @@ namespace Infrastructure.Settings
         public string ApiKey { get; set; } = string.Empty;
         public string? AppName { get; set; }
         public string? SiteUrl { get; set; }
+    }
+
+    public class GroqSettings
+    {
+        public string BaseUrl { get; set; } = "https://api.groq.com/openai/v1";
+        public string ApiKey { get; set; } = string.Empty;
     }
 }
