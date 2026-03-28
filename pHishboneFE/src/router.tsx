@@ -46,6 +46,17 @@ const TankBuilderDashboard = lazy(() =>
     import('./features/tank-builder').then((m) => ({ default: m.TankBuilderDashboard })),
 );
 
+// ─── Admin / AI Management (lazy) ────────────────────────────────────────────
+const AdminLayout = lazy(() =>
+    import('./features/ai-management').then((m) => ({ default: m.AdminLayout })),
+);
+const AiModelsPage = lazy(() =>
+    import('./features/ai-management').then((m) => ({ default: m.AiModelsPage })),
+);
+const AiPromptsPage = lazy(() =>
+    import('./features/ai-management').then((m) => ({ default: m.AiPromptsPage })),
+);
+
 // ─── Root Route ───────────────────────────────────────────────────────────────
 const rootRoute = createRootRoute({
     component: () => (
@@ -209,6 +220,37 @@ const tankBuilderRoute = createRoute({
     ),
 });
 
+// ─── Admin Workspace Routes ──────────────────────────────────────────────────
+const adminRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/admin',
+    component: () => (
+        <Suspense fallback={<SuspenseLoader />}>
+            <AdminLayout />
+        </Suspense>
+    ),
+});
+
+const adminModelsRoute = createRoute({
+    getParentRoute: () => adminRoute,
+    path: '/ai-models',
+    component: () => (
+        <Suspense fallback={<SuspenseLoader />}>
+            <AiModelsPage />
+        </Suspense>
+    ),
+});
+
+const adminPromptsRoute = createRoute({
+    getParentRoute: () => adminRoute,
+    path: '/ai-prompts',
+    component: () => (
+        <Suspense fallback={<SuspenseLoader />}>
+            <AiPromptsPage />
+        </Suspense>
+    ),
+});
+
 const unauthorizedRoute = createRoute({
 
     getParentRoute: () => rootRoute,
@@ -237,6 +279,10 @@ const routeTree = rootRoute.addChildren([
         catalogTagsRoute,
         catalogTypesRoute,
         catalogCompatibilityRoute,
+    ]),
+    adminRoute.addChildren([
+        adminModelsRoute,
+        adminPromptsRoute,
     ]),
 ]);
 
