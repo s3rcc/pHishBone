@@ -38,6 +38,7 @@ try
 
     // Add Infrastructure services (DbContext, Supabase, UnitOfWork, Repositories, Auth)
     builder.Services.AddInfrastructure(builder.Configuration);
+    builder.Services.AddAiInfrastructure(builder.Configuration);
 
     // Add Application services (AutoMapper, FluentValidation)
     builder.Services.AddApplicationServices();

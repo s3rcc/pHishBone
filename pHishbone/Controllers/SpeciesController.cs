@@ -1,6 +1,7 @@
 using Application.Common;
 using Application.Common.Interfaces;
 using Application.Constants;
+using Application.DTOs.AiDTOs;
 using Application.DTOs.CatalogDTOs;
 using Application.DTOs.ImageDTOs;
 using Application.Services;
@@ -13,15 +14,18 @@ namespace pHishbone.Controllers
     {
         private readonly ISpeciesService _speciesService;
         private readonly ISpeciesImageService _speciesImageService;
+        private readonly IAiFishInformationService _aiFishInformationService;
         private readonly ILogger<SpeciesController> _logger;
 
         public SpeciesController(
             ISpeciesService speciesService, 
             ISpeciesImageService speciesImageService,
+            IAiFishInformationService aiFishInformationService,
             ILogger<SpeciesController> logger)
         {
             _speciesService = speciesService;
             _speciesImageService = speciesImageService;
+            _aiFishInformationService = aiFishInformationService;
             _logger = logger;
         }
 
@@ -94,6 +98,20 @@ namespace pHishbone.Controllers
             _logger.LogInformation("Species hybrid search requested with query: {Query}", filter.SearchTerm);
             var results = await _speciesService.SearchHybridAsync(filter, cancellationToken);
             return Ok(ApiResponse<PaginationResponse<SpeciesDto>>.Success(results, SuccessMessageConstant.SpeciesSearchRetrievedSuccessfully));
+        }
+
+        /// <summary>
+        /// Generate preview-only fish information using the configured AI provider.
+        /// Returns an existing species when an exact common or scientific name match already exists.
+        /// </summary>
+        [HttpPost(ApiEndpointConstant.Species.GenerateFishInformation)]
+        [ProducesResponseType(typeof(ApiResponse<AiFishInformationResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GenerateFishInformation([FromBody] GenerateFishInformationRequestDto dto, CancellationToken cancellationToken)
+        {
+            var result = await _aiFishInformationService.GenerateFishInformationAsync(dto, cancellationToken);
+            return Ok(ApiResponse<AiFishInformationResponseDto>.Success(result, SuccessMessageConstant.AiFishInformationGeneratedSuccessfully));
         }
 
         /// <summary>

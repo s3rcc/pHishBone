@@ -78,6 +78,20 @@ namespace Application.Constants
         #region Guest
         public const string GuestTankAnalysisRetrievedSuccessfully = "Guest tank analysis retrieved successfully";
         #endregion Guest
+
+        #region AI
+        public const string AiFishInformationGeneratedSuccessfully = "Fish information generated successfully";
+        public const string AiModelRetrievedSuccessfully = "AI model retrieved successfully";
+        public const string AiModelsRetrievedSuccessfully = "AI models retrieved successfully";
+        public const string AiModelCreatedSuccessfully = "AI model created successfully";
+        public const string AiModelUpdatedSuccessfully = "AI model updated successfully";
+        public const string AiModelDeletedSuccessfully = "AI model deleted successfully";
+        public const string AiPromptRetrievedSuccessfully = "AI prompt retrieved successfully";
+        public const string AiPromptsRetrievedSuccessfully = "AI prompts retrieved successfully";
+        public const string AiPromptCreatedSuccessfully = "AI prompt created successfully";
+        public const string AiPromptUpdatedSuccessfully = "AI prompt updated successfully";
+        public const string AiPromptDeletedSuccessfully = "AI prompt deleted successfully";
+        #endregion AI
     }
 }
 
