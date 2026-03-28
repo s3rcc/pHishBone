@@ -55,6 +55,7 @@ namespace Application.Constants
             public const string Create = "";
             public const string Update = "{id}";
             public const string Delete = "{id}";
+            public const string GenerateFishInformation = "ai/fish-information";
         }
 
         public static class Tank
@@ -112,6 +113,34 @@ namespace Application.Constants
         {
             public const string Base = "api/guest/tanks";
             public const string Analysis = "analysis";
+        }
+
+        public static class AiModelAdmin
+        {
+            public const string Base = "api/admin/ai/models";
+            public const string GetById = "{id}";
+            public const string GetList = "";
+            public const string GetPaginated = "paginated";
+            public const string Create = "";
+            public const string Update = "{id}";
+            public const string Delete = "{id}";
+        }
+
+        public static class AiPromptAdmin
+        {
+            public const string Base = "api/admin/ai/prompts";
+            public const string GetById = "{id}";
+            public const string GetList = "";
+            public const string GetPaginated = "paginated";
+            public const string Create = "";
+            public const string Update = "{id}";
+            public const string Delete = "{id}";
+        }
+
+        public static class AiModel
+        {
+            public const string Base = "api/ai/models";
+            public const string Available = "available";
         }
     }
 }

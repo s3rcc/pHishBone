@@ -22,6 +22,8 @@ namespace Infrastructure.Persistence
         public DbSet<Domain.Entities.Catalog.Tag> Tags { get; set; }
         public DbSet<Domain.Entities.Catalog.SpeciesTag> SpeciesTags { get; set; }
         public DbSet<Domain.Entities.Catalog.CompatibilityRule> CompatibilityRules { get; set; }
+        public DbSet<Domain.Entities.Ai.AiModelConfig> AiModelConfigs { get; set; }
+        public DbSet<Domain.Entities.Ai.AiPromptTemplate> AiPromptTemplates { get; set; }
 
         // Project Module DbSets
         public DbSet<Domain.Entities.Project.Tank> Tanks { get; set; }
