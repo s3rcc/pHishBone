@@ -13,13 +13,11 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import BiotechIcon from '@mui/icons-material/Biotech';
-import CategoryIcon from '@mui/icons-material/Category';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
-import LabelIcon from '@mui/icons-material/Label';
-import MenuBookIcon from '@mui/icons-material/MenuBook';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
+import DescriptionIcon from '@mui/icons-material/Description';
 
 /** Sidebar width constants */
 const SIDEBAR_EXPANDED = 220;
@@ -32,13 +30,11 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-    { labelKey: 'Catalog.nav.species', path: '/catalog/species', icon: <BiotechIcon fontSize="small" /> },
-    { labelKey: 'Catalog.nav.types', path: '/catalog/types', icon: <CategoryIcon fontSize="small" /> },
-    { labelKey: 'Catalog.nav.tags', path: '/catalog/tags', icon: <LabelIcon fontSize="small" /> },
-    { labelKey: 'Catalog.nav.rules', path: '/catalog/compatibility', icon: <CompareArrowsIcon fontSize="small" /> },
+    { labelKey: 'AiManagement.nav.models', path: '/admin/ai-models', icon: <SmartToyIcon fontSize="small" /> },
+    { labelKey: 'AiManagement.nav.prompts', path: '/admin/ai-prompts', icon: <DescriptionIcon fontSize="small" /> },
 ];
 
-export const WorkspaceSidebar: React.FC = () => {
+export const AdminSidebar: React.FC = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const routerState = useRouterState();
@@ -95,7 +91,7 @@ export const WorkspaceSidebar: React.FC = () => {
             >
                 {!collapsed && (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <MenuBookIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                        <AdminPanelSettingsIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
                         <Typography
                             variant="caption"
                             fontWeight={700}
@@ -103,7 +99,7 @@ export const WorkspaceSidebar: React.FC = () => {
                             color="text.secondary"
                             sx={{ textTransform: 'uppercase', whiteSpace: 'nowrap' }}
                         >
-                            {t('Catalog.managerTitle')}
+                            {t('AiManagement.adminTitle')}
                         </Typography>
                     </Box>
                 )}
@@ -171,4 +167,4 @@ export const WorkspaceSidebar: React.FC = () => {
     );
 };
 
-export default WorkspaceSidebar;
+export default AdminSidebar;
