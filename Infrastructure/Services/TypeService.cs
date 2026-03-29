@@ -75,7 +75,7 @@ namespace Infrastructure.Services
         {
             // Check for duplicate name
             var existingWithName = await _unitOfWork.Repository<CatalogType>().SingleOrDefaultAsync(
-                predicate: t => t.Name == dto.Name
+                predicate: t => t.Name == dto.Name && t.DeletedTime == null
             );
             if (existingWithName != null)
             {
@@ -98,7 +98,7 @@ namespace Infrastructure.Services
             // Check for duplicate names in batch
             var names = dtos.Select(d => d.Name).ToList();
             var existingNames = await _unitOfWork.Repository<CatalogType>().GetListAsync(
-                predicate: t => names.Contains(t.Name)
+                predicate: t => names.Contains(t.Name) && t.DeletedTime == null
             );
 
             if (existingNames.Any())
@@ -134,7 +134,7 @@ namespace Infrastructure.Services
 
             // Check for duplicate name (excluding current type)
             var existingWithName = await _unitOfWork.Repository<CatalogType>().SingleOrDefaultAsync(
-                predicate: t => t.Name == dto.Name && t.Id != id
+                predicate: t => t.Name == dto.Name && t.Id != id && t.DeletedTime == null
             );
             if (existingWithName != null)
             {

@@ -109,8 +109,11 @@ namespace Infrastructure.Services
             // 3. Bidirectional duplicate check (A→B or B→A)
             var existingRule = await _unitOfWork.Repository<CompatibilityRule>().SingleOrDefaultAsync(
                 predicate: r =>
-                    (r.SubjectTagId == dto.SubjectTagId && r.ObjectTagId == dto.ObjectTagId) ||
-                    (r.SubjectTagId == dto.ObjectTagId && r.ObjectTagId == dto.SubjectTagId),
+                    r.DeletedTime == null &&
+                    (
+                        (r.SubjectTagId == dto.SubjectTagId && r.ObjectTagId == dto.ObjectTagId) ||
+                        (r.SubjectTagId == dto.ObjectTagId && r.ObjectTagId == dto.SubjectTagId)
+                    ),
                 tracking: false
             );
             if (existingRule != null)

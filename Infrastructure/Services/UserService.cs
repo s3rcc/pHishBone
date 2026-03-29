@@ -62,7 +62,7 @@ namespace Infrastructure.Services
                 // Check for username conflict
                 var usernameExists = await _unitOfWork.Repository<PBUser>()
                     .SingleOrDefaultAsync(
-                        predicate: u => u.Username == dto.Username && u.SupabaseUserId != userId,
+                        predicate: u => u.Username == dto.Username && u.SupabaseUserId != userId && u.DeletedTime == null,
                         tracking: false);
 
                 if (usernameExists != null)
@@ -162,7 +162,7 @@ namespace Infrastructure.Services
             // Check if new email is already in use locally
             var emailExists = await _unitOfWork.Repository<PBUser>()
                 .SingleOrDefaultAsync(
-                    predicate: u => u.Email == dto.NewEmail && u.SupabaseUserId != userId,
+                    predicate: u => u.Email == dto.NewEmail && u.SupabaseUserId != userId && u.DeletedTime == null,
                     tracking: false);
 
             if (emailExists != null)

@@ -41,7 +41,7 @@ namespace Infrastructure.Services
             _logger.LogInformation("Attempting to register user with email: {Email}", request.Email);
 
             var existingUser = await _unitOfWork.Repository<PBUser>()
-                .SingleOrDefaultAsync(predicate: u => u.Email == request.Email);
+                .SingleOrDefaultAsync(predicate: u => u.Email == request.Email && u.DeletedTime == null);
 
             if (existingUser != null)
             {
@@ -53,7 +53,7 @@ namespace Infrastructure.Services
             }
 
             var existingUserName = await _unitOfWork.Repository<PBUser>()
-                .SingleOrDefaultAsync(predicate: u => u.Username == request.Username);
+                .SingleOrDefaultAsync(predicate: u => u.Username == request.Username && u.DeletedTime == null);
 
             if (existingUserName != null)
             {

@@ -121,7 +121,7 @@ namespace Infrastructure.Services
 
             // Check for duplicate code
             var existingWithCode = await _unitOfWork.Repository<Tag>().SingleOrDefaultAsync(
-                predicate: t => t.Code == dto.Code
+                predicate: t => t.Code == dto.Code && t.DeletedTime == null
             );
             if (existingWithCode != null)
             {
@@ -134,7 +134,7 @@ namespace Infrastructure.Services
 
             // Check for duplicate name
             var existingWithName = await _unitOfWork.Repository<Tag>().SingleOrDefaultAsync(
-                predicate: t => t.Name == dto.Name
+                predicate: t => t.Name == dto.Name && t.DeletedTime == null
             );
             if (existingWithName != null)
             {
@@ -161,7 +161,7 @@ namespace Infrastructure.Services
             // Check for duplicate codes in batch
             var codes = dtos.Select(d => d.Code).ToList();
             var existingCodes = await _unitOfWork.Repository<Tag>().GetListAsync(
-                predicate: t => codes.Contains(t.Code)
+                predicate: t => codes.Contains(t.Code) && t.DeletedTime == null
             );
 
             if (existingCodes.Any())
@@ -176,7 +176,7 @@ namespace Infrastructure.Services
             // Check for duplicate names in batch
             var names = dtos.Select(d => d.Name).ToList();
             var existingNames = await _unitOfWork.Repository<Tag>().GetListAsync(
-                predicate: t => names.Contains(t.Name)
+                predicate: t => names.Contains(t.Name) && t.DeletedTime == null
             );
 
             if (existingNames.Any())
@@ -215,7 +215,7 @@ namespace Infrastructure.Services
 
             // Check for duplicate code (excluding current tag)
             var existingWithCode = await _unitOfWork.Repository<Tag>().SingleOrDefaultAsync(
-                predicate: t => t.Code == dto.Code && t.Id != id
+                predicate: t => t.Code == dto.Code && t.Id != id && t.DeletedTime == null
             );
             if (existingWithCode != null)
             {
@@ -228,7 +228,7 @@ namespace Infrastructure.Services
 
             // Check for duplicate name (excluding current tag)
             var existingWithName = await _unitOfWork.Repository<Tag>().SingleOrDefaultAsync(
-                predicate: t => t.Name == dto.Name && t.Id != id
+                predicate: t => t.Name == dto.Name && t.Id != id && t.DeletedTime == null
             );
             if (existingWithName != null)
             {

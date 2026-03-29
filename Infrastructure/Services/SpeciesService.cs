@@ -172,7 +172,7 @@ namespace Infrastructure.Services
 
             // 3. Check ScientificName uniqueness
             var existingSpecies = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
-                predicate: s => s.ScientificName == dto.ScientificName
+                predicate: s => s.ScientificName == dto.ScientificName && s.DeletedTime == null
             );
             if (existingSpecies != null)
             {
@@ -258,7 +258,7 @@ namespace Infrastructure.Services
 
             // 3. Validate ScientificName uniqueness (exclude current species)
             var existingSpecies = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
-                predicate: s => s.ScientificName == dto.ScientificName && s.Id != id
+                predicate: s => s.ScientificName == dto.ScientificName && s.Id != id && s.DeletedTime == null
             );
             if (existingSpecies != null)
             {
@@ -485,7 +485,7 @@ namespace Infrastructure.Services
         private async Task<bool> SlugExistsAsync(string slug)
         {
             var existing = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
-                predicate: s => s.Slug == slug
+                predicate: s => s.Slug == slug && s.DeletedTime == null
             );
             return existing != null;
         }
