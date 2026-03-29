@@ -35,9 +35,9 @@ namespace pHishbone.Controllers
         [HttpGet(ApiEndpointConstant.Species.GetById)]
         [ProducesResponseType(typeof(ApiResponse<SpeciesDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetById([FromRoute] string id)
+        public async Task<IActionResult> GetById([FromRoute] string id, CancellationToken cancellationToken)
         {
-            var species = await _speciesService.GetByIdAsync(id);
+            var species = await _speciesService.GetByIdAsync(id, cancellationToken);
             return Ok(ApiResponse<SpeciesDto>.Success(species, SuccessMessageConstant.SpeciesRetrievedSuccessfully));
         }
 
@@ -47,9 +47,9 @@ namespace pHishbone.Controllers
         [HttpGet(ApiEndpointConstant.Species.GetDetailById)]
         [ProducesResponseType(typeof(ApiResponse<SpeciesDetailDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetDetailById([FromRoute] string id)
+        public async Task<IActionResult> GetDetailById([FromRoute] string id, CancellationToken cancellationToken)
         {
-            var species = await _speciesService.GetDetailByIdAsync(id);
+            var species = await _speciesService.GetDetailByIdAsync(id, cancellationToken);
             return Ok(ApiResponse<SpeciesDetailDto>.Success(species, SuccessMessageConstant.SpeciesDetailsRetrievedSuccessfully));
         }
 
@@ -58,9 +58,9 @@ namespace pHishbone.Controllers
         /// </summary>
         [HttpGet(ApiEndpointConstant.Species.GetList)]
         [ProducesResponseType(typeof(ApiResponse<ICollection<SpeciesDto>>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetList()
+        public async Task<IActionResult> GetList(CancellationToken cancellationToken)
         {
-            var species = await _speciesService.GetListAsync();
+            var species = await _speciesService.GetListAsync(cancellationToken);
             return Ok(ApiResponse<ICollection<SpeciesDto>>.Success(species, SuccessMessageConstant.SpeciesListRetrievedSuccessfully));
         }
 
@@ -69,9 +69,9 @@ namespace pHishbone.Controllers
         /// </summary>
         [HttpGet(ApiEndpointConstant.Species.GetPaginated)]
         [ProducesResponseType(typeof(ApiResponse<PaginationResponse<SpeciesDto>>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetPaginated([FromQuery] SpeciesFilterDto filter)
+        public async Task<IActionResult> GetPaginated([FromQuery] SpeciesFilterDto filter, CancellationToken cancellationToken)
         {
-            var species = await _speciesService.GetPaginatedListAsync(filter);
+            var species = await _speciesService.GetPaginatedListAsync(filter, cancellationToken);
             return Ok(ApiResponse<PaginationResponse<SpeciesDto>>.Success(species, SuccessMessageConstant.SpeciesRetrievedSuccessfully));
         }
 
@@ -81,9 +81,9 @@ namespace pHishbone.Controllers
         [HttpGet(ApiEndpointConstant.Species.GetBySlug)]
         [ProducesResponseType(typeof(ApiResponse<SpeciesDetailDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetBySlug([FromRoute] string slug)
+        public async Task<IActionResult> GetBySlug([FromRoute] string slug, CancellationToken cancellationToken)
         {
-            var species = await _speciesService.GetDetailBySlugAsync(slug);
+            var species = await _speciesService.GetDetailBySlugAsync(slug, cancellationToken);
             return Ok(ApiResponse<SpeciesDetailDto>.Success(species, SuccessMessageConstant.SpeciesDetailsRetrievedSuccessfully));
         }
 
@@ -120,9 +120,9 @@ namespace pHishbone.Controllers
         [HttpPost(ApiEndpointConstant.Species.Create)]
         [ProducesResponseType(typeof(ApiResponse<SpeciesDetailDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> Create([FromBody] CreateSpeciesDto dto)
+        public async Task<IActionResult> Create([FromBody] CreateSpeciesDto dto, CancellationToken cancellationToken)
         {
-            var species = await _speciesService.CreateAsync(dto);
+            var species = await _speciesService.CreateAsync(dto, cancellationToken);
             return CreatedAtAction(
                 nameof(GetDetailById),
                 new { id = species.Id },
@@ -137,9 +137,9 @@ namespace pHishbone.Controllers
         [ProducesResponseType(typeof(ApiResponse<SpeciesDetailDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> Update([FromRoute] string id, [FromBody] UpdateSpeciesDto dto)
+        public async Task<IActionResult> Update([FromRoute] string id, [FromBody] UpdateSpeciesDto dto, CancellationToken cancellationToken)
         {
-            var species = await _speciesService.UpdateAsync(id, dto);
+            var species = await _speciesService.UpdateAsync(id, dto, cancellationToken);
             return Ok(ApiResponse<SpeciesDetailDto>.Success(species, SuccessMessageConstant.SpeciesUpdatedSuccessfully));
         }
 
@@ -149,9 +149,9 @@ namespace pHishbone.Controllers
         [HttpDelete(ApiEndpointConstant.Species.Delete)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Delete([FromRoute] string id)
+        public async Task<IActionResult> Delete([FromRoute] string id, CancellationToken cancellationToken)
         {
-            await _speciesService.DeleteAsync(id);
+            await _speciesService.DeleteAsync(id, cancellationToken);
             return Ok(ApiResponse<object>.Success(null, SuccessMessageConstant.SpeciesDeletedSuccessfully));
         }
 
@@ -163,9 +163,9 @@ namespace pHishbone.Controllers
         [HttpGet(ApiEndpointConstant.SpeciesImage.GetAll)]
         [ProducesResponseType(typeof(ApiResponse<IEnumerable<ImageResponseDto>>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetImages([FromRoute] string id)
+        public async Task<IActionResult> GetImages([FromRoute] string id, CancellationToken cancellationToken)
         {
-            var images = await _speciesImageService.GetImagesAsync(id);
+            var images = await _speciesImageService.GetImagesAsync(id, cancellationToken);
             return Ok(ApiResponse<IEnumerable<ImageResponseDto>>.Success(images, SuccessMessageConstant.ImagesRetrievedSuccessfully));
         }
 
@@ -175,10 +175,10 @@ namespace pHishbone.Controllers
         [HttpPost(ApiEndpointConstant.SpeciesImage.Add)]
         [ProducesResponseType(typeof(ApiResponse<ImageResponseDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> AddImage([FromRoute] string id, [FromForm] CreateImageDto dto)
+        public async Task<IActionResult> AddImage([FromRoute] string id, [FromForm] CreateImageDto dto, CancellationToken cancellationToken)
         {
             _logger.LogInformation("Adding image to species {SpeciesId}", id);
-            var image = await _speciesImageService.AddImageAsync(id, dto);
+            var image = await _speciesImageService.AddImageAsync(id, dto, cancellationToken);
             return StatusCode(StatusCodes.Status201Created,
                 ApiResponse<ImageResponseDto>.Success(image, SuccessMessageConstant.ImageAddedSuccessfully, 201));
         }
@@ -189,10 +189,10 @@ namespace pHishbone.Controllers
         [HttpPost(ApiEndpointConstant.SpeciesImage.AddBatch)]
         [ProducesResponseType(typeof(ApiResponse<List<ImageResponseDto>>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> AddImages([FromRoute] string id, [FromForm] List<IFormFile> files)
+        public async Task<IActionResult> AddImages([FromRoute] string id, [FromForm] List<IFormFile> files, CancellationToken cancellationToken)
         {
             _logger.LogInformation("Adding {Count} images to species {SpeciesId}", files.Count, id);
-            var images = await _speciesImageService.AddImagesAsync(id, files);
+            var images = await _speciesImageService.AddImagesAsync(id, files, cancellationToken);
             return StatusCode(StatusCodes.Status201Created,
                 ApiResponse<List<ImageResponseDto>>.Success(images, SuccessMessageConstant.ImageAddedSuccessfully, 201));
         }
@@ -203,10 +203,10 @@ namespace pHishbone.Controllers
         [HttpDelete(ApiEndpointConstant.SpeciesImage.Delete)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> RemoveImage([FromRoute] string id, [FromRoute] string imageId)
+        public async Task<IActionResult> RemoveImage([FromRoute] string id, [FromRoute] string imageId, CancellationToken cancellationToken)
         {
             _logger.LogInformation("Removing image {ImageId} from species {SpeciesId}", imageId, id);
-            await _speciesImageService.RemoveImageAsync(id, imageId);
+            await _speciesImageService.RemoveImageAsync(id, imageId, cancellationToken);
             return Ok(ApiResponse<object>.Success(null, SuccessMessageConstant.ImageRemovedSuccessfully));
         }
 
@@ -216,9 +216,9 @@ namespace pHishbone.Controllers
         [HttpPatch(ApiEndpointConstant.SpeciesImage.SetThumbnail)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> SetThumbnail([FromRoute] string id, [FromForm] SetThumbnailDto dto)
+        public async Task<IActionResult> SetThumbnail([FromRoute] string id, [FromForm] SetThumbnailDto dto, CancellationToken cancellationToken)
         {
-            await _speciesImageService.SetThumbnailAsync(id, dto);
+            await _speciesImageService.SetThumbnailAsync(id, dto, cancellationToken);
             return Ok(ApiResponse<object>.Success(null, SuccessMessageConstant.ThumbnailSetSuccessfully));
         }
 

@@ -25,9 +25,9 @@ namespace pHishbone.Controllers
         [HttpGet(ApiEndpointConstant.Type.GetById)]
         [ProducesResponseType(typeof(ApiResponse<TypeDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetById([FromRoute] string id)
+        public async Task<IActionResult> GetById([FromRoute] string id, CancellationToken cancellationToken)
         {
-            var type = await _typeService.GetByIdAsync(id);
+            var type = await _typeService.GetByIdAsync(id, cancellationToken);
             return Ok(ApiResponse<TypeDto>.Success(type, SuccessMessageConstant.TypeRetrievedSuccessfully));
         }
 
@@ -36,9 +36,9 @@ namespace pHishbone.Controllers
         /// </summary>
         [HttpGet(ApiEndpointConstant.Type.GetList)]
         [ProducesResponseType(typeof(ApiResponse<ICollection<TypeDto>>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetList()
+        public async Task<IActionResult> GetList(CancellationToken cancellationToken)
         {
-            var types = await _typeService.GetListAsync();
+            var types = await _typeService.GetListAsync(cancellationToken);
             return Ok(ApiResponse<ICollection<TypeDto>>.Success(types, SuccessMessageConstant.TypesRetrievedSuccessfully));
         }
 
@@ -47,9 +47,9 @@ namespace pHishbone.Controllers
         /// </summary>
         [HttpGet(ApiEndpointConstant.Type.GetPaginated)]
         [ProducesResponseType(typeof(ApiResponse<PaginationResponse<TypeDto>>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetPaginated([FromQuery] TypeFilterDto filter)
+        public async Task<IActionResult> GetPaginated([FromQuery] TypeFilterDto filter, CancellationToken cancellationToken)
         {
-            var types = await _typeService.GetPaginatedListAsync(filter);
+            var types = await _typeService.GetPaginatedListAsync(filter, cancellationToken);
             return Ok(ApiResponse<PaginationResponse<TypeDto>>.Success(types, SuccessMessageConstant.TypesRetrievedSuccessfully));
         }
 
@@ -59,9 +59,9 @@ namespace pHishbone.Controllers
         [HttpPost(ApiEndpointConstant.Type.Create)]
         [ProducesResponseType(typeof(ApiResponse<TypeDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> Create([FromBody] CreateTypeDto dto)
+        public async Task<IActionResult> Create([FromBody] CreateTypeDto dto, CancellationToken cancellationToken)
         {
-            var type = await _typeService.CreateAsync(dto);
+            var type = await _typeService.CreateAsync(dto, cancellationToken);
             return CreatedAtAction(
                 nameof(GetById),
                 new { id = type.Id },
@@ -75,9 +75,9 @@ namespace pHishbone.Controllers
         [HttpPost(ApiEndpointConstant.Type.CreateRange)]
         [ProducesResponseType(typeof(ApiResponse<ICollection<TypeDto>>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> CreateRange([FromBody] List<CreateTypeDto> dtos)
+        public async Task<IActionResult> CreateRange([FromBody] List<CreateTypeDto> dtos, CancellationToken cancellationToken)
         {
-            var types = await _typeService.CreateRangeAsync(dtos);
+            var types = await _typeService.CreateRangeAsync(dtos, cancellationToken);
             return Ok(ApiResponse<ICollection<TypeDto>>.Success(types, SuccessMessageConstant.TypesCreatedSuccessfully, 201));
         }
 
@@ -88,9 +88,9 @@ namespace pHishbone.Controllers
         [ProducesResponseType(typeof(ApiResponse<TypeDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> Update([FromRoute] string id, [FromBody] UpdateTypeDto dto)
+        public async Task<IActionResult> Update([FromRoute] string id, [FromBody] UpdateTypeDto dto, CancellationToken cancellationToken)
         {
-            var type = await _typeService.UpdateAsync(id, dto);
+            var type = await _typeService.UpdateAsync(id, dto, cancellationToken);
             return Ok(ApiResponse<TypeDto>.Success(type, SuccessMessageConstant.TypeUpdatedSuccessfully));
         }
 
@@ -100,9 +100,9 @@ namespace pHishbone.Controllers
         [HttpDelete(ApiEndpointConstant.Type.Delete)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Delete([FromRoute] string id)
+        public async Task<IActionResult> Delete([FromRoute] string id, CancellationToken cancellationToken)
         {
-            await _typeService.DeleteAsync(id);
+            await _typeService.DeleteAsync(id, cancellationToken);
             return Ok(ApiResponse<object>.Success(null, SuccessMessageConstant.TypeDeletedSuccessfully));
         }
     }

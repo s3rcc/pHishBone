@@ -29,13 +29,14 @@ namespace Infrastructure.Services
             _logger = logger;
         }
 
-        public async Task<PhotoUploadResult> AddPhotoAsync(IFormFile file, string folderName = "general")
+        public async Task<PhotoUploadResult> AddPhotoAsync(IFormFile file, string folderName = "general", CancellationToken cancellationToken = default)
         {
             if (file.Length <= 0)
             {
                 return new PhotoUploadResult { IsSuccess = false, Error = "File is empty" };
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
             await using var stream = file.OpenReadStream();
             var uploadParams = new ImageUploadParams
             {
@@ -44,7 +45,7 @@ namespace Infrastructure.Services
                 Transformation = new Transformation().FetchFormat("auto").Quality("auto")
             };
 
-            var result = await _cloudinary.UploadAsync(uploadParams);
+            var result = await _cloudinary.UploadAsync(uploadParams).WaitAsync(cancellationToken);
 
             if (result.Error != null)
             {
@@ -62,15 +63,16 @@ namespace Infrastructure.Services
             };
         }
 
-        public async Task<string> DeletePhotoAsync(string publicId)
+        public async Task<string> DeletePhotoAsync(string publicId, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(publicId))
             {
                 return "PublicId is empty";
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
             var deleteParams = new DeletionParams(publicId);
-            var result = await _cloudinary.DestroyAsync(deleteParams);
+            var result = await _cloudinary.DestroyAsync(deleteParams).WaitAsync(cancellationToken);
 
             if (result.Result == "ok")
             {
@@ -82,14 +84,14 @@ namespace Infrastructure.Services
             return result.Result;
         }
 
-        public async Task<List<PhotoUploadResult>> AddPhotosAsync(List<IFormFile> files, string folderName = "general")
+        public async Task<List<PhotoUploadResult>> AddPhotosAsync(List<IFormFile> files, string folderName = "general", CancellationToken cancellationToken = default)
         {
-            var uploadTasks = files.Select(file => AddPhotoAsync(file, folderName));
+            var uploadTasks = files.Select(file => AddPhotoAsync(file, folderName, cancellationToken));
             var results = await Task.WhenAll(uploadTasks);
             return results.ToList();
         }
 
-        public async Task<List<string>> DeletePhotosAsync(List<string> publicIds)
+        public async Task<List<string>> DeletePhotosAsync(List<string> publicIds, CancellationToken cancellationToken = default)
         {
             if (publicIds == null || publicIds.Count == 0)
             {
@@ -110,13 +112,14 @@ namespace Infrastructure.Services
 
             foreach (var batch in batches)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var deleteParams = new DelResParams
                 {
                     PublicIds = batch.ToList(),
                     ResourceType = ResourceType.Image
                 };
 
-                var result = await _cloudinary.DeleteResourcesAsync(deleteParams);
+                var result = await _cloudinary.DeleteResourcesAsync(deleteParams).WaitAsync(cancellationToken);
 
                 if (result.Error != null)
                 {

@@ -12,46 +12,46 @@ namespace Application.Common.Interfaces
         /// <summary>
         /// Get basic species information by ID (lightweight, no includes).
         /// </summary>
-        Task<SpeciesDto> GetByIdAsync(string id);
+        Task<SpeciesDto> GetByIdAsync(string id, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Get full species details by ID including Environment, Profile, and Tags.
         /// </summary>
-        Task<SpeciesDetailDto> GetDetailByIdAsync(string id);
+        Task<SpeciesDetailDto> GetDetailByIdAsync(string id, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Get full species details by slug for public catalog SEO-friendly URLs.
         /// </summary>
-        Task<SpeciesDetailDto> GetDetailBySlugAsync(string slug);
+        Task<SpeciesDetailDto> GetDetailBySlugAsync(string slug, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Get all species as a basic list.
         /// </summary>
-        Task<ICollection<SpeciesDto>> GetListAsync();
+        Task<ICollection<SpeciesDto>> GetListAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Get paginated species list with filtering and search.
         /// </summary>
-        Task<PaginationResponse<SpeciesDto>> GetPaginatedListAsync(SpeciesFilterDto filter);
+        Task<PaginationResponse<SpeciesDto>> GetPaginatedListAsync(SpeciesFilterDto filter, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Create a new species with environment, profile, and tags.
         /// Uses transaction to ensure atomicity across multiple tables.
         /// </summary>
-        Task<SpeciesDetailDto> CreateAsync(CreateSpeciesDto dto);
+        Task<SpeciesDetailDto> CreateAsync(CreateSpeciesDto dto, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Update an existing species with environment, profile, and tags.
         /// Uses transaction and smart tag synchronization.
         /// Slug is immutable and will be preserved.
         /// </summary>
-        Task<SpeciesDetailDto> UpdateAsync(string id, UpdateSpeciesDto dto);
+        Task<SpeciesDetailDto> UpdateAsync(string id, UpdateSpeciesDto dto, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Soft delete a species by setting DeletedTime and DeletedBy.
         /// Physical deletion is not allowed to preserve historical data.
         /// </summary>
-        Task DeleteAsync(string id);
+        Task DeleteAsync(string id, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Performs a bilingual hybrid search combining FTS (simple dictionary) and Trigram similarity.

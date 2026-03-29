@@ -23,12 +23,13 @@ namespace Infrastructure.Services
             _mapper = mapper;
         }
 
-        public async Task<CompatibilityRuleDto> GetByIdAsync(string id)
+        public async Task<CompatibilityRuleDto> GetByIdAsync(string id, CancellationToken cancellationToken = default)
         {
             var rule = await _unitOfWork.Repository<CompatibilityRule>().SingleOrDefaultAsync(
                 predicate: r => r.Id == id,
                 include: q => q.Include(r => r.SubjectTag).Include(r => r.ObjectTag),
-                tracking: false
+                tracking: false,
+                cancellationToken: cancellationToken
             );
 
             if (rule == null)
@@ -43,7 +44,7 @@ namespace Infrastructure.Services
             return _mapper.Map<CompatibilityRuleDto>(rule);
         }
 
-        public async Task<PaginationResponse<CompatibilityRuleDto>> GetPaginatedListAsync(CompatibilityRuleFilterDto filter)
+        public async Task<PaginationResponse<CompatibilityRuleDto>> GetPaginatedListAsync(CompatibilityRuleFilterDto filter, CancellationToken cancellationToken = default)
         {
             var rules = await _unitOfWork.Repository<CompatibilityRule>().GetPagingListAsync(
                 predicate: string.IsNullOrWhiteSpace(filter.SearchTerm) ? null :
@@ -54,7 +55,8 @@ namespace Infrastructure.Services
                 page: filter.Page,
                 size: filter.Size,
                 sortBy: filter.SortBy,
-                isAsc: filter.IsAscending
+                isAsc: filter.IsAscending,
+                cancellationToken: cancellationToken
             );
 
             return new PaginationResponse<CompatibilityRuleDto>
@@ -67,7 +69,7 @@ namespace Infrastructure.Services
             };
         }
 
-        public async Task<CompatibilityRuleDto> CreateAsync(CreateCompatibilityRuleDto dto)
+        public async Task<CompatibilityRuleDto> CreateAsync(CreateCompatibilityRuleDto dto, CancellationToken cancellationToken = default)
         {
             // 1. Self-reference check
             if (dto.SubjectTagId == dto.ObjectTagId)
@@ -82,7 +84,8 @@ namespace Infrastructure.Services
             // 2. Tag existence checks
             var subjectTag = await _unitOfWork.Repository<Tag>().SingleOrDefaultAsync(
                 predicate: t => t.Id == dto.SubjectTagId,
-                tracking: false
+                tracking: false,
+                cancellationToken: cancellationToken
             );
             if (subjectTag == null)
             {
@@ -95,7 +98,8 @@ namespace Infrastructure.Services
 
             var objectTag = await _unitOfWork.Repository<Tag>().SingleOrDefaultAsync(
                 predicate: t => t.Id == dto.ObjectTagId,
-                tracking: false
+                tracking: false,
+                cancellationToken: cancellationToken
             );
             if (objectTag == null)
             {
@@ -114,7 +118,8 @@ namespace Infrastructure.Services
                         (r.SubjectTagId == dto.SubjectTagId && r.ObjectTagId == dto.ObjectTagId) ||
                         (r.SubjectTagId == dto.ObjectTagId && r.ObjectTagId == dto.SubjectTagId)
                     ),
-                tracking: false
+                tracking: false,
+                cancellationToken: cancellationToken
             );
             if (existingRule != null)
             {
@@ -127,24 +132,26 @@ namespace Infrastructure.Services
 
             // 4. Create the rule
             var rule = _mapper.Map<CompatibilityRule>(dto);
-            await _unitOfWork.Repository<CompatibilityRule>().InsertAsync(rule);
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.Repository<CompatibilityRule>().InsertAsync(rule, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             // Re-fetch with includes to populate tag names for the response
             var created = await _unitOfWork.Repository<CompatibilityRule>().SingleOrDefaultAsync(
                 predicate: r => r.Id == rule.Id,
                 include: q => q.Include(r => r.SubjectTag).Include(r => r.ObjectTag),
-                tracking: false
+                tracking: false,
+                cancellationToken: cancellationToken
             );
 
             return _mapper.Map<CompatibilityRuleDto>(created!);
         }
 
-        public async Task<CompatibilityRuleDto> UpdateAsync(string id, UpdateCompatibilityRuleDto dto)
+        public async Task<CompatibilityRuleDto> UpdateAsync(string id, UpdateCompatibilityRuleDto dto, CancellationToken cancellationToken = default)
         {
             var rule = await _unitOfWork.Repository<CompatibilityRule>().SingleOrDefaultAsync(
                 predicate: r => r.Id == id,
-                include: q => q.Include(r => r.SubjectTag).Include(r => r.ObjectTag)
+                include: q => q.Include(r => r.SubjectTag).Include(r => r.ObjectTag),
+                cancellationToken: cancellationToken
             );
 
             if (rule == null)
@@ -161,15 +168,16 @@ namespace Infrastructure.Services
             rule.Message = dto.Message;
 
             await _unitOfWork.Repository<CompatibilityRule>().Update(rule);
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return _mapper.Map<CompatibilityRuleDto>(rule);
         }
 
-        public async Task DeleteAsync(string id)
+        public async Task DeleteAsync(string id, CancellationToken cancellationToken = default)
         {
             var rule = await _unitOfWork.Repository<CompatibilityRule>().SingleOrDefaultAsync(
-                predicate: r => r.Id == id
+                predicate: r => r.Id == id,
+                cancellationToken: cancellationToken
             );
 
             if (rule == null)
@@ -182,7 +190,7 @@ namespace Infrastructure.Services
             }
 
             _unitOfWork.Repository<CompatibilityRule>().Delete(rule);
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
     }
 }

@@ -46,7 +46,8 @@ namespace Infrastructure.Services
                         .Include(s => s.SpeciesProfile)
                         .Include(s => s.SpeciesTags)
                             .ThenInclude(st => st.Tag),
-                    tracking: false
+                    tracking: false,
+                    cancellationToken: cancellationToken
                 );
 
                 if (speciesList.Count != speciesIds.Count)
@@ -107,7 +108,8 @@ namespace Infrastructure.Services
                         predicate: r => allTagIds.Contains(r.SubjectTagId) &&
                                         allTagIds.Contains(r.ObjectTagId) &&
                                         r.DeletedTime == null,
-                        tracking: false
+                        tracking: false,
+                        cancellationToken: cancellationToken
                     );
 
                     ruleInputs = rules

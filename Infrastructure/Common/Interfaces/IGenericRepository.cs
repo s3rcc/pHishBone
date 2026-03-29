@@ -13,13 +13,15 @@ namespace Infrastructure.Common.Interfaces
         Expression<Func<T, bool>>? predicate = null,
         Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null,
         Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null,
-        bool tracking = false);
+        bool tracking = false,
+        CancellationToken cancellationToken = default);
 
         Task<ICollection<T>> GetListAsync(
             Expression<Func<T, bool>>? predicate = null,
             Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null,
             Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null,
-            bool tracking = false);
+            bool tracking = false,
+            CancellationToken cancellationToken = default);
 
         Task<IPaginate<T>> GetPagingListAsync(
             IFilter<T>? filter = null,
@@ -29,11 +31,12 @@ namespace Infrastructure.Common.Interfaces
             int page = 1,
             int size = 10,
             string? sortBy = null,
-            bool isAsc = true);
+            bool isAsc = true,
+            CancellationToken cancellationToken = default);
 
         // --- Writes ---
-        Task InsertAsync(T entity);
-        Task InsertRangeAsync(IEnumerable<T> entities);
+        Task InsertAsync(T entity, CancellationToken cancellationToken = default);
+        Task InsertRangeAsync(IEnumerable<T> entities, CancellationToken cancellationToken = default);
         Task Update(T entity);
         void UpdateRange(IEnumerable<T> entities);
         void Delete(T entity);

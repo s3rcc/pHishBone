@@ -37,25 +37,26 @@ namespace Infrastructure.Services
             _logger = logger;
         }
 
-        public async Task<IEnumerable<ImageResponseDto>> GetImagesAsync(string speciesId)
+        public async Task<IEnumerable<ImageResponseDto>> GetImagesAsync(string speciesId, CancellationToken cancellationToken = default)
         {
-            await VerifySpeciesExistsAsync(speciesId);
+            await VerifySpeciesExistsAsync(speciesId, cancellationToken);
 
             var images = await _unitOfWork.Repository<SpeciesImage>().GetListAsync(
                 predicate: si => si.SpeciesId == speciesId && si.DeletedTime == null,
                 orderBy: q => q.OrderBy(si => si.SortOrder).ThenByDescending(si => si.CreatedTime),
-                tracking: false
+                tracking: false,
+                cancellationToken: cancellationToken
             );
 
             return _mapper.Map<IEnumerable<ImageResponseDto>>(images);
         }
 
-        public async Task<ImageResponseDto> AddImageAsync(string speciesId, CreateImageDto dto)
+        public async Task<ImageResponseDto> AddImageAsync(string speciesId, CreateImageDto dto, CancellationToken cancellationToken = default)
         {
-            await VerifySpeciesExistsAsync(speciesId);
+            await VerifySpeciesExistsAsync(speciesId, cancellationToken);
 
             // Upload to Cloudinary
-            var uploadResult = await _photoService.AddPhotoAsync(dto.File, "species");
+            var uploadResult = await _photoService.AddPhotoAsync(dto.File, "species", cancellationToken);
 
             if (!uploadResult.IsSuccess)
             {
@@ -76,20 +77,20 @@ namespace Infrastructure.Services
                 CreatedBy = _currentUserService.GetUserId()
             };
 
-            await _unitOfWork.Repository<SpeciesImage>().InsertAsync(image);
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.Repository<SpeciesImage>().InsertAsync(image, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation("Added image {PublicId} to species {SpeciesId}", uploadResult.PublicId, speciesId);
 
             return _mapper.Map<ImageResponseDto>(image);
         }
 
-        public async Task<List<ImageResponseDto>> AddImagesAsync(string speciesId, List<IFormFile> files)
+        public async Task<List<ImageResponseDto>> AddImagesAsync(string speciesId, List<IFormFile> files, CancellationToken cancellationToken = default)
         {
-            await VerifySpeciesExistsAsync(speciesId);
+            await VerifySpeciesExistsAsync(speciesId, cancellationToken);
 
             // Concurrent upload via Task.WhenAll
-            var uploadResults = await _photoService.AddPhotosAsync(files, "species");
+            var uploadResults = await _photoService.AddPhotosAsync(files, "species", cancellationToken);
             var successResults = uploadResults.Where(r => r.IsSuccess).ToList();
 
             if (successResults.Count == 0)
@@ -113,21 +114,22 @@ namespace Infrastructure.Services
 
             foreach (var image in images)
             {
-                await _unitOfWork.Repository<SpeciesImage>().InsertAsync(image);
+                await _unitOfWork.Repository<SpeciesImage>().InsertAsync(image, cancellationToken);
             }
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation("Added {Count} images to species {SpeciesId}", images.Count, speciesId);
 
             return _mapper.Map<List<ImageResponseDto>>(images);
         }
 
-        public async Task RemoveImageAsync(string speciesId, string imageId)
+        public async Task RemoveImageAsync(string speciesId, string imageId, CancellationToken cancellationToken = default)
         {
-            await VerifySpeciesExistsAsync(speciesId);
+            await VerifySpeciesExistsAsync(speciesId, cancellationToken);
 
             var image = await _unitOfWork.Repository<SpeciesImage>().SingleOrDefaultAsync(
-                predicate: si => si.Id == imageId && si.SpeciesId == speciesId && si.DeletedTime == null
+                predicate: si => si.Id == imageId && si.SpeciesId == speciesId && si.DeletedTime == null,
+                cancellationToken: cancellationToken
             );
 
             if (image == null)
@@ -141,21 +143,22 @@ namespace Infrastructure.Services
 
             // Delete from DB first
             _unitOfWork.Repository<SpeciesImage>().Delete(image);
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             // Cleanup CDN (fire-and-forget safe: DB is already consistent)
             if (!string.IsNullOrEmpty(image.PublicId))
             {
-                await _photoService.DeletePhotoAsync(image.PublicId);
+                await _photoService.DeletePhotoAsync(image.PublicId, cancellationToken);
             }
 
             _logger.LogInformation("Removed image {ImageId} from species {SpeciesId}", imageId, speciesId);
         }
 
-        public async Task SetThumbnailAsync(string speciesId, SetThumbnailDto dto)
+        public async Task SetThumbnailAsync(string speciesId, SetThumbnailDto dto, CancellationToken cancellationToken = default)
         {
             var species = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
-                predicate: s => s.Id == speciesId && s.DeletedTime == null
+                predicate: s => s.Id == speciesId && s.DeletedTime == null,
+                cancellationToken: cancellationToken
             );
 
             if (species == null)
@@ -168,7 +171,7 @@ namespace Infrastructure.Services
             }
 
             // Upload new thumbnail
-            var uploadResult = await _photoService.AddPhotoAsync(dto.File, "species/thumbnails");
+            var uploadResult = await _photoService.AddPhotoAsync(dto.File, "species/thumbnails", cancellationToken);
 
             if (!uploadResult.IsSuccess)
             {
@@ -188,21 +191,22 @@ namespace Infrastructure.Services
             species.LastUpdatedTime = DateTime.UtcNow;
 
             await _unitOfWork.Repository<Species>().Update(species);
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             if (!string.IsNullOrEmpty(oldPublicId))
             {
-                await _photoService.DeletePhotoAsync(oldPublicId);
+                await _photoService.DeletePhotoAsync(oldPublicId, cancellationToken);
             }
 
             _logger.LogInformation("Set thumbnail for species {SpeciesId}: {PublicId}", speciesId, uploadResult.PublicId);
         }
 
-        private async Task VerifySpeciesExistsAsync(string speciesId)
+        private async Task VerifySpeciesExistsAsync(string speciesId, CancellationToken cancellationToken = default)
         {
             var species = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
                 predicate: s => s.Id == speciesId && s.DeletedTime == null,
-                tracking: false
+                tracking: false,
+                cancellationToken: cancellationToken
             );
 
             if (species == null)

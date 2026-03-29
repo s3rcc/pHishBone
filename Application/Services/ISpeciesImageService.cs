@@ -11,26 +11,26 @@ namespace Application.Services
         /// <summary>
         /// Get all images for a species.
         /// </summary>
-        Task<IEnumerable<ImageResponseDto>> GetImagesAsync(string speciesId);
+        Task<IEnumerable<ImageResponseDto>> GetImagesAsync(string speciesId, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Add a single image to a species gallery via file upload.
         /// </summary>
-        Task<ImageResponseDto> AddImageAsync(string speciesId, CreateImageDto dto);
+        Task<ImageResponseDto> AddImageAsync(string speciesId, CreateImageDto dto, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Add multiple images to a species gallery concurrently.
         /// </summary>
-        Task<List<ImageResponseDto>> AddImagesAsync(string speciesId, List<IFormFile> files);
+        Task<List<ImageResponseDto>> AddImagesAsync(string speciesId, List<IFormFile> files, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Remove an image from a species gallery and delete from CDN.
         /// </summary>
-        Task RemoveImageAsync(string speciesId, string imageId);
+        Task RemoveImageAsync(string speciesId, string imageId, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Set the main thumbnail image for a species via file upload.
         /// </summary>
-        Task SetThumbnailAsync(string speciesId, SetThumbnailDto dto);
+        Task SetThumbnailAsync(string speciesId, SetThumbnailDto dto, CancellationToken cancellationToken = default);
     }
 }

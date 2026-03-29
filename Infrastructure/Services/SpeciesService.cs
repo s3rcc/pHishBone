@@ -41,11 +41,12 @@ namespace Infrastructure.Services
             _logger = logger;
         }
 
-        public async Task<SpeciesDto> GetByIdAsync(string id)
+        public async Task<SpeciesDto> GetByIdAsync(string id, CancellationToken cancellationToken = default)
         {
             var species = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
                 predicate: s => s.Id == id,
-                include: q => q.Include(s => s.Type)
+                include: q => q.Include(s => s.Type),
+                cancellationToken: cancellationToken
             );
 
             if (species == null)
@@ -60,7 +61,7 @@ namespace Infrastructure.Services
             return _mapper.Map<SpeciesDto>(species);
         }
 
-        public async Task<SpeciesDetailDto> GetDetailByIdAsync(string id)
+        public async Task<SpeciesDetailDto> GetDetailByIdAsync(string id, CancellationToken cancellationToken = default)
         {
             var species = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
                 predicate: s => s.Id == id,
@@ -69,7 +70,8 @@ namespace Infrastructure.Services
                     .Include(s => s.SpeciesEnvironment)
                     .Include(s => s.SpeciesProfile)
                     .Include(s => s.SpeciesTags)
-                        .ThenInclude(st => st.Tag)
+                        .ThenInclude(st => st.Tag),
+                cancellationToken: cancellationToken
             );
 
             if (species == null)
@@ -84,7 +86,7 @@ namespace Infrastructure.Services
             return _mapper.Map<SpeciesDetailDto>(species);
         }
 
-        public async Task<SpeciesDetailDto> GetDetailBySlugAsync(string slug)
+        public async Task<SpeciesDetailDto> GetDetailBySlugAsync(string slug, CancellationToken cancellationToken = default)
         {
             var species = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
                 predicate: s => s.Slug == slug,
@@ -93,7 +95,8 @@ namespace Infrastructure.Services
                     .Include(s => s.SpeciesEnvironment)
                     .Include(s => s.SpeciesProfile)
                     .Include(s => s.SpeciesTags)
-                        .ThenInclude(st => st.Tag)
+                        .ThenInclude(st => st.Tag),
+                cancellationToken: cancellationToken
             );
 
             if (species == null)
@@ -108,17 +111,18 @@ namespace Infrastructure.Services
             return _mapper.Map<SpeciesDetailDto>(species);
         }
 
-        public async Task<ICollection<SpeciesDto>> GetListAsync()
+        public async Task<ICollection<SpeciesDto>> GetListAsync(CancellationToken cancellationToken = default)
         {
             var species = await _unitOfWork.Repository<Species>().GetListAsync(
                 include: q => q.Include(s => s.Type),
-                orderBy: q => q.OrderBy(s => s.CommonName)
+                orderBy: q => q.OrderBy(s => s.CommonName),
+                cancellationToken: cancellationToken
             );
 
             return _mapper.Map<ICollection<SpeciesDto>>(species);
         }
 
-        public async Task<PaginationResponse<SpeciesDto>> GetPaginatedListAsync(SpeciesFilterDto filter)
+        public async Task<PaginationResponse<SpeciesDto>> GetPaginatedListAsync(SpeciesFilterDto filter, CancellationToken cancellationToken = default)
         {
             var species = await _unitOfWork.Repository<Species>().GetPagingListAsync(
                 predicate: BuildFilterPredicate(filter),
@@ -126,7 +130,8 @@ namespace Infrastructure.Services
                 page: filter.Page,
                 size: filter.Size,
                 sortBy: filter.SortBy,
-                isAsc: filter.IsAscending
+                isAsc: filter.IsAscending,
+                cancellationToken: cancellationToken
             );
 
             return new PaginationResponse<SpeciesDto>
@@ -139,11 +144,12 @@ namespace Infrastructure.Services
             };
         }
 
-        public async Task<SpeciesDetailDto> CreateAsync(CreateSpeciesDto dto)
+        public async Task<SpeciesDetailDto> CreateAsync(CreateSpeciesDto dto, CancellationToken cancellationToken = default)
         {
             // 1. Validate TypeId exists
             var type = await _unitOfWork.Repository<Domain.Entities.Catalog.Type>().SingleOrDefaultAsync(
-                predicate: t => t.Id == dto.TypeId
+                predicate: t => t.Id == dto.TypeId,
+                cancellationToken: cancellationToken
             );
             if (type == null)
             {
@@ -158,7 +164,8 @@ namespace Infrastructure.Services
             if (dto.TagIds.Any())
             {
                 var existingTags = await _unitOfWork.Repository<Tag>().GetListAsync(
-                    predicate: t => dto.TagIds.Contains(t.Id)
+                    predicate: t => dto.TagIds.Contains(t.Id),
+                    cancellationToken: cancellationToken
                 );
                 if (existingTags.Count != dto.TagIds.Count)
                 {
@@ -172,7 +179,8 @@ namespace Infrastructure.Services
 
             // 3. Check ScientificName uniqueness
             var existingSpecies = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
-                predicate: s => s.ScientificName == dto.ScientificName && s.DeletedTime == null
+                predicate: s => s.ScientificName == dto.ScientificName && s.DeletedTime == null,
+                cancellationToken: cancellationToken
             );
             if (existingSpecies != null)
             {
@@ -184,25 +192,25 @@ namespace Infrastructure.Services
             }
 
             // 4. Generate unique slug
-            var slug = await GenerateUniqueSlugAsync(dto.CommonName);
+            var slug = await GenerateUniqueSlugAsync(dto.CommonName, cancellationToken);
 
             // 5. Create Species entity
             var species = _mapper.Map<Species>(dto);
             species.Slug = slug;
             species.CreatedBy = _currentUserService.GetUserId();
-            await _unitOfWork.Repository<Species>().InsertAsync(species);
+            await _unitOfWork.Repository<Species>().InsertAsync(species, cancellationToken);
 
             // 6. Create SpeciesEnvironment entity with SAME ID
             var environment = _mapper.Map<SpeciesEnvironment>(dto.Environment);
             environment.Id = species.Id; // Critical: Use same ID
             environment.CreatedBy = _currentUserService.GetUserId();
-            await _unitOfWork.Repository<SpeciesEnvironment>().InsertAsync(environment);
+            await _unitOfWork.Repository<SpeciesEnvironment>().InsertAsync(environment, cancellationToken);
 
             // 7. Create SpeciesProfile entity with SAME ID
             var profile = _mapper.Map<SpeciesProfile>(dto.Profile);
             profile.Id = species.Id; // Critical: Use same ID
             profile.CreatedBy = _currentUserService.GetUserId();
-            await _unitOfWork.Repository<SpeciesProfile>().InsertAsync(profile);
+            await _unitOfWork.Repository<SpeciesProfile>().InsertAsync(profile, cancellationToken);
 
             // 8. Create SpeciesTag entities
             foreach (var tagId in dto.TagIds)
@@ -213,17 +221,17 @@ namespace Infrastructure.Services
                     TagId = tagId,
                     CreatedBy = _currentUserService.GetUserId()
                 };
-                await _unitOfWork.Repository<SpeciesTag>().InsertAsync(speciesTag);
+                await _unitOfWork.Repository<SpeciesTag>().InsertAsync(speciesTag, cancellationToken);
             }
 
             // 9. Save all changes in one transaction
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             // 10. Return full detail
-            return await GetDetailByIdAsync(species.Id);
+            return await GetDetailByIdAsync(species.Id, cancellationToken);
         }
 
-        public async Task<SpeciesDetailDto> UpdateAsync(string id, UpdateSpeciesDto dto)
+        public async Task<SpeciesDetailDto> UpdateAsync(string id, UpdateSpeciesDto dto, CancellationToken cancellationToken = default)
         {
             // 1. Fetch existing Species with all includes
             var species = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
@@ -231,7 +239,8 @@ namespace Infrastructure.Services
                 include: q => q
                     .Include(s => s.SpeciesEnvironment)
                     .Include(s => s.SpeciesProfile)
-                    .Include(s => s.SpeciesTags)
+                    .Include(s => s.SpeciesTags),
+                cancellationToken: cancellationToken
             );
 
             if (species == null)
@@ -245,7 +254,8 @@ namespace Infrastructure.Services
 
             // 2. Validate TypeId exists
             var type = await _unitOfWork.Repository<Domain.Entities.Catalog.Type>().SingleOrDefaultAsync(
-                predicate: t => t.Id == dto.TypeId
+                predicate: t => t.Id == dto.TypeId,
+                cancellationToken: cancellationToken
             );
             if (type == null)
             {
@@ -258,7 +268,8 @@ namespace Infrastructure.Services
 
             // 3. Validate ScientificName uniqueness (exclude current species)
             var existingSpecies = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
-                predicate: s => s.ScientificName == dto.ScientificName && s.Id != id && s.DeletedTime == null
+                predicate: s => s.ScientificName == dto.ScientificName && s.Id != id && s.DeletedTime == null,
+                cancellationToken: cancellationToken
             );
             if (existingSpecies != null)
             {
@@ -291,7 +302,7 @@ namespace Infrastructure.Services
                 var environment = _mapper.Map<SpeciesEnvironment>(dto.Environment);
                 environment.Id = species.Id;
                 environment.CreatedBy = _currentUserService.GetUserId();
-                await _unitOfWork.Repository<SpeciesEnvironment>().InsertAsync(environment);
+                await _unitOfWork.Repository<SpeciesEnvironment>().InsertAsync(environment, cancellationToken);
             }
 
             // 6. Update SpeciesProfile
@@ -308,7 +319,7 @@ namespace Infrastructure.Services
                 var profile = _mapper.Map<SpeciesProfile>(dto.Profile);
                 profile.Id = species.Id;
                 profile.CreatedBy = _currentUserService.GetUserId();
-                await _unitOfWork.Repository<SpeciesProfile>().InsertAsync(profile);
+                await _unitOfWork.Repository<SpeciesProfile>().InsertAsync(profile, cancellationToken);
             }
 
             // 7. Smart Tag Sync
@@ -332,7 +343,8 @@ namespace Infrastructure.Services
             {
                 // Validate tag exists
                 var tagExists = await _unitOfWork.Repository<Tag>().SingleOrDefaultAsync(
-                    predicate: t => t.Id == tagId
+                    predicate: t => t.Id == tagId,
+                    cancellationToken: cancellationToken
                 );
                 if (tagExists == null)
                 {
@@ -349,20 +361,21 @@ namespace Infrastructure.Services
                     TagId = tagId,
                     CreatedBy = _currentUserService.GetUserId()
                 };
-                await _unitOfWork.Repository<SpeciesTag>().InsertAsync(speciesTag);
+                await _unitOfWork.Repository<SpeciesTag>().InsertAsync(speciesTag, cancellationToken);
             }
 
             // 8. Save all changes in one transaction
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             // 9. Return full detail
-            return await GetDetailByIdAsync(species.Id);
+            return await GetDetailByIdAsync(species.Id, cancellationToken);
         }
 
-        public async Task DeleteAsync(string id)
+        public async Task DeleteAsync(string id, CancellationToken cancellationToken = default)
         {
             var species = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
-                predicate: s => s.Id == id
+                predicate: s => s.Id == id,
+                cancellationToken: cancellationToken
             );
 
             if (species == null)
@@ -378,7 +391,7 @@ namespace Infrastructure.Services
             species.DeletedTime = DateTime.UtcNow;
             species.DeletedBy = _currentUserService.GetUserId();
             await _unitOfWork.Repository<Species>().Update(species);
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
         public async Task<PaginationResponse<SpeciesDto>> SearchHybridAsync(SpeciesFilterDto filter, CancellationToken cancellationToken = default)
@@ -399,7 +412,7 @@ namespace Infrastructure.Services
             // If no search term, return gracefully paginated list as a sensible default
             if (string.IsNullOrWhiteSpace(searchTerm))
             {
-                return await GetPaginatedListAsync(filter);
+                return await GetPaginatedListAsync(filter, cancellationToken);
             }
 
             // [Reasoning] FromSqlInterpolated is used for safe, parameterized raw SQL.
@@ -461,7 +474,7 @@ namespace Infrastructure.Services
                 (string.IsNullOrWhiteSpace(filter.TypeId) || s.TypeId == filter.TypeId);
         }
 
-        private async Task<string> GenerateUniqueSlugAsync(string commonName)
+        private async Task<string> GenerateUniqueSlugAsync(string commonName, CancellationToken cancellationToken = default)
         {
             // Generate base slug: lowercase, replace spaces with hyphens, remove special chars
             var baseSlug = Regex.Replace(commonName.ToLower().Trim(), @"[^a-z0-9\s-]", "");
@@ -473,7 +486,7 @@ namespace Infrastructure.Services
             var slug = baseSlug;
             var counter = 1;
 
-            while (await SlugExistsAsync(slug))
+            while (await SlugExistsAsync(slug, cancellationToken))
             {
                 slug = $"{baseSlug}-{counter}";
                 counter++;
@@ -482,10 +495,11 @@ namespace Infrastructure.Services
             return slug;
         }
 
-        private async Task<bool> SlugExistsAsync(string slug)
+        private async Task<bool> SlugExistsAsync(string slug, CancellationToken cancellationToken = default)
         {
             var existing = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
-                predicate: s => s.Slug == slug && s.DeletedTime == null
+                predicate: s => s.Slug == slug && s.DeletedTime == null,
+                cancellationToken: cancellationToken
             );
             return existing != null;
         }

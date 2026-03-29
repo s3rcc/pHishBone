@@ -23,10 +23,11 @@ namespace Infrastructure.Services
             _mapper = mapper;
         }
 
-        public async Task<TypeDto> GetByIdAsync(string id)
+        public async Task<TypeDto> GetByIdAsync(string id, CancellationToken cancellationToken = default)
         {
             var type = await _unitOfWork.Repository<CatalogType>().SingleOrDefaultAsync(
-                predicate: t => t.Id == id
+                predicate: t => t.Id == id,
+                cancellationToken: cancellationToken
             );
 
             if (type == null)
@@ -41,16 +42,17 @@ namespace Infrastructure.Services
             return _mapper.Map<TypeDto>(type);
         }
 
-        public async Task<ICollection<TypeDto>> GetListAsync()
+        public async Task<ICollection<TypeDto>> GetListAsync(CancellationToken cancellationToken = default)
         {
             var types = await _unitOfWork.Repository<CatalogType>().GetListAsync(
-                orderBy: q => q.OrderBy(t => t.Name)
+                orderBy: q => q.OrderBy(t => t.Name),
+                cancellationToken: cancellationToken
             );
 
             return _mapper.Map<ICollection<TypeDto>>(types);
         }
 
-        public async Task<PaginationResponse<TypeDto>> GetPaginatedListAsync(TypeFilterDto filter)
+        public async Task<PaginationResponse<TypeDto>> GetPaginatedListAsync(TypeFilterDto filter, CancellationToken cancellationToken = default)
         {
             var types = await _unitOfWork.Repository<CatalogType>().GetPagingListAsync(
                 predicate: string.IsNullOrWhiteSpace(filter.SearchTerm) ? null :
@@ -58,7 +60,8 @@ namespace Infrastructure.Services
                 page: filter.Page,
                 size: filter.Size,
                 sortBy: filter.SortBy,
-                isAsc: filter.IsAscending
+                isAsc: filter.IsAscending,
+                cancellationToken: cancellationToken
             );
 
             return new PaginationResponse<TypeDto>
@@ -71,11 +74,12 @@ namespace Infrastructure.Services
             };
         }
 
-        public async Task<TypeDto> CreateAsync(CreateTypeDto dto)
+        public async Task<TypeDto> CreateAsync(CreateTypeDto dto, CancellationToken cancellationToken = default)
         {
             // Check for duplicate name
             var existingWithName = await _unitOfWork.Repository<CatalogType>().SingleOrDefaultAsync(
-                predicate: t => t.Name == dto.Name && t.DeletedTime == null
+                predicate: t => t.Name == dto.Name && t.DeletedTime == null,
+                cancellationToken: cancellationToken
             );
             if (existingWithName != null)
             {
@@ -87,18 +91,19 @@ namespace Infrastructure.Services
             }
 
             var type = _mapper.Map<CatalogType>(dto);
-            await _unitOfWork.Repository<CatalogType>().InsertAsync(type);
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.Repository<CatalogType>().InsertAsync(type, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return _mapper.Map<TypeDto>(type);
         }
 
-        public async Task<ICollection<TypeDto>> CreateRangeAsync(List<CreateTypeDto> dtos)
+        public async Task<ICollection<TypeDto>> CreateRangeAsync(List<CreateTypeDto> dtos, CancellationToken cancellationToken = default)
         {
             // Check for duplicate names in batch
             var names = dtos.Select(d => d.Name).ToList();
             var existingNames = await _unitOfWork.Repository<CatalogType>().GetListAsync(
-                predicate: t => names.Contains(t.Name) && t.DeletedTime == null
+                predicate: t => names.Contains(t.Name) && t.DeletedTime == null,
+                cancellationToken: cancellationToken
             );
 
             if (existingNames.Any())
@@ -111,16 +116,17 @@ namespace Infrastructure.Services
             }
 
             var types = _mapper.Map<List<CatalogType>>(dtos);
-            await _unitOfWork.Repository<CatalogType>().InsertRangeAsync(types);
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.Repository<CatalogType>().InsertRangeAsync(types, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return _mapper.Map<ICollection<TypeDto>>(types);
         }
 
-        public async Task<TypeDto> UpdateAsync(string id, UpdateTypeDto dto)
+        public async Task<TypeDto> UpdateAsync(string id, UpdateTypeDto dto, CancellationToken cancellationToken = default)
         {
             var type = await _unitOfWork.Repository<CatalogType>().SingleOrDefaultAsync(
-                predicate: t => t.Id == id
+                predicate: t => t.Id == id,
+                cancellationToken: cancellationToken
             );
 
             if (type == null)
@@ -134,7 +140,8 @@ namespace Infrastructure.Services
 
             // Check for duplicate name (excluding current type)
             var existingWithName = await _unitOfWork.Repository<CatalogType>().SingleOrDefaultAsync(
-                predicate: t => t.Name == dto.Name && t.Id != id && t.DeletedTime == null
+                predicate: t => t.Name == dto.Name && t.Id != id && t.DeletedTime == null,
+                cancellationToken: cancellationToken
             );
             if (existingWithName != null)
             {
@@ -147,15 +154,16 @@ namespace Infrastructure.Services
 
             _mapper.Map(dto, type);
             await _unitOfWork.Repository<CatalogType>().Update(type);
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return _mapper.Map<TypeDto>(type);
         }
 
-        public async Task DeleteAsync(string id)
+        public async Task DeleteAsync(string id, CancellationToken cancellationToken = default)
         {
             var type = await _unitOfWork.Repository<CatalogType>().SingleOrDefaultAsync(
-                predicate: t => t.Id == id
+                predicate: t => t.Id == id,
+                cancellationToken: cancellationToken
             );
 
             if (type == null)
@@ -168,7 +176,7 @@ namespace Infrastructure.Services
             }
 
             _unitOfWork.Repository<CatalogType>().Delete(type);
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
     }
 }
