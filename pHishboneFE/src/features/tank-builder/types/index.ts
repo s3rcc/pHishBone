@@ -128,6 +128,9 @@ export interface TankWorldPosition {
 
 export interface AnimatedTankWorldPosition extends TankWorldPosition {
     facingDirection: -1 | 1;
+    headingYaw: number;
+    pitch: number;
+    bank: number;
 }
 
 export interface SceneFishRenderState {

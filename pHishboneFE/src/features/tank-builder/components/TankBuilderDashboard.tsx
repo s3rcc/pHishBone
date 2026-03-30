@@ -39,8 +39,10 @@ export function TankBuilderDashboard(): ReactElement {
     });
 
     useEffect(() => {
+        // Persisted drafts rehydrate after mount, so keep the scene instances reconciled
+        // whenever the restored inventory or tank dimensions change.
         syncSceneFish();
-    }, [syncSceneFish]);
+    }, [dimensions, inventory, syncSceneFish]);
 
     const handleAddSpecies = useCallback(
         async (species: SpeciesDto) => {
