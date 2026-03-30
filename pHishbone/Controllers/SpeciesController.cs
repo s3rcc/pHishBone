@@ -211,12 +211,12 @@ namespace pHishbone.Controllers
         }
 
         /// <summary>
-        /// Set the main thumbnail image for a species via file upload
+        /// Set the main thumbnail image for a species from an existing gallery image
         /// </summary>
         [HttpPatch(ApiEndpointConstant.SpeciesImage.SetThumbnail)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> SetThumbnail([FromRoute] string id, [FromForm] SetThumbnailDto dto, CancellationToken cancellationToken)
+        public async Task<IActionResult> SetThumbnail([FromRoute] string id, [FromBody] SetSpeciesThumbnailDto dto, CancellationToken cancellationToken)
         {
             await _speciesImageService.SetThumbnailAsync(id, dto, cancellationToken);
             return Ok(ApiResponse<object>.Success(null, SuccessMessageConstant.ThumbnailSetSuccessfully));

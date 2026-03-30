@@ -141,6 +141,30 @@ namespace Infrastructure.Services
                 );
             }
 
+            var species = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
+                predicate: s => s.Id == speciesId && s.DeletedTime == null,
+                cancellationToken: cancellationToken
+            );
+
+            if (species == null)
+            {
+                throw new CustomErrorException(
+                    StatusCodes.Status404NotFound,
+                    ErrorCode.NOT_FOUND,
+                    CatalogErrorMessageConstant.SpeciesNotFound
+                );
+            }
+
+            if (IsThumbnailReference(species, image))
+            {
+                species.ThumbnailUrl = null;
+                species.ThumbnailPublicId = null;
+                species.LastUpdatedBy = _currentUserService.GetUserId();
+                species.LastUpdatedTime = DateTime.UtcNow;
+
+                await _unitOfWork.Repository<Species>().Update(species);
+            }
+
             // Delete from DB first
             _unitOfWork.Repository<SpeciesImage>().Delete(image);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -154,7 +178,7 @@ namespace Infrastructure.Services
             _logger.LogInformation("Removed image {ImageId} from species {SpeciesId}", imageId, speciesId);
         }
 
-        public async Task SetThumbnailAsync(string speciesId, SetThumbnailDto dto, CancellationToken cancellationToken = default)
+        public async Task SetThumbnailAsync(string speciesId, SetSpeciesThumbnailDto dto, CancellationToken cancellationToken = default)
         {
             var species = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
                 predicate: s => s.Id == speciesId && s.DeletedTime == null,
@@ -170,35 +194,30 @@ namespace Infrastructure.Services
                 );
             }
 
-            // Upload new thumbnail
-            var uploadResult = await _photoService.AddPhotoAsync(dto.File, "species/thumbnails", cancellationToken);
+            var image = await _unitOfWork.Repository<SpeciesImage>().SingleOrDefaultAsync(
+                predicate: si => si.Id == dto.ImageId && si.SpeciesId == speciesId && si.DeletedTime == null,
+                tracking: false,
+                cancellationToken: cancellationToken
+            );
 
-            if (!uploadResult.IsSuccess)
+            if (image == null)
             {
                 throw new CustomErrorException(
-                    StatusCodes.Status400BadRequest,
-                    ErrorCode.BADREQUEST,
-                    $"Thumbnail upload failed: {uploadResult.Error}"
+                    StatusCodes.Status404NotFound,
+                    ErrorCode.NOT_FOUND,
+                    CatalogErrorMessageConstant.ImageNotFound
                 );
             }
 
-            // Delete old thumbnail from CDN if exists
-            var oldPublicId = species.ThumbnailPublicId;
-
-            species.ThumbnailUrl = uploadResult.Url;
-            species.ThumbnailPublicId = uploadResult.PublicId;
+            species.ThumbnailUrl = image.ImageUrl;
+            species.ThumbnailPublicId = image.PublicId;
             species.LastUpdatedBy = _currentUserService.GetUserId();
             species.LastUpdatedTime = DateTime.UtcNow;
 
             await _unitOfWork.Repository<Species>().Update(species);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            if (!string.IsNullOrEmpty(oldPublicId))
-            {
-                await _photoService.DeletePhotoAsync(oldPublicId, cancellationToken);
-            }
-
-            _logger.LogInformation("Set thumbnail for species {SpeciesId}: {PublicId}", speciesId, uploadResult.PublicId);
+            _logger.LogInformation("Set thumbnail for species {SpeciesId} from existing image {ImageId}", speciesId, image.Id);
         }
 
         private async Task VerifySpeciesExistsAsync(string speciesId, CancellationToken cancellationToken = default)
@@ -217,6 +236,17 @@ namespace Infrastructure.Services
                     CatalogErrorMessageConstant.SpeciesNotFound
                 );
             }
+        }
+
+        private static bool IsThumbnailReference(Species species, SpeciesImage image)
+        {
+            if (!string.IsNullOrWhiteSpace(species.ThumbnailPublicId) && !string.IsNullOrWhiteSpace(image.PublicId))
+            {
+                return string.Equals(species.ThumbnailPublicId, image.PublicId, StringComparison.Ordinal);
+            }
+
+            return !string.IsNullOrWhiteSpace(species.ThumbnailUrl)
+                && string.Equals(species.ThumbnailUrl, image.ImageUrl, StringComparison.Ordinal);
         }
     }
 }

@@ -29,8 +29,8 @@ namespace Application.Services
         Task RemoveImageAsync(string speciesId, string imageId, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Set the main thumbnail image for a species via file upload.
+        /// Set the main thumbnail image for a species from an existing gallery image.
         /// </summary>
-        Task SetThumbnailAsync(string speciesId, SetThumbnailDto dto, CancellationToken cancellationToken = default);
+        Task SetThumbnailAsync(string speciesId, SetSpeciesThumbnailDto dto, CancellationToken cancellationToken = default);
     }
 }

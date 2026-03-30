@@ -32,4 +32,16 @@ namespace Application.Validators.Image
                 .NotNull().WithMessage(CatalogErrorMessageConstant.FileRequired);
         }
     }
+
+    /// <summary>
+    /// Validator for SetSpeciesThumbnailDto (existing species image reference).
+    /// </summary>
+    public class SetSpeciesThumbnailDtoValidator : AbstractValidator<DTOs.ImageDTOs.SetSpeciesThumbnailDto>
+    {
+        public SetSpeciesThumbnailDtoValidator()
+        {
+            RuleFor(x => x.ImageId)
+                .NotEmpty().WithMessage(CatalogErrorMessageConstant.ImageIdRequired);
+        }
+    }
 }
