@@ -381,6 +381,8 @@
         "productTab": "Thiết Bị",
         "view3d": "Xem 3D",
         "view2d": "Xem 2D",
+        "bubbles": "Bong Bóng",
+        "toggleBubbles": "Bật tắt bong bóng nền",
         "orbitHint": "Kéo để xoay. Cuộn để phóng to.",
         "frontViewLabel": "Mặt Đứng Trước",
         "equipmentComingSoon": "Khu vực thiết bị sẽ xuất hiện khi API danh mục sản phẩm sẵn sàng.",

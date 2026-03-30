@@ -5,10 +5,10 @@ namespace Application.Common.Interfaces
 {
     public interface ICompatibilityRuleService
     {
-        Task<CompatibilityRuleDto> GetByIdAsync(string id);
-        Task<PaginationResponse<CompatibilityRuleDto>> GetPaginatedListAsync(CompatibilityRuleFilterDto filter);
-        Task<CompatibilityRuleDto> CreateAsync(CreateCompatibilityRuleDto dto);
-        Task<CompatibilityRuleDto> UpdateAsync(string id, UpdateCompatibilityRuleDto dto);
-        Task DeleteAsync(string id);
+        Task<CompatibilityRuleDto> GetByIdAsync(string id, CancellationToken cancellationToken = default);
+        Task<PaginationResponse<CompatibilityRuleDto>> GetPaginatedListAsync(CompatibilityRuleFilterDto filter, CancellationToken cancellationToken = default);
+        Task<CompatibilityRuleDto> CreateAsync(CreateCompatibilityRuleDto dto, CancellationToken cancellationToken = default);
+        Task<CompatibilityRuleDto> UpdateAsync(string id, UpdateCompatibilityRuleDto dto, CancellationToken cancellationToken = default);
+        Task DeleteAsync(string id, CancellationToken cancellationToken = default);
     }
 }

@@ -46,7 +46,7 @@ namespace Infrastructure.Services
             _logger.LogInformation("Generating fish information for fish name {FishName} using model config {ModelConfigId}", normalizedFishName, dto.ModelConfigId);
 
             var existingSpeciesStopwatch = Stopwatch.StartNew();
-            var existingSpecies = await TryGetExistingSpeciesAsync(normalizedFishName);
+            var existingSpecies = await TryGetExistingSpeciesAsync(normalizedFishName, cancellationToken);
             existingSpeciesStopwatch.Stop();
             _logger.LogInformation("Fish information stage ExistingSpeciesCheck completed in {ElapsedMs} ms", existingSpeciesStopwatch.ElapsedMilliseconds);
             if (existingSpecies != null)
@@ -61,9 +61,9 @@ namespace Infrastructure.Services
             }
 
             var dependencyLoadStopwatch = Stopwatch.StartNew();
-            var modelConfig = await GetEnabledModelAsync(dto.ModelConfigId);
-            var promptTemplate = await GetActivePromptAsync(AiPromptUseCase.FishInformation);
-            var vocabulary = await LoadVocabularyAsync();
+            var modelConfig = await GetEnabledModelAsync(dto.ModelConfigId, cancellationToken);
+            var promptTemplate = await GetActivePromptAsync(AiPromptUseCase.FishInformation, cancellationToken);
+            var vocabulary = await LoadVocabularyAsync(cancellationToken);
             dependencyLoadStopwatch.Stop();
             _logger.LogInformation("Fish information stage DependencyLoad completed in {ElapsedMs} ms", dependencyLoadStopwatch.ElapsedMilliseconds);
 
@@ -114,7 +114,7 @@ namespace Infrastructure.Services
             };
         }
 
-        private async Task<Species?> TryGetExistingSpeciesAsync(string normalizedFishName)
+        private async Task<Species?> TryGetExistingSpeciesAsync(string normalizedFishName, CancellationToken cancellationToken = default)
         {
             var lowerName = normalizedFishName.ToLowerInvariant();
             return await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
@@ -125,14 +125,16 @@ namespace Infrastructure.Services
                     .Include(s => s.SpeciesEnvironment)
                     .Include(s => s.SpeciesProfile)
                     .Include(s => s.SpeciesTags)
-                        .ThenInclude(st => st.Tag)
+                        .ThenInclude(st => st.Tag),
+                cancellationToken: cancellationToken
             );
         }
 
-        private async Task<AiModelConfig> GetEnabledModelAsync(string modelConfigId)
+        private async Task<AiModelConfig> GetEnabledModelAsync(string modelConfigId, CancellationToken cancellationToken = default)
         {
             var modelConfig = await _unitOfWork.Repository<AiModelConfig>().SingleOrDefaultAsync(
-                predicate: x => x.Id == modelConfigId && x.DeletedTime == null
+                predicate: x => x.Id == modelConfigId && x.DeletedTime == null,
+                cancellationToken: cancellationToken
             );
 
             if (modelConfig == null)
@@ -156,10 +158,11 @@ namespace Infrastructure.Services
             return modelConfig;
         }
 
-        private async Task<AiPromptTemplate> GetActivePromptAsync(AiPromptUseCase useCase)
+        private async Task<AiPromptTemplate> GetActivePromptAsync(AiPromptUseCase useCase, CancellationToken cancellationToken = default)
         {
             var prompt = await _unitOfWork.Repository<AiPromptTemplate>().SingleOrDefaultAsync(
-                predicate: x => x.DeletedTime == null && x.UseCase == useCase && x.IsEnabled && x.IsActive
+                predicate: x => x.DeletedTime == null && x.UseCase == useCase && x.IsEnabled && x.IsActive,
+                cancellationToken: cancellationToken
             );
 
             if (prompt == null)
@@ -189,16 +192,18 @@ namespace Infrastructure.Services
             return client;
         }
 
-        private async Task<AiVocabulary> LoadVocabularyAsync()
+        private async Task<AiVocabulary> LoadVocabularyAsync(CancellationToken cancellationToken = default)
         {
             var types = await _unitOfWork.Repository<Domain.Entities.Catalog.Type>().GetListAsync(
                 predicate: x => x.DeletedTime == null,
-                orderBy: q => q.OrderBy(x => x.Name)
+                orderBy: q => q.OrderBy(x => x.Name),
+                cancellationToken: cancellationToken
             );
 
             var tags = await _unitOfWork.Repository<Tag>().GetListAsync(
                 predicate: x => x.DeletedTime == null,
-                orderBy: q => q.OrderBy(x => x.Code)
+                orderBy: q => q.OrderBy(x => x.Code),
+                cancellationToken: cancellationToken
             );
 
             return new AiVocabulary(types, tags);

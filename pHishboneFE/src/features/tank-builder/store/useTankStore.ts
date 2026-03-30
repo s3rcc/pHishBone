@@ -18,6 +18,7 @@ interface TankStoreState {
     inventory: TankSpeciesDraft[];
     sceneFish: TankSceneFishInstance[];
     viewMode: TankSceneViewMode;
+    showSceneBubbles: boolean;
     selectedSpeciesId: string | null;
     getVolumeLiters: () => number;
     setDimensions: (dimensions: Partial<TankDimensions>) => void;
@@ -27,6 +28,7 @@ interface TankStoreState {
     removeSpecies: (speciesId: string) => void;
     selectSpecies: (speciesId: string | null) => void;
     setViewMode: (viewMode: TankSceneViewMode) => void;
+    setShowSceneBubbles: (showSceneBubbles: boolean) => void;
     syncSceneFish: () => void;
     clearDraft: () => void;
 }
@@ -42,6 +44,7 @@ const DEFAULT_STATE = {
     inventory: [] as TankSpeciesDraft[],
     sceneFish: [] as TankSceneFishInstance[],
     viewMode: '3d' as TankSceneViewMode,
+    showSceneBubbles: true,
     selectedSpeciesId: null as string | null,
 };
 
@@ -161,6 +164,10 @@ export const useTankStore = create<TankStoreState>()(
                 set({
                     viewMode,
                 }),
+            setShowSceneBubbles: (showSceneBubbles) =>
+                set({
+                    showSceneBubbles,
+                }),
             syncSceneFish: () =>
                 set((state) => ({
                     sceneFish: reconcileSceneFish(state.sceneFish, state.inventory, state.dimensions),
@@ -178,6 +185,7 @@ export const useTankStore = create<TankStoreState>()(
                 inventory: state.inventory,
                 sceneFish: state.sceneFish,
                 viewMode: state.viewMode,
+                showSceneBubbles: state.showSceneBubbles,
             }),
         },
     ),

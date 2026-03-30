@@ -25,9 +25,9 @@ namespace pHishbone.Controllers
         [HttpGet(ApiEndpointConstant.Tag.GetById)]
         [ProducesResponseType(typeof(ApiResponse<TagDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetById([FromRoute] string id)
+        public async Task<IActionResult> GetById([FromRoute] string id, CancellationToken cancellationToken)
         {
-            var tag = await _tagService.GetByIdAsync(id);
+            var tag = await _tagService.GetByIdAsync(id, cancellationToken);
             return Ok(ApiResponse<TagDto>.Success(tag, SuccessMessageConstant.TagRetrievedSuccessfully));
         }
 
@@ -36,9 +36,9 @@ namespace pHishbone.Controllers
         /// </summary>
         [HttpGet(ApiEndpointConstant.Tag.GetList)]
         [ProducesResponseType(typeof(ApiResponse<ICollection<TagDto>>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetList()
+        public async Task<IActionResult> GetList(CancellationToken cancellationToken)
         {
-            var tags = await _tagService.GetListAsync();
+            var tags = await _tagService.GetListAsync(cancellationToken);
             return Ok(ApiResponse<ICollection<TagDto>>.Success(tags, SuccessMessageConstant.TagsRetrievedSuccessfully));
         }
 
@@ -47,9 +47,9 @@ namespace pHishbone.Controllers
         /// </summary>
         [HttpGet(ApiEndpointConstant.Tag.GetPaginated)]
         [ProducesResponseType(typeof(ApiResponse<PaginationResponse<TagDto>>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetPaginated([FromQuery] TagFilterDto filter)
+        public async Task<IActionResult> GetPaginated([FromQuery] TagFilterDto filter, CancellationToken cancellationToken)
         {
-            var tags = await _tagService.GetPaginatedListAsync(filter);
+            var tags = await _tagService.GetPaginatedListAsync(filter, cancellationToken);
             return Ok(ApiResponse<PaginationResponse<TagDto>>.Success(tags, SuccessMessageConstant.TagsRetrievedSuccessfully));
         }
 
@@ -59,9 +59,9 @@ namespace pHishbone.Controllers
         [HttpPost(ApiEndpointConstant.Tag.Create)]
         [ProducesResponseType(typeof(ApiResponse<TagDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> Create([FromBody] CreateTagDto dto)
+        public async Task<IActionResult> Create([FromBody] CreateTagDto dto, CancellationToken cancellationToken)
         {
-            var tag = await _tagService.CreateAsync(dto);
+            var tag = await _tagService.CreateAsync(dto, cancellationToken);
             return CreatedAtAction(
                 nameof(GetById),
                 new { id = tag.Id },
@@ -75,9 +75,9 @@ namespace pHishbone.Controllers
         [HttpPost(ApiEndpointConstant.Tag.CreateRange)]
         [ProducesResponseType(typeof(ApiResponse<ICollection<TagDto>>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> CreateRange([FromBody] List<CreateTagDto> dtos)
+        public async Task<IActionResult> CreateRange([FromBody] List<CreateTagDto> dtos, CancellationToken cancellationToken)
         {
-            var tags = await _tagService.CreateRangeAsync(dtos);
+            var tags = await _tagService.CreateRangeAsync(dtos, cancellationToken);
             return Ok(ApiResponse<ICollection<TagDto>>.Success(tags, SuccessMessageConstant.TagsCreatedSuccessfully, 201));
         }
 
@@ -88,9 +88,9 @@ namespace pHishbone.Controllers
         [ProducesResponseType(typeof(ApiResponse<TagDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> Update([FromRoute] string id, [FromBody] UpdateTagDto dto)
+        public async Task<IActionResult> Update([FromRoute] string id, [FromBody] UpdateTagDto dto, CancellationToken cancellationToken)
         {
-            var tag = await _tagService.UpdateAsync(id, dto);
+            var tag = await _tagService.UpdateAsync(id, dto, cancellationToken);
             return Ok(ApiResponse<TagDto>.Success(tag, SuccessMessageConstant.TagUpdatedSuccessfully));
         }
 
@@ -100,9 +100,9 @@ namespace pHishbone.Controllers
         [HttpDelete(ApiEndpointConstant.Tag.Delete)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Delete([FromRoute] string id)
+        public async Task<IActionResult> Delete([FromRoute] string id, CancellationToken cancellationToken)
         {
-            await _tagService.DeleteAsync(id);
+            await _tagService.DeleteAsync(id, cancellationToken);
             return Ok(ApiResponse<object>.Success(null, SuccessMessageConstant.TagDeletedSuccessfully));
         }
     }

@@ -381,6 +381,8 @@
         "productTab": "Products",
         "view3d": "3D View",
         "view2d": "2D View",
+        "bubbles": "Bubbles",
+        "toggleBubbles": "Toggle scene bubbles",
         "orbitHint": "Drag to orbit. Scroll to zoom.",
         "frontViewLabel": "Front Elevation",
         "equipmentComingSoon": "Equipment browsing will appear here once the product catalog APIs land.",

@@ -35,7 +35,8 @@ namespace Infrastructure.Services
                 predicate: t => t.UserId == userId && t.DeletedTime == null,
                 include: q => q.Include(t => t.TankItems),
                 orderBy: q => q.OrderByDescending(t => t.CreatedTime),
-                tracking: false
+                tracking: false,
+                cancellationToken: cancellationToken
             );
 
             return _mapper.Map<IEnumerable<TankListItemDto>>(tanks);
@@ -46,7 +47,8 @@ namespace Infrastructure.Services
             var tank = await _unitOfWork.Repository<Tank>().SingleOrDefaultAsync(
                 predicate: t => t.Id == tankId && t.DeletedTime == null,
                 include: q => q.Include(t => t.TankItems),
-                tracking: false
+                tracking: false,
+                cancellationToken: cancellationToken
             );
 
             if (tank == null)
@@ -77,8 +79,8 @@ namespace Infrastructure.Services
             tank.UserId = userId;
             tank.CreatedBy = _currentUserService.GetUserId();
 
-            await _unitOfWork.Repository<Tank>().InsertAsync(tank);
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.Repository<Tank>().InsertAsync(tank, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return _mapper.Map<TankResponseDto>(tank);
         }
@@ -87,7 +89,8 @@ namespace Infrastructure.Services
         {
             var tank = await _unitOfWork.Repository<Tank>().SingleOrDefaultAsync(
                 predicate: t => t.Id == tankId && t.DeletedTime == null,
-                include: q => q.Include(t => t.TankItems)
+                include: q => q.Include(t => t.TankItems),
+                cancellationToken: cancellationToken
             );
 
             if (tank == null)
@@ -114,7 +117,7 @@ namespace Infrastructure.Services
             tank.LastUpdatedTime = DateTime.UtcNow;
 
             await _unitOfWork.Repository<Tank>().Update(tank);
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return _mapper.Map<TankResponseDto>(tank);
         }
@@ -123,7 +126,8 @@ namespace Infrastructure.Services
         {
             var tank = await _unitOfWork.Repository<Tank>().SingleOrDefaultAsync(
                 predicate: t => t.Id == tankId && t.DeletedTime == null,
-                include: q => q.Include(t => t.TankImages)
+                include: q => q.Include(t => t.TankImages),
+                cancellationToken: cancellationToken
             );
 
             if (tank == null)
@@ -161,12 +165,12 @@ namespace Infrastructure.Services
             tank.DeletedBy = _currentUserService.GetUserId();
 
             await _unitOfWork.Repository<Tank>().Update(tank);
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             // Cleanup CDN after DB commit
             if (publicIds.Count > 0)
             {
-                await _photoService.DeletePhotosAsync(publicIds);
+                await _photoService.DeletePhotosAsync(publicIds, cancellationToken);
             }
         }
 
@@ -175,7 +179,8 @@ namespace Infrastructure.Services
             var snapshot = await _unitOfWork.Repository<TankSnapshot>().SingleOrDefaultAsync(
                 predicate: s => s.TankId == tankId && s.DeletedTime == null,
                 orderBy: q => q.OrderByDescending(s => s.CreatedTime),
-                tracking: false
+                tracking: false,
+                cancellationToken: cancellationToken
             );
 
             if (snapshot == null)

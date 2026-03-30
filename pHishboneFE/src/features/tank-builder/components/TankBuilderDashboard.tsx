@@ -22,6 +22,7 @@ export function TankBuilderDashboard(): ReactElement {
     const inventory = useTankStore((state) => state.inventory);
     const sceneFish = useTankStore((state) => state.sceneFish);
     const viewMode = useTankStore((state) => state.viewMode);
+    const showSceneBubbles = useTankStore((state) => state.showSceneBubbles);
     const selectedSpeciesId = useTankStore((state) => state.selectedSpeciesId);
     const setDimensions = useTankStore((state) => state.setDimensions);
     const upsertSpecies = useTankStore((state) => state.upsertSpecies);
@@ -30,6 +31,7 @@ export function TankBuilderDashboard(): ReactElement {
     const removeSpecies = useTankStore((state) => state.removeSpecies);
     const selectSpecies = useTankStore((state) => state.selectSpecies);
     const setViewMode = useTankStore((state) => state.setViewMode);
+    const setShowSceneBubbles = useTankStore((state) => state.setShowSceneBubbles);
     const syncSceneFish = useTankStore((state) => state.syncSceneFish);
     const clearDraft = useTankStore((state) => state.clearDraft);
 
@@ -39,8 +41,10 @@ export function TankBuilderDashboard(): ReactElement {
     });
 
     useEffect(() => {
+        // Persisted drafts rehydrate after mount, so keep the scene instances reconciled
+        // whenever the restored inventory or tank dimensions change.
         syncSceneFish();
-    }, [syncSceneFish]);
+    }, [dimensions, inventory, syncSceneFish]);
 
     const handleAddSpecies = useCallback(
         async (species: SpeciesDto) => {
@@ -95,7 +99,9 @@ export function TankBuilderDashboard(): ReactElement {
                             sceneFish={sceneFish}
                             selectedSpeciesId={selectedSpeciesId}
                             viewMode={viewMode}
+                            showSceneBubbles={showSceneBubbles}
                             onChangeViewMode={setViewMode}
+                            onToggleSceneBubbles={setShowSceneBubbles}
                             onSelectSpecies={selectSpecies}
                             onSetDimensions={setDimensions}
                             onAddSpecies={handleAddSpecies}

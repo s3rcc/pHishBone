@@ -36,9 +36,9 @@ namespace pHishbone.Controllers
         [HttpPost(ApiEndpointConstant.Auth.Register)]
         [ProducesResponseType(typeof(ApiResponse<LoginResponseDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> Register([FromBody] RegisterRequestDto request)
+        public async Task<IActionResult> Register([FromBody] RegisterRequestDto request, CancellationToken cancellationToken)
         {
-            var result = await _authService.RegisterAsync(request);
+            var result = await _authService.RegisterAsync(request, cancellationToken);
             return StatusCode(
                 StatusCodes.Status201Created,
                 ApiResponse<LoginResponseDto>.Success(result, SuccessMessageConstant.UserRegisteredSuccessfully, 201)
@@ -51,9 +51,9 @@ namespace pHishbone.Controllers
         [HttpPost(ApiEndpointConstant.Auth.Login)]
         [ProducesResponseType(typeof(ApiResponse<LoginResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> Login([FromBody] LoginRequestDto request)
+        public async Task<IActionResult> Login([FromBody] LoginRequestDto request, CancellationToken cancellationToken)
         {
-            var result = await _authService.LoginAsync(request);
+            var result = await _authService.LoginAsync(request, cancellationToken);
             return Ok(ApiResponse<LoginResponseDto>.Success(result, SuccessMessageConstant.LoginSuccessful));
         }
 
@@ -63,9 +63,9 @@ namespace pHishbone.Controllers
         [HttpPost(ApiEndpointConstant.Auth.Refresh)]
         [ProducesResponseType(typeof(ApiResponse<LoginResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequestDto dto)
+        public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequestDto dto, CancellationToken cancellationToken)
         {
-            var response = await _authService.RefreshTokenAsync(dto.RefreshToken);
+            var response = await _authService.RefreshTokenAsync(dto.RefreshToken, cancellationToken);
             return Ok(ApiResponse<LoginResponseDto>.Success(response, SuccessMessageConstant.TokenRefreshedSuccessfully));
         }
 
@@ -75,7 +75,7 @@ namespace pHishbone.Controllers
         [HttpGet(ApiEndpointConstant.Auth.Me)]
         [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> GetCurrentUser()
+        public async Task<IActionResult> GetCurrentUser(CancellationToken cancellationToken)
         {
             var userId = _currentUserService.GetUserId();
 
@@ -88,7 +88,7 @@ namespace pHishbone.Controllers
                 ));
             }
 
-            var user = await _authService.GetCurrentUserAsync(userId);
+            var user = await _authService.GetCurrentUserAsync(userId, cancellationToken);
             return Ok(ApiResponse<UserDto>.Success(user, SuccessMessageConstant.UserRetrievedSuccessfully));
         }
 
@@ -99,7 +99,7 @@ namespace pHishbone.Controllers
         [HttpPost(ApiEndpointConstant.Auth.Logout)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> Logout()
+        public async Task<IActionResult> Logout(CancellationToken cancellationToken)
         {
             // Extract the raw token from the Authorization header so the service can blacklist it
             var authHeader = Request.Headers["Authorization"].FirstOrDefault();
@@ -107,7 +107,7 @@ namespace pHishbone.Controllers
                 ? authHeader["Bearer ".Length..].Trim()
                 : string.Empty;
 
-            await _authService.LogoutAsync(accessToken);
+            await _authService.LogoutAsync(accessToken, cancellationToken);
             return Ok(ApiResponse<object>.Success(null, SuccessMessageConstant.LogoutSuccessful));
         }
 
@@ -117,9 +117,9 @@ namespace pHishbone.Controllers
         [HttpPost(ApiEndpointConstant.Auth.ForgotPassword)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestDto request)
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestDto request, CancellationToken cancellationToken)
         {
-            await _authService.ForgotPasswordAsync(request);
+            await _authService.ForgotPasswordAsync(request, cancellationToken);
             return Ok(ApiResponse<object>.Success(null, SuccessMessageConstant.PasswordResetEmailSent));
         }
 
@@ -129,9 +129,9 @@ namespace pHishbone.Controllers
         [HttpPost(ApiEndpointConstant.Auth.ResetPassword)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto request)
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto request, CancellationToken cancellationToken)
         {
-            await _authService.ResetPasswordAsync(request);
+            await _authService.ResetPasswordAsync(request, cancellationToken);
             return Ok(ApiResponse<object>.Success(null, SuccessMessageConstant.PasswordChangedSuccessfully));
         }
 
@@ -141,7 +141,7 @@ namespace pHishbone.Controllers
         [HttpPost(ApiEndpointConstant.Auth.ChangePassword)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequestDto request)
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequestDto request, CancellationToken cancellationToken)
         {
             var userId = _currentUserService.GetUserId();
 
@@ -153,7 +153,7 @@ namespace pHishbone.Controllers
                 ));
             }
 
-            await _authService.ChangePasswordAsync(request, userId);
+            await _authService.ChangePasswordAsync(request, userId, cancellationToken);
             return Ok(ApiResponse<object>.Success(null, SuccessMessageConstant.PasswordChangedSuccessfully));
         }
 
@@ -163,9 +163,9 @@ namespace pHishbone.Controllers
         [HttpPost(ApiEndpointConstant.Auth.VerifyEmail)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequestDto request)
+        public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequestDto request, CancellationToken cancellationToken)
         {
-            await _authService.VerifyEmailAsync(request);
+            await _authService.VerifyEmailAsync(request, cancellationToken);
             return Ok(ApiResponse<object>.Success(null, SuccessMessageConstant.EmailVerifiedSuccessfully));
         }
 
@@ -175,9 +175,9 @@ namespace pHishbone.Controllers
         [HttpPost(ApiEndpointConstant.Auth.ResendVerification)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> ResendVerification([FromBody] ResendVerificationRequestDto request)
+        public async Task<IActionResult> ResendVerification([FromBody] ResendVerificationRequestDto request, CancellationToken cancellationToken)
         {
-            await _authService.ResendVerificationEmailAsync(request);
+            await _authService.ResendVerificationEmailAsync(request, cancellationToken);
             return Ok(ApiResponse<object>.Success(null, SuccessMessageConstant.EmailVerificationSent));
         }
 
@@ -193,7 +193,7 @@ namespace pHishbone.Controllers
         [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequestDto request)
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequestDto request, CancellationToken cancellationToken)
         {
             var userId = _currentUserService.GetUserId();
 
@@ -202,7 +202,7 @@ namespace pHishbone.Controllers
                 return Unauthorized(ApiResponse<object>.Error("User not authenticated", "User not authenticated"));
             }
 
-            var result = await _userService.UpdateProfileAsync(request, userId);
+            var result = await _userService.UpdateProfileAsync(request, userId, cancellationToken);
             return Ok(ApiResponse<UserDto>.Success(result, SuccessMessageConstant.ProfileUpdatedSuccessfully));
         }
 
@@ -215,7 +215,7 @@ namespace pHishbone.Controllers
         [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> UploadAvatar(IFormFile file)
+        public async Task<IActionResult> UploadAvatar(IFormFile file, CancellationToken cancellationToken)
         {
             var userId = _currentUserService.GetUserId();
 
@@ -224,7 +224,7 @@ namespace pHishbone.Controllers
                 return Unauthorized(ApiResponse<object>.Error("User not authenticated", "User not authenticated"));
             }
 
-            var result = await _userService.UploadAvatarAsync(file, userId);
+            var result = await _userService.UploadAvatarAsync(file, userId, cancellationToken);
             return Ok(ApiResponse<UserDto>.Success(result, SuccessMessageConstant.AvatarUploadedSuccessfully));
         }
 
@@ -236,7 +236,7 @@ namespace pHishbone.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> ChangeEmail([FromBody] ChangeEmailRequestDto request)
+        public async Task<IActionResult> ChangeEmail([FromBody] ChangeEmailRequestDto request, CancellationToken cancellationToken)
         {
             var userId = _currentUserService.GetUserId();
 
@@ -245,7 +245,7 @@ namespace pHishbone.Controllers
                 return Unauthorized(ApiResponse<object>.Error("User not authenticated", "User not authenticated"));
             }
 
-            var message = await _userService.ChangeEmailAsync(request, userId);
+            var message = await _userService.ChangeEmailAsync(request, userId, cancellationToken);
             return Ok(ApiResponse<object>.Success(null, message));
         }
     }

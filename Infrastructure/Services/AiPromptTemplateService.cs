@@ -28,7 +28,7 @@ namespace Infrastructure.Services
 
         public async Task<AiPromptTemplateDto> GetByIdAsync(string id, CancellationToken cancellationToken = default)
         {
-            var entity = await GetEntityByIdAsync(id);
+            var entity = await GetEntityByIdAsync(id, cancellationToken);
             return _mapper.Map<AiPromptTemplateDto>(entity);
         }
 
@@ -36,7 +36,8 @@ namespace Infrastructure.Services
         {
             var items = await _unitOfWork.Repository<AiPromptTemplate>().GetListAsync(
                 predicate: x => x.DeletedTime == null,
-                orderBy: q => q.OrderBy(x => x.Name)
+                orderBy: q => q.OrderBy(x => x.Name),
+                cancellationToken: cancellationToken
             );
 
             return _mapper.Map<ICollection<AiPromptTemplateDto>>(items);
@@ -49,7 +50,8 @@ namespace Infrastructure.Services
                 page: filter.Page,
                 size: filter.Size,
                 sortBy: filter.SortBy,
-                isAsc: filter.IsAscending
+                isAsc: filter.IsAscending,
+                cancellationToken: cancellationToken
             );
 
             return new PaginationResponse<AiPromptTemplateDto>
@@ -65,17 +67,17 @@ namespace Infrastructure.Services
         public async Task<AiPromptTemplateDto> CreateAsync(CreateAiPromptTemplateDto dto, CancellationToken cancellationToken = default)
         {
             Normalize(dto);
-            await EnsurePromptNameUniquenessAsync(dto.Name, null);
+            await EnsurePromptNameUniquenessAsync(dto.Name, null, cancellationToken);
 
             var entity = _mapper.Map<AiPromptTemplate>(dto);
             entity.CreatedBy = _currentUserService.GetUserId();
 
             if (entity.IsActive)
             {
-                await DeactivateOtherPromptsAsync(entity.UseCase, null);
+                await DeactivateOtherPromptsAsync(entity.UseCase, null, cancellationToken);
             }
 
-            await _unitOfWork.Repository<AiPromptTemplate>().InsertAsync(entity);
+            await _unitOfWork.Repository<AiPromptTemplate>().InsertAsync(entity, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return _mapper.Map<AiPromptTemplateDto>(entity);
@@ -85,8 +87,8 @@ namespace Infrastructure.Services
         {
             Normalize(dto);
 
-            var entity = await GetEntityByIdAsync(id);
-            await EnsurePromptNameUniquenessAsync(dto.Name, id);
+            var entity = await GetEntityByIdAsync(id, cancellationToken);
+            await EnsurePromptNameUniquenessAsync(dto.Name, id, cancellationToken);
 
             if (dto.IsActive && !dto.IsEnabled)
             {
@@ -103,7 +105,7 @@ namespace Infrastructure.Services
 
             if (entity.IsActive)
             {
-                await DeactivateOtherPromptsAsync(entity.UseCase, entity.Id);
+                await DeactivateOtherPromptsAsync(entity.UseCase, entity.Id, cancellationToken);
             }
 
             await _unitOfWork.Repository<AiPromptTemplate>().Update(entity);
@@ -114,7 +116,7 @@ namespace Infrastructure.Services
 
         public async Task DeleteAsync(string id, CancellationToken cancellationToken = default)
         {
-            var entity = await GetEntityByIdAsync(id);
+            var entity = await GetEntityByIdAsync(id, cancellationToken);
             entity.DeletedBy = _currentUserService.GetUserId();
             entity.DeletedTime = DateTime.UtcNow;
             entity.LastUpdatedBy = _currentUserService.GetUserId();
@@ -125,10 +127,11 @@ namespace Infrastructure.Services
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
-        private async Task<AiPromptTemplate> GetEntityByIdAsync(string id)
+        private async Task<AiPromptTemplate> GetEntityByIdAsync(string id, CancellationToken cancellationToken = default)
         {
             var entity = await _unitOfWork.Repository<AiPromptTemplate>().SingleOrDefaultAsync(
-                predicate: x => x.Id == id && x.DeletedTime == null
+                predicate: x => x.Id == id && x.DeletedTime == null,
+                cancellationToken: cancellationToken
             );
 
             if (entity == null)
@@ -143,10 +146,11 @@ namespace Infrastructure.Services
             return entity;
         }
 
-        private async Task EnsurePromptNameUniquenessAsync(string name, string? excludedId)
+        private async Task EnsurePromptNameUniquenessAsync(string name, string? excludedId, CancellationToken cancellationToken = default)
         {
             var existing = await _unitOfWork.Repository<AiPromptTemplate>().SingleOrDefaultAsync(
-                predicate: x => x.DeletedTime == null && x.Name == name && x.Id != excludedId
+                predicate: x => x.DeletedTime == null && x.Name == name && x.Id != excludedId,
+                cancellationToken: cancellationToken
             );
 
             if (existing != null)
@@ -159,10 +163,11 @@ namespace Infrastructure.Services
             }
         }
 
-        private async Task DeactivateOtherPromptsAsync(Domain.Enums.AiPromptUseCase useCase, string? currentId)
+        private async Task DeactivateOtherPromptsAsync(Domain.Enums.AiPromptUseCase useCase, string? currentId, CancellationToken cancellationToken = default)
         {
             var existingPrompts = await _unitOfWork.Repository<AiPromptTemplate>().GetListAsync(
-                predicate: x => x.DeletedTime == null && x.UseCase == useCase && x.IsActive && x.Id != currentId
+                predicate: x => x.DeletedTime == null && x.UseCase == useCase && x.IsActive && x.Id != currentId,
+                cancellationToken: cancellationToken
             );
 
             foreach (var prompt in existingPrompts)

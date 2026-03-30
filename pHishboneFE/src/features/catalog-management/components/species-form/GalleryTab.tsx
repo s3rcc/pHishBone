@@ -35,6 +35,7 @@ interface GalleryTabProps {
     speciesId?: string;
     currentThumbnailUrl?: string;
     onStagedFilesChange: (files: File[]) => void;
+    onThumbnailUrlChange?: (thumbnailUrl: string) => void;
 }
 
 // ─── Image Grid (server images, Suspense inner) ──────────────────────────────
@@ -156,7 +157,12 @@ function ImageGrid({
 
 // ─── Main Gallery Tab ─────────────────────────────────────────────────────────
 
-export const GalleryTab: React.FC<GalleryTabProps> = ({ speciesId, currentThumbnailUrl, onStagedFilesChange }) => {
+export const GalleryTab: React.FC<GalleryTabProps> = ({
+    speciesId,
+    currentThumbnailUrl,
+    onStagedFilesChange,
+    onThumbnailUrlChange,
+}) => {
     const { t } = useTranslation();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [deleteTarget, setDeleteTarget] = useState<ImageResponseDto | null>(null);
@@ -237,26 +243,27 @@ export const GalleryTab: React.FC<GalleryTabProps> = ({ speciesId, currentThumbn
         setDeleteError(null);
         try {
             await removeImage({ speciesId, imageId: deleteTarget.id });
+            if (currentThumbnailUrl === deleteTarget.imageUrl) {
+                onThumbnailUrlChange?.('');
+            }
             setDeleteTarget(null);
         } catch (err: unknown) {
             setDeleteError(err instanceof Error ? err.message : t('Catalog.form.errorUnexpected'));
         }
-    }, [deleteTarget, speciesId, removeImage, t]);
+    }, [currentThumbnailUrl, deleteTarget, onThumbnailUrlChange, removeImage, speciesId, t]);
 
     // Set thumbnail
     const handleSetThumbnail = useCallback(
         async (img: ImageResponseDto) => {
             if (!speciesId) return;
             try {
-                const response = await fetch(img.imageUrl);
-                const blob = await response.blob();
-                const file = new File([blob], 'thumbnail.jpg', { type: blob.type });
-                await setThumbnail({ speciesId, file });
+                await setThumbnail({ speciesId, imageId: img.id });
+                onThumbnailUrlChange?.(img.imageUrl);
             } catch {
                 // Silently fail
             }
         },
-        [speciesId, setThumbnail],
+        [onThumbnailUrlChange, setThumbnail, speciesId],
     );
 
     const hiddenInput = (

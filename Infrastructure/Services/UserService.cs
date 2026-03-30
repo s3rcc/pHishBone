@@ -41,12 +41,12 @@ namespace Infrastructure.Services
         /// Updates the user's profile (currently username).
         /// userId here is the Supabase UID extracted from the JWT.
         /// </summary>
-        public async Task<UserDto> UpdateProfileAsync(UpdateProfileRequestDto dto, string userId)
+        public async Task<UserDto> UpdateProfileAsync(UpdateProfileRequestDto dto, string userId, CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Updating profile for user: {UserId}", userId);
 
             var user = await _unitOfWork.Repository<PBUser>()
-                .SingleOrDefaultAsync(predicate: u => u.SupabaseUserId == userId);
+                .SingleOrDefaultAsync(predicate: u => u.SupabaseUserId == userId, cancellationToken: cancellationToken);
 
             if (user == null)
             {
@@ -62,8 +62,9 @@ namespace Infrastructure.Services
                 // Check for username conflict
                 var usernameExists = await _unitOfWork.Repository<PBUser>()
                     .SingleOrDefaultAsync(
-                        predicate: u => u.Username == dto.Username && u.SupabaseUserId != userId,
-                        tracking: false);
+                        predicate: u => u.Username == dto.Username && u.SupabaseUserId != userId && u.DeletedTime == null,
+                        tracking: false,
+                        cancellationToken: cancellationToken);
 
                 if (usernameExists != null)
                 {
@@ -80,7 +81,7 @@ namespace Infrastructure.Services
             // GenericRepository.SingleOrDefaultAsync always uses AsNoTracking(), so we must
             // explicitly call Update() to mark the entity as Modified before saving.
             await _unitOfWork.Repository<PBUser>().Update(user);
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation("Profile updated successfully for user: {UserId}", userId);
             return _mapper.Map<UserDto>(user);
@@ -89,12 +90,12 @@ namespace Infrastructure.Services
         /// <summary>
         /// Uploads a new avatar for the user, replacing the old one on Cloudinary if it exists.
         /// </summary>
-        public async Task<UserDto> UploadAvatarAsync(IFormFile file, string userId)
+        public async Task<UserDto> UploadAvatarAsync(IFormFile file, string userId, CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Uploading avatar for user: {UserId}", userId);
 
             var user = await _unitOfWork.Repository<PBUser>()
-                .SingleOrDefaultAsync(predicate: u => u.SupabaseUserId == userId);
+                .SingleOrDefaultAsync(predicate: u => u.SupabaseUserId == userId, cancellationToken: cancellationToken);
 
             if (user == null)
             {
@@ -109,11 +110,11 @@ namespace Infrastructure.Services
             if (!string.IsNullOrWhiteSpace(user.AvatarPublicId))
             {
                 _logger.LogInformation("Deleting old avatar from Cloudinary: {PublicId}", user.AvatarPublicId);
-                await _photoService.DeletePhotoAsync(user.AvatarPublicId);
+                await _photoService.DeletePhotoAsync(user.AvatarPublicId, cancellationToken);
             }
 
             // Upload new avatar
-            var uploadResult = await _photoService.AddPhotoAsync(file, "avatars");
+            var uploadResult = await _photoService.AddPhotoAsync(file, "avatars", cancellationToken);
 
             if (!uploadResult.IsSuccess)
             {
@@ -130,7 +131,7 @@ namespace Infrastructure.Services
             // GenericRepository.SingleOrDefaultAsync always uses AsNoTracking(), so we must
             // explicitly call Update() to mark the entity as Modified before saving.
             await _unitOfWork.Repository<PBUser>().Update(user);
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation("Avatar uploaded successfully for user: {UserId}, PublicId: {PublicId}",
                 userId, uploadResult.PublicId);
@@ -143,12 +144,12 @@ namespace Infrastructure.Services
         /// Supabase sends a confirmation to both old and new addresses.
         /// The local DB is updated immediately (MVP strategy).
         /// </summary>
-        public async Task<string> ChangeEmailAsync(ChangeEmailRequestDto dto, string userId)
+        public async Task<string> ChangeEmailAsync(ChangeEmailRequestDto dto, string userId, CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Requesting email change for user: {UserId} to: {NewEmail}", userId, dto.NewEmail);
 
             var user = await _unitOfWork.Repository<PBUser>()
-                .SingleOrDefaultAsync(predicate: u => u.SupabaseUserId == userId);
+                .SingleOrDefaultAsync(predicate: u => u.SupabaseUserId == userId, cancellationToken: cancellationToken);
 
             if (user == null)
             {
@@ -162,8 +163,9 @@ namespace Infrastructure.Services
             // Check if new email is already in use locally
             var emailExists = await _unitOfWork.Repository<PBUser>()
                 .SingleOrDefaultAsync(
-                    predicate: u => u.Email == dto.NewEmail && u.SupabaseUserId != userId,
-                    tracking: false);
+                    predicate: u => u.Email == dto.NewEmail && u.SupabaseUserId != userId && u.DeletedTime == null,
+                    tracking: false,
+                    cancellationToken: cancellationToken);
 
             if (emailExists != null)
             {
@@ -182,7 +184,7 @@ namespace Infrastructure.Services
                     Email = dto.NewEmail
                 };
 
-                await _supabaseClient.Auth.Update(userAttributes);
+                await _supabaseClient.Auth.Update(userAttributes).WaitAsync(cancellationToken);
             }
             catch (Exception ex)
             {
@@ -197,7 +199,7 @@ namespace Infrastructure.Services
             // GenericRepository.SingleOrDefaultAsync always uses AsNoTracking(), so Update() is required.
             user.Email = dto.NewEmail;
             await _unitOfWork.Repository<PBUser>().Update(user);
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation("Email change requested successfully for user: {UserId}", userId);
             return SuccessMessageConstant.EmailChangeRequested;

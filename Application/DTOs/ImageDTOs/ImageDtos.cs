@@ -29,4 +29,11 @@ namespace Application.DTOs.ImageDTOs
     public record SetThumbnailDto(
         IFormFile File
     );
+
+    /// <summary>
+    /// DTO for setting a species thumbnail from an existing gallery image.
+    /// </summary>
+    public record SetSpeciesThumbnailDto(
+        string ImageId
+    );
 }

@@ -32,12 +32,13 @@ namespace Infrastructure.Services
         public async Task<IEnumerable<TankItemResponseDto>> GetTankItemsAsync(string tankId, string userId, CancellationToken cancellationToken = default)
         {
             // Verify tank exists and user has access
-            var tank = await GetTankWithAuthorizationAsync(tankId, userId);
+            var tank = await GetTankWithAuthorizationAsync(tankId, userId, cancellationToken);
 
             var items = await _unitOfWork.Repository<TankItem>().GetListAsync(
                 predicate: ti => ti.TankId == tankId && ti.DeletedTime == null,
                 orderBy: q => q.OrderByDescending(ti => ti.CreatedTime),
-                tracking: false
+                tracking: false,
+                cancellationToken: cancellationToken
             );
 
             return _mapper.Map<IEnumerable<TankItemResponseDto>>(items);
@@ -46,17 +47,18 @@ namespace Infrastructure.Services
         public async Task<TankItemResponseDto> AddItemAsync(string tankId, AddTankItemDto dto, string userId, CancellationToken cancellationToken = default)
         {
             // Verify tank exists and user has access
-            var tank = await GetTankWithAuthorizationAsync(tankId, userId);
+            var tank = await GetTankWithAuthorizationAsync(tankId, userId, cancellationToken);
 
             // Validate catalog existence
-            await ValidateCatalogReferenceAsync(dto.ItemType, dto.ReferenceId);
+            await ValidateCatalogReferenceAsync(dto.ItemType, dto.ReferenceId, cancellationToken);
 
             // Check if item already exists in tank (merge logic)
             var existingItem = await _unitOfWork.Repository<TankItem>().SingleOrDefaultAsync(
                 predicate: ti => ti.TankId == tankId &&
                                  ti.ReferenceId == dto.ReferenceId &&
                                  ti.ItemType == dto.ItemType &&
-                                 ti.DeletedTime == null
+                                 ti.DeletedTime == null,
+                cancellationToken: cancellationToken
             );
 
             TankItem tankItem;
@@ -82,13 +84,13 @@ namespace Infrastructure.Services
                 tankItem.TankId = tankId;
                 tankItem.CreatedBy = _currentUserService.GetUserId();
 
-                await _unitOfWork.Repository<TankItem>().InsertAsync(tankItem);
+                await _unitOfWork.Repository<TankItem>().InsertAsync(tankItem, cancellationToken);
             }
 
             // Invalidate tank - set status to Draft when inventory changes
             await InvalidateTankStatusAsync(tank);
 
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return _mapper.Map<TankItemResponseDto>(tankItem);
         }
@@ -96,10 +98,11 @@ namespace Infrastructure.Services
         public async Task<TankItemResponseDto> UpdateItemAsync(string tankId, string itemId, UpdateTankItemDto dto, string userId, CancellationToken cancellationToken = default)
         {
             // Verify tank exists and user has access
-            var tank = await GetTankWithAuthorizationAsync(tankId, userId);
+            var tank = await GetTankWithAuthorizationAsync(tankId, userId, cancellationToken);
 
             var tankItem = await _unitOfWork.Repository<TankItem>().SingleOrDefaultAsync(
-                predicate: ti => ti.Id == itemId && ti.TankId == tankId && ti.DeletedTime == null
+                predicate: ti => ti.Id == itemId && ti.TankId == tankId && ti.DeletedTime == null,
+                cancellationToken: cancellationToken
             );
 
             if (tankItem == null)
@@ -120,7 +123,7 @@ namespace Infrastructure.Services
             // Invalidate tank status
             await InvalidateTankStatusAsync(tank);
 
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return _mapper.Map<TankItemResponseDto>(tankItem);
         }
@@ -128,10 +131,11 @@ namespace Infrastructure.Services
         public async Task RemoveItemAsync(string tankId, string itemId, string userId, CancellationToken cancellationToken = default)
         {
             // Verify tank exists and user has access
-            var tank = await GetTankWithAuthorizationAsync(tankId, userId);
+            var tank = await GetTankWithAuthorizationAsync(tankId, userId, cancellationToken);
 
             var tankItem = await _unitOfWork.Repository<TankItem>().SingleOrDefaultAsync(
-                predicate: ti => ti.Id == itemId && ti.TankId == tankId && ti.DeletedTime == null
+                predicate: ti => ti.Id == itemId && ti.TankId == tankId && ti.DeletedTime == null,
+                cancellationToken: cancellationToken
             );
 
             if (tankItem == null)
@@ -149,7 +153,7 @@ namespace Infrastructure.Services
             // Invalidate tank status
             await InvalidateTankStatusAsync(tank);
 
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
         #region Private Helper Methods
@@ -157,10 +161,11 @@ namespace Infrastructure.Services
         /// <summary>
         /// Verify tank exists and user has authorization.
         /// </summary>
-        private async Task<Tank> GetTankWithAuthorizationAsync(string tankId, string userId)
+        private async Task<Tank> GetTankWithAuthorizationAsync(string tankId, string userId, CancellationToken cancellationToken = default)
         {
             var tank = await _unitOfWork.Repository<Tank>().SingleOrDefaultAsync(
-                predicate: t => t.Id == tankId && t.DeletedTime == null
+                predicate: t => t.Id == tankId && t.DeletedTime == null,
+                cancellationToken: cancellationToken
             );
 
             if (tank == null)
@@ -187,13 +192,14 @@ namespace Infrastructure.Services
         /// <summary>
         /// Validate that the reference exists in the catalog.
         /// </summary>
-        private async Task ValidateCatalogReferenceAsync(ItemType itemType, string referenceId)
+        private async Task ValidateCatalogReferenceAsync(ItemType itemType, string referenceId, CancellationToken cancellationToken = default)
         {
             if (itemType == ItemType.Species)
             {
                 var species = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
                     predicate: s => s.Id == referenceId && s.DeletedTime == null,
-                    tracking: false
+                    tracking: false,
+                    cancellationToken: cancellationToken
                 );
 
                 if (species == null)

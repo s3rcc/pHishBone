@@ -63,6 +63,10 @@ function getCompositeLateralOffset(elapsedSeconds: number, speed: number, phase:
     return direction * (primary * 0.62 + secondary * 0.25 + tertiary * 0.13);
 }
 
+function getAxisAmplitude(center: number, min: number, max: number, target: number, floor: number): number {
+    return Math.max(floor, Math.min(center - min, max - center, target));
+}
+
 export function getTankVolumeBounds(dimensions: TankDimensions): TankVolumeBounds {
     const xMargin = normalizeMargin(dimensions.length);
     const yMarginBottom = normalizeMargin(dimensions.height);
@@ -269,44 +273,83 @@ export function getAnimatedFishWorldPosition(
 ): AnimatedTankWorldPosition {
     const renderDimensions = getTankRenderDimensions(dimensions);
     const bounds = getTankVolumeBounds(dimensions);
+    const swimBand = getSwimBand(fish.swimLevel, dimensions);
 
     const worldMinX = -renderDimensions.length / 2 + bounds.xMin * renderDimensions.length;
     const worldMaxX = -renderDimensions.length / 2 + bounds.xMax * renderDimensions.length;
+    const worldMinY = -renderDimensions.height / 2 + swimBand.yMin * renderDimensions.height;
+    const worldMaxY = -renderDimensions.height / 2 + swimBand.yMax * renderDimensions.height;
     const worldMinZ = -renderDimensions.width / 2 + bounds.zMin * renderDimensions.width;
     const worldMaxZ = -renderDimensions.width / 2 + bounds.zMax * renderDimensions.width;
     const centerX = -renderDimensions.length / 2 + fish.x * renderDimensions.length;
-    const maxTravelAmplitude = Math.max(
-        0.02,
-        Math.min(
-            centerX - worldMinX,
-            worldMaxX - centerX,
-            renderDimensions.length * 0.18,
-        ),
+    const centerY = -renderDimensions.height / 2 + fish.y * renderDimensions.height;
+    const centerZ = -renderDimensions.width / 2 + fish.z * renderDimensions.width;
+    const xAmplitude = getAxisAmplitude(
+        centerX,
+        worldMinX,
+        worldMaxX,
+        renderDimensions.length * (0.08 + fish.phase * 0.08),
+        0.06,
     );
-    const targetAmplitude = renderDimensions.length * (0.08 + fish.phase * 0.06);
-    const travelAmplitude = Math.max(0.06, Math.min(maxTravelAmplitude, targetAmplitude));
-    const lateralOffset = getCompositeLateralOffset(elapsedSeconds, fish.speed, fish.phase, fish.direction) * travelAmplitude;
-    const previousOffset =
-        getCompositeLateralOffset(elapsedSeconds - 0.08, fish.speed, fish.phase, fish.direction) * travelAmplitude;
-
-    const x = clamp(centerX + lateralOffset, worldMinX, worldMaxX);
-    const previousX = clamp(centerX + previousOffset, worldMinX, worldMaxX);
-    const verticalGlide =
-        Math.sin(elapsedSeconds * fish.speed * 1.8 + fish.phase * Math.PI * 2) * 0.02 +
-        Math.sin(elapsedSeconds * fish.speed * 0.8 + fish.phase * Math.PI * 4.1) * 0.012;
-    const depthDrift = clamp(
-        (-renderDimensions.width / 2 + fish.z * renderDimensions.width) +
-            Math.sin(elapsedSeconds * fish.speed * 1.3 + fish.phase * Math.PI * 1.7) * 0.08,
+    const yAmplitude = getAxisAmplitude(
+        centerY,
+        worldMinY,
+        worldMaxY,
+        renderDimensions.height * 0.11,
+        0.015,
+    );
+    const zAmplitude = getAxisAmplitude(
+        centerZ,
         worldMinZ,
         worldMaxZ,
+        renderDimensions.width * (0.11 + fish.phase * 0.06),
+        0.04,
     );
-    const facingDirection = x >= previousX ? 1 : -1;
+
+    const computePosition = (sampleSeconds: number): AnimatedTankWorldPosition => {
+        const time = sampleSeconds * Math.max(fish.speed, 0.02) * Math.PI * 2;
+        const xOffset =
+            fish.direction *
+            (
+                Math.sin(time + fish.phase * Math.PI * 2) * xAmplitude +
+                Math.sin(time * 0.47 + fish.phase * Math.PI * 3.2) * xAmplitude * 0.34 +
+                getCompositeLateralOffset(sampleSeconds, fish.speed, fish.phase, fish.direction) * xAmplitude * 0.18
+            );
+        const yOffset =
+            Math.sin(time * 0.66 + fish.phase * Math.PI * 2.7) * yAmplitude +
+            Math.cos(time * 1.18 + fish.phase * Math.PI * 1.1) * yAmplitude * 0.28;
+        const zOffset =
+            Math.cos(time * 0.82 + fish.phase * Math.PI * 1.8) * zAmplitude +
+            Math.sin(time * 1.29 + fish.phase * Math.PI * 4.3) * zAmplitude * 0.26;
+
+        return {
+            x: clamp(centerX + xOffset, worldMinX, worldMaxX),
+            y: clamp(centerY + yOffset, worldMinY, worldMaxY),
+            z: clamp(centerZ + zOffset, worldMinZ, worldMaxZ),
+            facingDirection: 1,
+            headingYaw: 0,
+            pitch: 0,
+            bank: 0,
+        };
+    };
+
+    const current = computePosition(elapsedSeconds);
+    const previous = computePosition(elapsedSeconds - 0.08);
+    const deltaX = current.x - previous.x;
+    const deltaY = current.y - previous.y;
+    const deltaZ = current.z - previous.z;
+    const horizontalSpeed = Math.max(Math.hypot(deltaX, deltaZ), 0.0001);
+    const facingDirection = deltaX >= 0 ? 1 : -1;
+    const headingYaw = Math.atan2(deltaZ, deltaX);
+    const pitch = Math.atan2(deltaY, horizontalSpeed);
+    const bank = clamp((deltaZ / horizontalSpeed) * 0.16, -0.2, 0.2);
 
     return {
-        x,
-        y: -renderDimensions.height / 2 + fish.y * renderDimensions.height + verticalGlide,
-        z: depthDrift,
+        ...current,
         facingDirection,
+        headingYaw,
+        pitch,
+        bank,
     };
 }
 
@@ -347,6 +390,10 @@ export function getSceneFishRenderState(
                 renderDimensions.height === 0
                     ? projection.topPercent
                     : clamp((0.5 - animatedPosition.y / renderDimensions.height) * 100, 4, 96),
+            depthPercent:
+                renderDimensions.width === 0
+                    ? projection.depthPercent
+                    : clamp(((animatedPosition.z / renderDimensions.width) + 0.5) * 100, 4, 96),
         },
         facingDirection: animatedPosition.facingDirection,
         bobOffsetPercent: Math.sin((elapsedSeconds * fish.speed * 4) + fish.phase * Math.PI * 2) * 0.45,
