@@ -153,7 +153,9 @@ export interface TankSceneDimensionsProps {
 export interface TankSceneToolbarProps {
     viewMode: TankSceneViewMode;
     volumeLiters: number;
+    showSceneBubbles: boolean;
     onChangeViewMode: (viewMode: TankSceneViewMode) => void;
+    onToggleSceneBubbles: (enabled: boolean) => void;
 }
 
 export interface TankSceneViewportProps {
@@ -161,6 +163,7 @@ export interface TankSceneViewportProps {
     fish: TankSceneFish[];
     selectedSpeciesId: string | null;
     onSelectSpecies: (speciesId: string | null) => void;
+    showSceneBubbles: boolean;
 }
 
 export interface BuilderSceneViewportProps extends TankSceneViewportProps {

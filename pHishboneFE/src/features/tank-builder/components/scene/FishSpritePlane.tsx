@@ -3,7 +3,6 @@ import type { ReactElement } from 'react';
 import type { Group, Mesh, PlaneGeometry } from 'three';
 import { DoubleSide, SRGBColorSpace, TextureLoader } from 'three';
 import { useFrame, useLoader } from '@react-three/fiber';
-import fishPlaneUrl from '../../../../assets/fish-plane.png';
 import { getAnimatedFishWorldPosition, getFishRenderScale } from '../../helpers/scene';
 import type { TankDimensions, TankSceneFishSpriteProps } from '../../types';
 
@@ -13,6 +12,8 @@ interface FishSpritePlaneProps extends TankSceneFishSpriteProps {
 
 const BODY_SEGMENTS = 20;
 const HEIGHT_SEGMENTS = 8;
+const TRANSPARENT_TEXTURE_URL =
+    'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
 
 function clamp01(value: number): number {
     return Math.min(Math.max(value, 0), 1);
@@ -28,7 +29,7 @@ export function FishSpritePlane({
     const geometryRef = useRef<PlaneGeometry | null>(null);
     const basePositionsRef = useRef<Float32Array | null>(null);
     const bodyMeshRef = useRef<Mesh | null>(null);
-    const textureUrl = fish.thumbnailUrl || fishPlaneUrl;
+    const textureUrl = fish.thumbnailUrl || TRANSPARENT_TEXTURE_URL;
 
     const fishTexture = useLoader(TextureLoader, textureUrl, (loader) => {
         loader.setCrossOrigin('anonymous');
