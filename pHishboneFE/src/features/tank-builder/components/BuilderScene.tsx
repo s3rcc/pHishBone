@@ -21,7 +21,9 @@ interface BuilderSceneProps {
     sceneFish: TankSceneFishInstance[];
     selectedSpeciesId: string | null;
     viewMode: TankSceneViewMode;
+    showSceneBubbles: boolean;
     onChangeViewMode: (viewMode: TankSceneViewMode) => void;
+    onToggleSceneBubbles: (enabled: boolean) => void;
     onSelectSpecies: (speciesId: string | null) => void;
     onSetDimensions: (dimensions: Partial<TankDimensions>) => void;
     onAddSpecies: (species: SpeciesDto) => Promise<void>;
@@ -47,7 +49,9 @@ export function BuilderScene({
     sceneFish,
     selectedSpeciesId,
     viewMode,
+    showSceneBubbles,
     onChangeViewMode,
+    onToggleSceneBubbles,
     onSelectSpecies,
     onSetDimensions,
     onAddSpecies,
@@ -101,7 +105,9 @@ export function BuilderScene({
             <TankSceneToolbar
                 viewMode={viewMode}
                 volumeLiters={volumeLiters}
+                showSceneBubbles={showSceneBubbles}
                 onChangeViewMode={onChangeViewMode}
+                onToggleSceneBubbles={onToggleSceneBubbles}
             />
 
             <TankDimensionInputs dimensions={dimensions} onSetDimensions={onSetDimensions} />
@@ -114,6 +120,7 @@ export function BuilderScene({
                             fish={resolvedSceneFish}
                             selectedSpeciesId={selectedSpeciesId}
                             onSelectSpecies={onSelectSpecies}
+                            showSceneBubbles={showSceneBubbles}
                             isDropActive={isDropActive}
                         />
                     </Suspense>
@@ -123,6 +130,7 @@ export function BuilderScene({
                         fish={resolvedSceneFish}
                         selectedSpeciesId={selectedSpeciesId}
                         onSelectSpecies={onSelectSpecies}
+                        showSceneBubbles={showSceneBubbles}
                         isDropActive={isDropActive}
                     />
                 )}

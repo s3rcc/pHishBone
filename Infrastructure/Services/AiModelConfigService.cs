@@ -28,7 +28,7 @@ namespace Infrastructure.Services
 
         public async Task<AiModelConfigDto> GetByIdAsync(string id, CancellationToken cancellationToken = default)
         {
-            var entity = await GetEntityByIdAsync(id);
+            var entity = await GetEntityByIdAsync(id, cancellationToken);
             return _mapper.Map<AiModelConfigDto>(entity);
         }
 
@@ -36,7 +36,8 @@ namespace Infrastructure.Services
         {
             var items = await _unitOfWork.Repository<AiModelConfig>().GetListAsync(
                 predicate: x => x.DeletedTime == null,
-                orderBy: q => q.OrderBy(x => x.DisplayName)
+                orderBy: q => q.OrderBy(x => x.DisplayName),
+                cancellationToken: cancellationToken
             );
 
             return _mapper.Map<ICollection<AiModelConfigDto>>(items);
@@ -49,7 +50,8 @@ namespace Infrastructure.Services
                 page: filter.Page,
                 size: filter.Size,
                 sortBy: filter.SortBy,
-                isAsc: filter.IsAscending
+                isAsc: filter.IsAscending,
+                cancellationToken: cancellationToken
             );
 
             return new PaginationResponse<AiModelConfigDto>
@@ -66,7 +68,8 @@ namespace Infrastructure.Services
         {
             var items = await _unitOfWork.Repository<AiModelConfig>().GetListAsync(
                 predicate: x => x.DeletedTime == null && x.IsEnabled,
-                orderBy: q => q.OrderBy(x => x.DisplayName)
+                orderBy: q => q.OrderBy(x => x.DisplayName),
+                cancellationToken: cancellationToken
             );
 
             return _mapper.Map<ICollection<AiModelConfigDto>>(items);
@@ -75,12 +78,12 @@ namespace Infrastructure.Services
         public async Task<AiModelConfigDto> CreateAsync(CreateAiModelConfigDto dto, CancellationToken cancellationToken = default)
         {
             Normalize(dto);
-            await EnsureModelUniquenessAsync(dto.DisplayName, dto.ProviderModelId, dto.Provider, null);
+            await EnsureModelUniquenessAsync(dto.DisplayName, dto.ProviderModelId, dto.Provider, null, cancellationToken);
 
             var entity = _mapper.Map<AiModelConfig>(dto);
             entity.CreatedBy = _currentUserService.GetUserId();
 
-            await _unitOfWork.Repository<AiModelConfig>().InsertAsync(entity);
+            await _unitOfWork.Repository<AiModelConfig>().InsertAsync(entity, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             return _mapper.Map<AiModelConfigDto>(entity);
@@ -90,8 +93,8 @@ namespace Infrastructure.Services
         {
             Normalize(dto);
 
-            var entity = await GetEntityByIdAsync(id);
-            await EnsureModelUniquenessAsync(dto.DisplayName, dto.ProviderModelId, dto.Provider, id);
+            var entity = await GetEntityByIdAsync(id, cancellationToken);
+            await EnsureModelUniquenessAsync(dto.DisplayName, dto.ProviderModelId, dto.Provider, id, cancellationToken);
 
             _mapper.Map(dto, entity);
             entity.LastUpdatedBy = _currentUserService.GetUserId();
@@ -105,7 +108,7 @@ namespace Infrastructure.Services
 
         public async Task DeleteAsync(string id, CancellationToken cancellationToken = default)
         {
-            var entity = await GetEntityByIdAsync(id);
+            var entity = await GetEntityByIdAsync(id, cancellationToken);
             entity.DeletedBy = _currentUserService.GetUserId();
             entity.DeletedTime = DateTime.UtcNow;
             entity.LastUpdatedBy = _currentUserService.GetUserId();
@@ -115,10 +118,11 @@ namespace Infrastructure.Services
             await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
-        private async Task<AiModelConfig> GetEntityByIdAsync(string id)
+        private async Task<AiModelConfig> GetEntityByIdAsync(string id, CancellationToken cancellationToken = default)
         {
             var entity = await _unitOfWork.Repository<AiModelConfig>().SingleOrDefaultAsync(
-                predicate: x => x.Id == id && x.DeletedTime == null
+                predicate: x => x.Id == id && x.DeletedTime == null,
+                cancellationToken: cancellationToken
             );
 
             if (entity == null)
@@ -133,10 +137,11 @@ namespace Infrastructure.Services
             return entity;
         }
 
-        private async Task EnsureModelUniquenessAsync(string displayName, string providerModelId, Domain.Enums.AiProvider provider, string? excludedId)
+        private async Task EnsureModelUniquenessAsync(string displayName, string providerModelId, Domain.Enums.AiProvider provider, string? excludedId, CancellationToken cancellationToken = default)
         {
             var existingDisplayName = await _unitOfWork.Repository<AiModelConfig>().SingleOrDefaultAsync(
-                predicate: x => x.DeletedTime == null && x.DisplayName == displayName && x.Id != excludedId
+                predicate: x => x.DeletedTime == null && x.DisplayName == displayName && x.Id != excludedId,
+                cancellationToken: cancellationToken
             );
 
             if (existingDisplayName != null)
@@ -152,7 +157,8 @@ namespace Infrastructure.Services
                 predicate: x => x.DeletedTime == null
                     && x.Provider == provider
                     && x.ProviderModelId == providerModelId
-                    && x.Id != excludedId
+                    && x.Id != excludedId,
+                cancellationToken: cancellationToken
             );
 
             if (existingProviderModel != null)

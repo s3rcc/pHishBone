@@ -149,6 +149,8 @@ export function useRemoveSpeciesImage() {
             speciesImageApi.remove(speciesId, imageId),
         onSuccess: (_data, { speciesId }) => {
             void qc.invalidateQueries({ queryKey: CATALOG_KEYS.speciesImages(speciesId) });
+            void qc.invalidateQueries({ queryKey: CATALOG_KEYS.speciesDetail(speciesId) });
+            void qc.invalidateQueries({ queryKey: ['catalog', 'species'] });
         },
     });
 }
@@ -156,10 +158,11 @@ export function useRemoveSpeciesImage() {
 export function useSetSpeciesThumbnail() {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: ({ speciesId, file }: { speciesId: string; file: File }) =>
-            speciesImageApi.setThumbnail(speciesId, file),
+        mutationFn: ({ speciesId, imageId }: { speciesId: string; imageId: string }) =>
+            speciesImageApi.setThumbnail(speciesId, imageId),
         onSuccess: (_data, { speciesId }) => {
             void qc.invalidateQueries({ queryKey: CATALOG_KEYS.speciesImages(speciesId) });
+            void qc.invalidateQueries({ queryKey: CATALOG_KEYS.speciesDetail(speciesId) });
             void qc.invalidateQueries({ queryKey: ['catalog', 'species'] });
         },
     });

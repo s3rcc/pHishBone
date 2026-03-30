@@ -9,15 +9,15 @@ namespace Infrastructure.Paginate
 {
     public static class PaginateExtension
     {
-        public static async Task<IPaginate<T>> ToPaginateAsync<T>(this IQueryable<T> query, int page, int size, int firstPage = 1)
+        public static async Task<IPaginate<T>> ToPaginateAsync<T>(this IQueryable<T> query, int page, int size, int firstPage = 1, CancellationToken cancellationToken = default)
         {
             if (firstPage > page)
             {
                 throw new AggregateException($"page ({page}) must be greater than or equal to firstPage ({firstPage})");
             }
 
-            var total = await query.CountAsync();
-            var items = await query.Skip((page - firstPage) * size).Take(size).ToListAsync();
+            var total = await query.CountAsync(cancellationToken);
+            var items = await query.Skip((page - firstPage) * size).Take(size).ToListAsync(cancellationToken);
             var totalPages = (int)Math.Ceiling(total / (double)size);
             return new Paginate<T>
             {

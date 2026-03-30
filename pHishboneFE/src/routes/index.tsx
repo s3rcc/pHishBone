@@ -122,7 +122,7 @@ export default function HomePage() {
                         <Button
                             variant="outlined"
                             size="large"
-                            onClick={() => navigate({ to: '/' })}
+                            onClick={() => navigate({ to: '/explore' })}
                             sx={{
                                 px: 4,
                                 py: 1.75,

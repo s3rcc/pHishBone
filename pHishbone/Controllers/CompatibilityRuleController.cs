@@ -27,9 +27,9 @@ namespace pHishbone.Controllers
         [HttpGet(ApiEndpointConstant.CompatibilityRule.GetById)]
         [ProducesResponseType(typeof(ApiResponse<CompatibilityRuleDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetById([FromRoute] string id)
+        public async Task<IActionResult> GetById([FromRoute] string id, CancellationToken cancellationToken)
         {
-            var rule = await _ruleService.GetByIdAsync(id);
+            var rule = await _ruleService.GetByIdAsync(id, cancellationToken);
             return Ok(ApiResponse<CompatibilityRuleDto>.Success(rule, SuccessMessageConstant.RuleRetrievedSuccessfully));
         }
 
@@ -38,9 +38,9 @@ namespace pHishbone.Controllers
         /// </summary>
         [HttpGet(ApiEndpointConstant.CompatibilityRule.GetPaginated)]
         [ProducesResponseType(typeof(ApiResponse<PaginationResponse<CompatibilityRuleDto>>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetPaginated([FromQuery] CompatibilityRuleFilterDto filter)
+        public async Task<IActionResult> GetPaginated([FromQuery] CompatibilityRuleFilterDto filter, CancellationToken cancellationToken)
         {
-            var rules = await _ruleService.GetPaginatedListAsync(filter);
+            var rules = await _ruleService.GetPaginatedListAsync(filter, cancellationToken);
             return Ok(ApiResponse<PaginationResponse<CompatibilityRuleDto>>.Success(rules, SuccessMessageConstant.RulesRetrievedSuccessfully));
         }
 
@@ -51,10 +51,10 @@ namespace pHishbone.Controllers
         [ProducesResponseType(typeof(ApiResponse<CompatibilityRuleDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Create([FromBody] CreateCompatibilityRuleDto dto)
+        public async Task<IActionResult> Create([FromBody] CreateCompatibilityRuleDto dto, CancellationToken cancellationToken)
         {
             _logger.LogInformation("Creating compatibility rule: {SubjectTagId} → {ObjectTagId}", dto.SubjectTagId, dto.ObjectTagId);
-            var rule = await _ruleService.CreateAsync(dto);
+            var rule = await _ruleService.CreateAsync(dto, cancellationToken);
             return CreatedAtAction(
                 nameof(GetById),
                 new { id = rule.Id },
@@ -69,10 +69,10 @@ namespace pHishbone.Controllers
         [ProducesResponseType(typeof(ApiResponse<CompatibilityRuleDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> Update([FromRoute] string id, [FromBody] UpdateCompatibilityRuleDto dto)
+        public async Task<IActionResult> Update([FromRoute] string id, [FromBody] UpdateCompatibilityRuleDto dto, CancellationToken cancellationToken)
         {
             _logger.LogInformation("Updating compatibility rule {RuleId}", id);
-            var rule = await _ruleService.UpdateAsync(id, dto);
+            var rule = await _ruleService.UpdateAsync(id, dto, cancellationToken);
             return Ok(ApiResponse<CompatibilityRuleDto>.Success(rule, SuccessMessageConstant.RuleUpdatedSuccessfully));
         }
 
@@ -82,10 +82,10 @@ namespace pHishbone.Controllers
         [HttpDelete(ApiEndpointConstant.CompatibilityRule.Delete)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Delete([FromRoute] string id)
+        public async Task<IActionResult> Delete([FromRoute] string id, CancellationToken cancellationToken)
         {
             _logger.LogInformation("Deleting compatibility rule {RuleId}", id);
-            await _ruleService.DeleteAsync(id);
+            await _ruleService.DeleteAsync(id, cancellationToken);
             return Ok(ApiResponse<object>.Success(null, SuccessMessageConstant.RuleDeletedSuccessfully));
         }
     }

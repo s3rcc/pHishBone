@@ -128,6 +128,9 @@ export interface TankWorldPosition {
 
 export interface AnimatedTankWorldPosition extends TankWorldPosition {
     facingDirection: -1 | 1;
+    headingYaw: number;
+    pitch: number;
+    bank: number;
 }
 
 export interface SceneFishRenderState {
@@ -150,7 +153,9 @@ export interface TankSceneDimensionsProps {
 export interface TankSceneToolbarProps {
     viewMode: TankSceneViewMode;
     volumeLiters: number;
+    showSceneBubbles: boolean;
     onChangeViewMode: (viewMode: TankSceneViewMode) => void;
+    onToggleSceneBubbles: (enabled: boolean) => void;
 }
 
 export interface TankSceneViewportProps {
@@ -158,6 +163,7 @@ export interface TankSceneViewportProps {
     fish: TankSceneFish[];
     selectedSpeciesId: string | null;
     onSelectSpecies: (speciesId: string | null) => void;
+    showSceneBubbles: boolean;
 }
 
 export interface BuilderSceneViewportProps extends TankSceneViewportProps {

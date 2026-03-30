@@ -209,13 +209,10 @@ export const speciesImageApi = {
         await axiosInstance.delete(`/api/catalog/species/${speciesId}/images/${imageId}`);
     },
 
-    setThumbnail: async (speciesId: string, file: File): Promise<void> => {
-        const formData = new FormData();
-        formData.append('File', file);
+    setThumbnail: async (speciesId: string, imageId: string): Promise<void> => {
         await axiosInstance.patch(
             `/api/catalog/species/${speciesId}/set-thumbnail`,
-            formData,
-            { headers: { 'Content-Type': 'multipart/form-data' } },
+            { imageId },
         );
     },
 };

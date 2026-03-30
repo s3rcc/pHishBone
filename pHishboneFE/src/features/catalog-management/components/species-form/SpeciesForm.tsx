@@ -130,10 +130,19 @@ export const SpeciesForm: React.FC<SpeciesFormProps> = ({ mode, speciesId, defau
     });
 
     const { isDirty } = methods.formState;
+    const currentThumbnailUrl = methods.watch('thumbnailUrl');
 
     const handleTabChange = useCallback((_: React.SyntheticEvent, newValue: number) => {
         setActiveTab(newValue);
     }, []);
+
+    const handleThumbnailUrlChange = useCallback((thumbnailUrl: string) => {
+        methods.setValue('thumbnailUrl', thumbnailUrl, {
+            shouldDirty: false,
+            shouldTouch: false,
+            shouldValidate: false,
+        });
+    }, [methods]);
 
     const handleStagedFilesChange = useCallback((files: File[]) => {
         stagedFilesRef.current = files;
@@ -303,8 +312,9 @@ export const SpeciesForm: React.FC<SpeciesFormProps> = ({ mode, speciesId, defau
                         <Suspense fallback={<SuspenseLoader />}>
                             <GalleryTab
                                 speciesId={speciesId}
-                                currentThumbnailUrl={defaultValues?.thumbnailUrl}
+                                currentThumbnailUrl={currentThumbnailUrl}
                                 onStagedFilesChange={handleStagedFilesChange}
+                                onThumbnailUrlChange={handleThumbnailUrlChange}
                             />
                         </Suspense>
                     </TabPanel>

@@ -38,6 +38,7 @@ namespace Application.Constants
 
         #region Image Errors
         public const string ImageNotFound = "Image not found";
+        public const string ImageIdRequired = "Image ID is required";
         public const string ImageUrlRequired = "Image URL is required";
         public const string InvalidImageUrl = "Image URL must be a valid URL";
         public const string ImageUrlTooLong = "Image URL cannot exceed 500 characters";
