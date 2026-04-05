@@ -39,6 +39,7 @@ import {
     useUpdateCompatibilityRule,
 } from '../hooks/useCatalog';
 import type {
+    CompatibilitySeverity,
     CompatibilityRuleDto,
     CompatibilityRuleFilter,
     TagDto,
@@ -46,7 +47,24 @@ import type {
 
 // ─── Severity helpers ─────────────────────────────────────────────────────────
 
-const SEVERITY_OPTIONS = ['Info', 'Warning', 'Danger'] as const;
+const SEVERITY_OPTIONS: ReadonlyArray<{ value: CompatibilitySeverity; label: string }> = [
+    { value: 0, label: 'Info' },
+    { value: 1, label: 'Warning' },
+    { value: 2, label: 'Danger' },
+];
+
+function severityLabelToValue(severity: string | undefined): CompatibilitySeverity {
+    switch (severity) {
+        case 'Danger':
+            return 2;
+        case 'Warning':
+            return 1;
+        case 'Info':
+            return 0;
+        default:
+            return 1;
+    }
+}
 
 function severityChipColor(severity: string): 'default' | 'warning' | 'error' {
     switch (severity) {
@@ -61,8 +79,17 @@ function severityChipColor(severity: string): 'default' | 'warning' | 'error' {
 interface RuleFormValues {
     subjectTagId: string;
     objectTagId: string;
-    severity: string;
+    severity: CompatibilitySeverity;
     message: string;
+}
+
+function getRuleFormDefaults(editTarget: CompatibilityRuleDto | null): RuleFormValues {
+    return {
+        subjectTagId: editTarget?.subjectTagId ?? '',
+        objectTagId: editTarget?.objectTagId ?? '',
+        severity: severityLabelToValue(editTarget?.severity ?? 'Warning'),
+        message: editTarget?.message ?? '',
+    };
 }
 
 // ─── Rules Table (Suspense inner) ─────────────────────────────────────────────
@@ -223,22 +250,16 @@ function RuleEditorDialog({ open, editTarget, onClose }: RuleEditorDialogProps) 
         formState: { errors },
         setError,
     } = useForm<RuleFormValues>({
-        defaultValues: {
-            subjectTagId: editTarget?.subjectTagId ?? '',
-            objectTagId: editTarget?.objectTagId ?? '',
-            severity: editTarget?.severity ?? 'Warning',
-            message: editTarget?.message ?? '',
-        },
+        defaultValues: getRuleFormDefaults(editTarget),
     });
 
     React.useEffect(() => {
-        reset({
-            subjectTagId: editTarget?.subjectTagId ?? '',
-            objectTagId: editTarget?.objectTagId ?? '',
-            severity: editTarget?.severity ?? 'Warning',
-            message: editTarget?.message ?? '',
-        });
-    }, [editTarget, reset]);
+        if (!open) {
+            return;
+        }
+
+        reset(getRuleFormDefaults(editTarget));
+    }, [editTarget, open, reset]);
 
     const subjectTagId = watch('subjectTagId');
     const objectTagId = watch('objectTagId');
@@ -319,19 +340,25 @@ function RuleEditorDialog({ open, editTarget, onClose }: RuleEditorDialogProps) 
                                             rules={{ required: true }}
                                             render={({ field }) => (
                                                 <TextField
-                                                    {...field}
                                                     select
+                                                    value={field.value}
+                                                    onChange={(event) =>
+                                                        field.onChange(Number(event.target.value) as CompatibilitySeverity)
+                                                    }
                                                     label={t('Catalog.Rules.fieldSeverity')}
                                                     size="small"
                                                     fullWidth
                                                     error={!!errors.severity}
                                                 >
-                                                    {SEVERITY_OPTIONS.map((s) => (
-                                                        <MenuItem key={s} value={s}>
+                                                    {SEVERITY_OPTIONS.map((severityOption) => (
+                                                        <MenuItem
+                                                            key={severityOption.value}
+                                                            value={severityOption.value}
+                                                        >
                                                             <Chip
-                                                                label={t(`Catalog.Rules.severity${s}`)}
+                                                                label={t(`Catalog.Rules.severity${severityOption.label}`)}
                                                                 size="small"
-                                                                color={severityChipColor(s)}
+                                                                color={severityChipColor(severityOption.label)}
                                                                 variant="filled"
                                                                 sx={{ pointerEvents: 'none' }}
                                                             />

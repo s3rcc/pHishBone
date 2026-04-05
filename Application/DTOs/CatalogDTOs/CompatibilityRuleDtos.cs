@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Domain.Enums;
 
 namespace Application.DTOs.CatalogDTOs
@@ -36,6 +37,7 @@ namespace Application.DTOs.CatalogDTOs
     {
         public string SubjectTagId { get; set; } = string.Empty;
         public string ObjectTagId { get; set; } = string.Empty;
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public Severity Severity { get; set; }
         public string Message { get; set; } = string.Empty;
     }
@@ -46,6 +48,7 @@ namespace Application.DTOs.CatalogDTOs
     /// </summary>
     public class UpdateCompatibilityRuleDto
     {
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public Severity Severity { get; set; }
         public string Message { get; set; } = string.Empty;
     }
