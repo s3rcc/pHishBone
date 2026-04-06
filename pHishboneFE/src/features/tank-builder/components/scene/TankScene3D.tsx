@@ -25,14 +25,6 @@ interface TankSceneContentProps extends BuilderSceneViewportProps {
     capColor: string;
 }
 
-interface BubbleSpec {
-    size: number;
-    left: string;
-    delay: string;
-    duration: string;
-    opacity: number;
-}
-
 function createSceneBackdropTexture(backgroundColor: string, glowColor: string, hazeColor: string): CanvasTexture {
     const canvas = document.createElement('canvas');
     canvas.width = 1024;
@@ -141,64 +133,6 @@ function TankGlassBox({
     );
 }
 
-function BubbleBackdrop({
-    enabled,
-    bubbleColor,
-}: {
-    enabled: boolean;
-    bubbleColor: string;
-}): ReactElement | null {
-    const bubbles = useMemo<BubbleSpec[]>(
-        () =>
-            Array.from({ length: 18 }, (_, index) => ({
-                size: 8 + ((index * 7) % 22),
-                left: `${4 + ((index * 11.5) % 88)}%`,
-                delay: `${(index % 6) * -2.2}s`,
-                duration: `${10 + (index % 5) * 2.4}s`,
-                opacity: 0.14 + (index % 4) * 0.06,
-            })),
-        [],
-    );
-
-    if (!enabled) {
-        return null;
-    }
-
-    return (
-        <Box
-            sx={{
-                position: 'absolute',
-                inset: 0,
-                pointerEvents: 'none',
-                overflow: 'hidden',
-                zIndex: 2,
-                mixBlendMode: 'screen',
-            }}
-        >
-            {bubbles.map((bubble, index) => (
-                <Box
-                    key={`${bubble.left}-${bubble.size}-${index}`}
-                    sx={{
-                        position: 'absolute',
-                        bottom: '-12%',
-                        left: bubble.left,
-                        width: bubble.size,
-                        height: bubble.size,
-                        borderRadius: '50%',
-                        border: `12px solid ${bubbleColor}`,
-                        background: 'radial-gradient(circle at 35% 35%, rgba(255,255,255,0.42), rgba(255,255,255,0.06) 45%, rgba(255,255,255,0) 75%)',
-                        boxShadow: `0 0 ${Math.max(6, bubble.size * 10)}px rgba(255,255,255,0.12)`,
-                        opacity: bubble.opacity + 0.08,
-                        animation: `tankBubbleRise ${bubble.duration} linear infinite, tankBubbleDrift ${Math.max(4, Number.parseFloat(bubble.duration) * 0.45)}s ease-in-out infinite`,
-                        animationDelay: bubble.delay,
-                        // filter: 'blur(0.15px)',
-                    }}
-                />
-            ))}
-        </Box>
-    );
-}
-
 function TankSceneContent({
     dimensions,
     fish,
@@ -280,7 +214,6 @@ export function TankScene3D({
     fish,
     selectedSpeciesId,
     onSelectSpecies,
-    showSceneBubbles,
     isDropActive,
 }: BuilderSceneViewportProps): ReactElement {
     const { t } = useTranslation();
@@ -292,7 +225,6 @@ export function TankScene3D({
     const fillColor = theme.palette.mode === 'dark' ? '#34c6dc' : '#5fdde6';
     const floorColor = theme.palette.mode === 'dark' ? '#124960' : '#73d8dd';
     const capColor = theme.palette.mode === 'dark' ? '#b8f6ff' : '#ffffff';
-    const bubbleColor = theme.palette.mode === 'dark' ? 'rgba(168, 244, 255, 0.9)' : 'rgba(42, 174, 195, 0.72)';
     const shellBorder = theme.palette.mode === 'dark' ? 'rgba(120, 232, 246, 0.28)' : 'rgba(42, 174, 195, 0.28)';
     const shellHighlight = theme.palette.mode === 'dark' ? 'rgba(29,233,182,0.22)' : 'rgba(42, 174, 195, 0.18)';
     const shellInset = theme.palette.mode === 'dark' ? 'rgba(0, 188, 212, 0.10)' : 'rgba(42, 174, 195, 0.12)';
@@ -313,33 +245,8 @@ export function TankScene3D({
                 boxShadow: isDropActive
                     ? `0 0 0 2px ${shellHighlight}, inset 0 0 40px ${shellHighlight}`
                     : `inset 0 0 24px ${shellInset}`,
-                '@keyframes tankBubbleRise': {
-                    '0%': {
-                        transform: 'translate3d(0, 0, 0) scale(0.82)',
-                        opacity: 0,
-                    },
-                    '15%': {
-                        opacity: 1,
-                    },
-                    '100%': {
-                        transform: 'translate3d(14px, -115%, 0) scale(1.08)',
-                        opacity: 0,
-                    },
-                },
-                '@keyframes tankBubbleDrift': {
-                    '0%': {
-                        marginLeft: 0,
-                    },
-                    '50%': {
-                        marginLeft: 10,
-                    },
-                    '100%': {
-                        marginLeft: -6,
-                    },
-                },
             }}
         >
-            <BubbleBackdrop enabled={showSceneBubbles} bubbleColor={bubbleColor} />
             <Canvas
                 shadows={false}
                 camera={{ position: [6.8, 5.4, 7.2], fov: 38 }}
@@ -351,7 +258,6 @@ export function TankScene3D({
                     fish={fish}
                     selectedSpeciesId={selectedSpeciesId}
                     onSelectSpecies={onSelectSpecies}
-                    showSceneBubbles={showSceneBubbles}
                     isDropActive={isDropActive}
                     backgroundColor={sceneBackground}
                     glowColor={sceneGlow}
