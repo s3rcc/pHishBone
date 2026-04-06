@@ -39,9 +39,10 @@ namespace pHishbone.Controllers
         public async Task<IActionResult> Register([FromBody] RegisterRequestDto request, CancellationToken cancellationToken)
         {
             var result = await _authService.RegisterAsync(request, cancellationToken);
+            WriteAuthCookies(result);
             return StatusCode(
                 StatusCodes.Status201Created,
-                ApiResponse<LoginResponseDto>.Success(result, SuccessMessageConstant.UserRegisteredSuccessfully, 201)
+                ApiResponse<LoginResponseDto>.Success(SanitizeAuthResponse(result), SuccessMessageConstant.UserRegisteredSuccessfully, 201)
             );
         }
 
@@ -54,7 +55,8 @@ namespace pHishbone.Controllers
         public async Task<IActionResult> Login([FromBody] LoginRequestDto request, CancellationToken cancellationToken)
         {
             var result = await _authService.LoginAsync(request, cancellationToken);
-            return Ok(ApiResponse<LoginResponseDto>.Success(result, SuccessMessageConstant.LoginSuccessful));
+            WriteAuthCookies(result);
+            return Ok(ApiResponse<LoginResponseDto>.Success(SanitizeAuthResponse(result), SuccessMessageConstant.LoginSuccessful));
         }
 
         /// <summary>
@@ -63,10 +65,15 @@ namespace pHishbone.Controllers
         [HttpPost(ApiEndpointConstant.Auth.Refresh)]
         [ProducesResponseType(typeof(ApiResponse<LoginResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequestDto dto, CancellationToken cancellationToken)
+        public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequestDto? dto, CancellationToken cancellationToken)
         {
-            var response = await _authService.RefreshTokenAsync(dto.RefreshToken, cancellationToken);
-            return Ok(ApiResponse<LoginResponseDto>.Success(response, SuccessMessageConstant.TokenRefreshedSuccessfully));
+            var accessToken = ResolveAccessToken(dto?.AccessToken);
+            var refreshToken = ResolveRefreshToken(dto?.RefreshToken);
+
+            var response = await _authService.RefreshTokenAsync(accessToken, refreshToken, cancellationToken);
+            WriteAuthCookies(response);
+
+            return Ok(ApiResponse<LoginResponseDto>.Success(SanitizeAuthResponse(response), SuccessMessageConstant.TokenRefreshedSuccessfully));
         }
 
         /// <summary>
@@ -101,13 +108,18 @@ namespace pHishbone.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Logout(CancellationToken cancellationToken)
         {
-            // Extract the raw token from the Authorization header so the service can blacklist it
-            var authHeader = Request.Headers["Authorization"].FirstOrDefault();
-            var accessToken = authHeader?.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) == true
-                ? authHeader["Bearer ".Length..].Trim()
-                : string.Empty;
+            var accessToken = ResolveAccessToken();
+            var refreshToken = ResolveRefreshToken();
 
-            await _authService.LogoutAsync(accessToken, cancellationToken);
+            try
+            {
+                await _authService.LogoutAsync(accessToken, refreshToken, cancellationToken);
+            }
+            finally
+            {
+                ClearAuthCookies();
+            }
+
             return Ok(ApiResponse<object>.Success(null, SuccessMessageConstant.LogoutSuccessful));
         }
 
@@ -247,6 +259,84 @@ namespace pHishbone.Controllers
 
             var message = await _userService.ChangeEmailAsync(request, userId, cancellationToken);
             return Ok(ApiResponse<object>.Success(null, message));
+        }
+
+        private string ResolveAccessToken(string? dtoAccessToken = null)
+        {
+            if (!string.IsNullOrWhiteSpace(dtoAccessToken))
+            {
+                return dtoAccessToken;
+            }
+
+            var authHeader = Request.Headers["Authorization"].FirstOrDefault();
+            if (authHeader?.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                return authHeader["Bearer ".Length..].Trim();
+            }
+
+            return Request.Cookies.TryGetValue(AuthCookieConstant.AccessTokenCookieName, out var cookieAccessToken)
+                ? cookieAccessToken
+                : string.Empty;
+        }
+
+        private string ResolveRefreshToken(string? dtoRefreshToken = null)
+        {
+            if (!string.IsNullOrWhiteSpace(dtoRefreshToken))
+            {
+                return dtoRefreshToken;
+            }
+
+            return Request.Cookies.TryGetValue(AuthCookieConstant.RefreshTokenCookieName, out var cookieRefreshToken)
+                ? cookieRefreshToken
+                : string.Empty;
+        }
+
+        private void WriteAuthCookies(LoginResponseDto response)
+        {
+            var expiresAt = DateTimeOffset.UtcNow.AddDays(AuthCookieConstant.AuthCookieLifetimeInDays);
+
+            Response.Cookies.Append(
+                AuthCookieConstant.AccessTokenCookieName,
+                response.AccessToken,
+                BuildCookieOptions(expiresAt));
+
+            if (!string.IsNullOrWhiteSpace(response.RefreshToken))
+            {
+                Response.Cookies.Append(
+                    AuthCookieConstant.RefreshTokenCookieName,
+                    response.RefreshToken,
+                    BuildCookieOptions(expiresAt));
+            }
+        }
+
+        private void ClearAuthCookies()
+        {
+            Response.Cookies.Delete(AuthCookieConstant.AccessTokenCookieName, BuildCookieOptions(DateTimeOffset.UnixEpoch));
+            Response.Cookies.Delete(AuthCookieConstant.RefreshTokenCookieName, BuildCookieOptions(DateTimeOffset.UnixEpoch));
+        }
+
+        private CookieOptions BuildCookieOptions(DateTimeOffset expiresAt)
+        {
+            return new CookieOptions
+            {
+                HttpOnly = true,
+                IsEssential = true,
+                Path = "/",
+                SameSite = SameSiteMode.Strict,
+                Secure = Request.IsHttps,
+                Expires = expiresAt
+            };
+        }
+
+        private static LoginResponseDto SanitizeAuthResponse(LoginResponseDto response)
+        {
+            return new LoginResponseDto
+            {
+                AccessToken = string.Empty,
+                RefreshToken = string.Empty,
+                ExpiresIn = response.ExpiresIn,
+                User = response.User
+            };
         }
     }
 }

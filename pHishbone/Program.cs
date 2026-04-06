@@ -44,7 +44,7 @@ try
     builder.Services.AddApplicationServices();
 
     // Add CORS
-    builder.Services.AddCorsPolicy();
+    builder.Services.AddCorsPolicy(builder.Configuration);
 
     // Add JWT Authentication
     builder.Services.AddJwtAuthentication(builder.Configuration);

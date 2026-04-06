@@ -7,25 +7,13 @@ import type {
     UserDto,
 } from '../types';
 
-function storeTokens(data: LoginResponseDto): void {
-    localStorage.setItem('accessToken', data.accessToken);
-    localStorage.setItem('refreshToken', data.refreshToken);
-}
-
-function clearTokens(): void {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-}
-
 export const authApi = {
     login: async (dto: LoginRequestDto): Promise<ApiResponse<LoginResponseDto>> => {
         const { data } = await axiosInstance.post<ApiResponse<LoginResponseDto>>(
             '/api/auth/login',
             dto,
         );
-        if (data.data) {
-            storeTokens(data.data);
-        }
+
         return data;
     },
 
@@ -34,9 +22,7 @@ export const authApi = {
             '/api/auth/register',
             dto,
         );
-        if (data.data) {
-            storeTokens(data.data);
-        }
+
         return data;
     },
 
@@ -45,14 +31,11 @@ export const authApi = {
         if (!data.data) {
             throw new Error(data.message ?? 'Unauthorized');
         }
+
         return data.data;
     },
 
     logout: async (): Promise<void> => {
-        try {
-            await axiosInstance.post('/api/auth/logout');
-        } finally {
-            clearTokens();
-        }
+        await axiosInstance.post('/api/auth/logout');
     },
 };

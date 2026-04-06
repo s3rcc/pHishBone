@@ -4,9 +4,9 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Net.Http.Headers;
 using System.Reflection;
 using System.Security.Claims;
-using System.Text;
 
 namespace pHishbone.Extensions
 {
@@ -24,15 +24,22 @@ namespace pHishbone.Extensions
             return services;
         }
 
-        public static IServiceCollection AddCorsPolicy(this IServiceCollection services)
+        public static IServiceCollection AddCorsPolicy(this IServiceCollection services, IConfiguration configuration)
         {
+            var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+                ?? new[]
+                {
+                    "http://localhost:5173"
+                };
+
             services.AddCors(options =>
             {
                 options.AddPolicy("AllowAll", builder =>
                 {
-                    builder.AllowAnyOrigin()
+                    builder.WithOrigins(allowedOrigins)
                            .AllowAnyMethod()
-                           .AllowAnyHeader();
+                           .AllowAnyHeader()
+                           .AllowCredentials();
                 });
             });
 
@@ -89,6 +96,29 @@ namespace pHishbone.Extensions
                 // Map Supabase JWT claims to ASP.NET Core claims
                 options.Events = new JwtBearerEvents
                 {
+                    OnMessageReceived = context =>
+                    {
+                        if (!string.IsNullOrWhiteSpace(context.Token))
+                        {
+                            return Task.CompletedTask;
+                        }
+
+                        var authorizationHeader = context.Request.Headers[HeaderNames.Authorization].ToString();
+                        if (!string.IsNullOrWhiteSpace(authorizationHeader) &&
+                            authorizationHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                        {
+                            context.Token = authorizationHeader["Bearer ".Length..].Trim();
+                            return Task.CompletedTask;
+                        }
+
+                        if (context.Request.Cookies.TryGetValue(AuthCookieConstant.AccessTokenCookieName, out var accessTokenCookie) &&
+                            !string.IsNullOrWhiteSpace(accessTokenCookie))
+                        {
+                            context.Token = accessTokenCookie;
+                        }
+
+                        return Task.CompletedTask;
+                    },
                     OnTokenValidated = async context =>
                     {
                         if (context.Principal?.Identity is ClaimsIdentity identity)

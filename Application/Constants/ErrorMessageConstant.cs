@@ -16,6 +16,8 @@ namespace Application.Constants
         public const string PasswordChangeFailed = "Failed to change password.";
         public const string EmailVerificationFailed = "Email verification failed.";
         public const string InvalidVerificationToken = "Invalid or expired verification token.";
+        public const string InvalidRefreshToken = "Invalid or expired refresh token.";
+        public const string MissingRefreshSession = "Refresh session is unavailable. Please login again.";
         public const string LogoutFailed = "Failed to logout.";
         public const string TokenRevoked = "Token has been revoked. Please login again.";
         public const string DuplicateUserName = "Username already exists.";
