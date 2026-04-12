@@ -2,7 +2,7 @@ namespace Application.Constants
 {
     public static class CatalogErrorMessageConstant
     {
-        // Tag errors
+        #region Tag Errors
         public const string TagCodeAlreadyExists = "TAG_CODE_EXISTS";
         public const string TagNameAlreadyExists = "TAG_NAME_EXISTS";
         public const string TagNotFound = "TAG_NOT_FOUND";
@@ -11,12 +11,49 @@ namespace Application.Constants
         public const string TagCodeDuplicate = "A tag with this code already exists";
         public const string TagNameDuplicate = "A tag with this name already exists";
         public const string TagNotFoundMessage = "Tag not found";
+        public const string TagCodeInvalidFormat = "Tag code must contain only uppercase letters (A-Z), digits (0-9), and underscores (_) after normalization. Input like 'high light' becomes 'HIGH_LIGHT'.";
+        public const string TagCodeMustStartWithLetter = "Tag code must start with a letter (A-Z) after normalization.";
+        public const string TagCodePatternHint = "Input is automatically normalized: 'high light' → 'HIGH_LIGHT'. Use letters, digits, spaces, or hyphens only.";
+        #endregion Tag Errors
 
-        // Type errors
+        #region Type Errors
         public const string TypeNameAlreadyExists = "TYPE_NAME_EXISTS";
         public const string TypeNotFound = "TYPE_NOT_FOUND";
         public const string TypeNameRequired = "Type name is required";
         public const string TypeNameDuplicate = "A type with this name already exists";
         public const string TypeNotFoundMessage = "Type not found";
+        #endregion Type Errors
+
+        #region Species Errors
+        public const string SpeciesNotFound = "Species not found";
+        public const string SpeciesScientificNameDuplicate = "A species with this scientific name already exists";
+        public const string SpeciesInvalidEnvironment = "PhMin must be less than PhMax, and TempMin must be less than TempMax";
+        public const string SpeciesInvalidAdultSize = "AdultSize must be greater than 0";
+        public const string SpeciesTypeNotFound = "The specified Type does not exist";
+        public const string SpeciesTagNotFound = "One or more specified Tags do not exist";
+        public const string SpeciesCommonNameRequired = "Common name is required";
+        public const string SpeciesScientificNameRequired = "Scientific name is required";
+        public const string SpeciesTypeIdRequired = "Type ID is required";
+        #endregion Species Errors
+
+        #region Image Errors
+        public const string ImageNotFound = "Image not found";
+        public const string ImageIdRequired = "Image ID is required";
+        public const string ImageUrlRequired = "Image URL is required";
+        public const string InvalidImageUrl = "Image URL must be a valid URL";
+        public const string ImageUrlTooLong = "Image URL cannot exceed 500 characters";
+        public const string CaptionTooLong = "Caption cannot exceed 255 characters";
+        public const string FileRequired = "Image file is required";
+        public const string AllUploadsFailedMessage = "All image uploads failed. Please try again.";
+        #endregion Image Errors
+
+        #region CompatibilityRule Errors
+        public const string RuleNotFound = "Compatibility rule not found.";
+        public const string RuleSelfReference = "A tag cannot have a compatibility rule with itself. Subject and object tags must be different.";
+        public const string RuleDuplicate = "A compatibility rule between these two tags already exists (in either direction). Consider updating the existing rule instead.";
+        public const string RuleSubjectTagNotFound = "The specified subject tag does not exist.";
+        public const string RuleObjectTagNotFound = "The specified object tag does not exist.";
+        #endregion CompatibilityRule Errors
     }
 }
+

@@ -30,7 +30,7 @@ namespace Infrastructure.Persistence.Repositories
             _dbSet.RemoveRange(entities);
         }
 
-        public async Task<ICollection<T>> GetListAsync(Expression<Func<T, bool>>? predicate = null, Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null, Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null, bool tracking = false)
+        public async Task<ICollection<T>> GetListAsync(Expression<Func<T, bool>>? predicate = null, Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null, Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null, bool tracking = false, CancellationToken cancellationToken = default)
         {
             IQueryable<T> query = _dbSet;
 
@@ -38,12 +38,12 @@ namespace Infrastructure.Persistence.Repositories
 
             if (predicate != null) query = query.Where(predicate);
 
-            if (orderBy != null) return await orderBy(query).AsNoTracking().ToListAsync();
+            if (orderBy != null) return await orderBy(query).AsNoTracking().ToListAsync(cancellationToken);
 
-            return await query.AsNoTracking().ToListAsync();
+            return await query.AsNoTracking().ToListAsync(cancellationToken);
         }
 
-        public async Task<IPaginate<T>> GetPagingListAsync(IFilter<T>? filter = null, Expression<Func<T, bool>>? predicate = null, Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null, Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null, int page = 1, int size = 10, string? sortBy = null, bool isAsc = true)
+        public async Task<IPaginate<T>> GetPagingListAsync(IFilter<T>? filter = null, Expression<Func<T, bool>>? predicate = null, Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null, Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null, int page = 1, int size = 10, string? sortBy = null, bool isAsc = true, CancellationToken cancellationToken = default)
         {
             IQueryable<T> query = _dbSet;
 
@@ -63,30 +63,30 @@ namespace Infrastructure.Persistence.Repositories
                 query = orderBy(query);
             }
 
-            return await query.AsNoTracking().ToPaginateAsync(page, size, 1);
+            return await query.AsNoTracking().ToPaginateAsync(page, size, 1, cancellationToken);
         }
 
-        public async Task InsertAsync(T entity)
+        public async Task InsertAsync(T entity, CancellationToken cancellationToken = default)
         {
             if (entity == null) return;
-            await _dbSet.AddAsync(entity);
+            await _dbSet.AddAsync(entity, cancellationToken);
         }
 
-        public async Task InsertRangeAsync(IEnumerable<T> entities)
+        public async Task InsertRangeAsync(IEnumerable<T> entities, CancellationToken cancellationToken = default)
         {
-            await _dbSet.AddRangeAsync(entities);
+            await _dbSet.AddRangeAsync(entities, cancellationToken);
         }
 
-        public async Task<T?> SingleOrDefaultAsync(Expression<Func<T, bool>>? predicate = null, Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null, Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null, bool tracking = false)
+        public async Task<T?> SingleOrDefaultAsync(Expression<Func<T, bool>>? predicate = null, Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null, Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null, bool tracking = false, CancellationToken cancellationToken = default)
         {
             IQueryable<T> query = _dbSet;
             if (include != null) query = include(query);
 
             if (predicate != null) query = query.Where(predicate);
 
-            if (orderBy != null) return await orderBy(query).AsNoTracking().FirstOrDefaultAsync();
+            if (orderBy != null) return await orderBy(query).AsNoTracking().FirstOrDefaultAsync(cancellationToken);
 
-            return await query.AsNoTracking().FirstOrDefaultAsync();
+            return await query.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
         }
 
         public Task Update(T entity)

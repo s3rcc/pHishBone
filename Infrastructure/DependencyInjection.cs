@@ -1,8 +1,11 @@
 using Application.Common.Interfaces;
+using Application.Services;
+using CloudinaryDotNet;
 using Infrastructure.Common.Interfaces;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
 using Infrastructure.Services;
+using Infrastructure.Settings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -52,18 +55,49 @@ namespace Infrastructure
                 return supabase;
             });
 
+            // Configure Cloudinary
+            services.Configure<CloudinarySettings>(configuration.GetSection("CloudinarySettings"));
+
+            // Configure Redis distributed cache
+            var redisSettings = configuration.GetSection("RedisSettings").Get<RedisSettings>();
+            if (redisSettings != null && !string.IsNullOrEmpty(redisSettings.ConnectionString))
+            {
+                services.Configure<RedisSettings>(configuration.GetSection("RedisSettings"));
+                services.AddStackExchangeRedisCache(options =>
+                {
+                    options.Configuration = redisSettings.ConnectionString;
+                    options.InstanceName = redisSettings.InstanceName;
+                });
+            }
+            else
+            {
+                // Fallback to in-memory cache when Redis is not configured
+                services.AddDistributedMemoryCache();
+            }
+
             // Add Unit of Work and Repositories
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
             // Add Services
             services.AddScoped<IAuthService, SupabaseAuthService>();
+            services.AddScoped<ITokenBlacklistService, TokenBlacklistService>();
             services.AddScoped<ITagService, TagService>();
             services.AddScoped<ITypeService, TypeService>();
+            services.AddScoped<ISpeciesService, SpeciesService>();
             services.AddScoped<ICurrentUserService, CurrentUserService>();
-            services.AddScoped<Application.Services.ITankService, TankService>();
+            services.AddScoped<ITankService, TankService>();
+            services.AddScoped<ITankItemService, TankItemService>();
+            services.AddScoped<ITankAnalysisService, TankAnalysisService>();
+            services.AddScoped<IGuestTankAnalysisService, GuestTankAnalysisService>();
+            services.AddScoped<ISpeciesImageService, SpeciesImageService>();
+            services.AddScoped<ITankImageService, TankImageService>();
+            services.AddScoped<IPhotoService, PhotoService>();
+            services.AddScoped<IUserService, UserService>();
+            services.AddScoped<ICompatibilityRuleService, CompatibilityRuleService>();
 
             return services;
         }
     }
 }
+

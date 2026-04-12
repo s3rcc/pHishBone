@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Supabase.Gotrue;
 using Supabase.Gotrue.Interfaces;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace Infrastructure.Services
 {
@@ -19,25 +20,52 @@ namespace Infrastructure.Services
         private readonly IMapper _mapper;
         private readonly Supabase.Client _supabaseClient;
         private readonly ILogger<SupabaseAuthService> _logger;
+        private readonly ITokenBlacklistService _tokenBlacklist;
 
         public SupabaseAuthService(
             IUnitOfWork unitOfWork,
             IMapper mapper,
             Supabase.Client supabaseClient,
-            ILogger<SupabaseAuthService> logger)
+            ILogger<SupabaseAuthService> logger,
+            ITokenBlacklistService tokenBlacklist)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _supabaseClient = supabaseClient;
             _logger = logger;
+            _tokenBlacklist = tokenBlacklist;
         }
 
-        public async Task<LoginResponseDto> RegisterAsync(RegisterRequestDto request)
+        public async Task<LoginResponseDto> RegisterAsync(RegisterRequestDto request, CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Attempting to register user with email: {Email}", request.Email);
 
+            var existingUser = await _unitOfWork.Repository<PBUser>()
+                .SingleOrDefaultAsync(predicate: u => u.Email == request.Email && u.DeletedTime == null, cancellationToken: cancellationToken);
+
+            if (existingUser != null)
+            {
+                _logger.LogWarning("User with email {Email} already exists", request.Email);
+                throw new CustomErrorException(
+                    StatusCodes.Status400BadRequest,
+                    ErrorCode.BADREQUEST,
+                    ErrorMessageConstant.DuplicateEmail);
+            }
+
+            var existingUserName = await _unitOfWork.Repository<PBUser>()
+                .SingleOrDefaultAsync(predicate: u => u.Username == request.Username && u.DeletedTime == null, cancellationToken: cancellationToken);
+
+            if (existingUserName != null)
+            {
+                _logger.LogWarning("User with username {UserName} already exists", request.Username);
+                throw new CustomErrorException(
+                    StatusCodes.Status400BadRequest,
+                    ErrorCode.BADREQUEST,
+                    ErrorMessageConstant.DuplicateUserName);
+            }
+
             // Register user in Supabase Auth
-            var authResponse = await _supabaseClient.Auth.SignUp(request.Email, request.Password);
+            var authResponse = await _supabaseClient.Auth.SignUp(request.Email, request.Password).WaitAsync(cancellationToken);
 
             if (authResponse?.User == null)
             {
@@ -58,8 +86,8 @@ namespace Infrastructure.Services
                 CreatedBy = authResponse.User.Id
             };
 
-            await _unitOfWork.Repository<PBUser>().InsertAsync(user);
-            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.Repository<PBUser>().InsertAsync(user, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation("Successfully registered user with email: {Email}, UserId: {UserId}",
                 request.Email, user.Id);
@@ -76,12 +104,12 @@ namespace Infrastructure.Services
             };
         }
 
-        public async Task<LoginResponseDto> LoginAsync(LoginRequestDto request)
+        public async Task<LoginResponseDto> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Attempting login for email: {Email}", request.Email);
 
             // Authenticate with Supabase
-            var authResponse = await _supabaseClient.Auth.SignIn(request.Email, request.Password);
+            var authResponse = await _supabaseClient.Auth.SignIn(request.Email, request.Password).WaitAsync(cancellationToken);
 
             if (authResponse?.User == null)
             {
@@ -91,7 +119,7 @@ namespace Infrastructure.Services
 
             // Get user from local database
             var user = await _unitOfWork.Repository<PBUser>()
-                .SingleOrDefaultAsync(predicate: u => u.SupabaseUserId == authResponse.User.Id);
+                .SingleOrDefaultAsync(predicate: u => u.SupabaseUserId == authResponse.User.Id, cancellationToken: cancellationToken);
 
             if (user == null)
             {
@@ -114,12 +142,12 @@ namespace Infrastructure.Services
             };
         }
 
-        public async Task<LoginResponseDto> RefreshTokenAsync(string refreshToken)
+        public async Task<LoginResponseDto> RefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Attempting to refresh token");
 
             // Set the session with the refresh token, then refresh
-            var session = await _supabaseClient.Auth.RefreshSession();
+            var session = await _supabaseClient.Auth.RefreshSession().WaitAsync(cancellationToken);
 
             if (session?.User == null)
             {
@@ -132,7 +160,7 @@ namespace Infrastructure.Services
 
             // Get user from local database
             var user = await _unitOfWork.Repository<PBUser>()
-                .SingleOrDefaultAsync(predicate: u => u.SupabaseUserId == session.User.Id);
+                .SingleOrDefaultAsync(predicate: u => u.SupabaseUserId == session.User.Id, cancellationToken: cancellationToken);
 
             if (user == null)
             {
@@ -157,12 +185,12 @@ namespace Infrastructure.Services
             };
         }
 
-        public async Task<UserDto> GetCurrentUserAsync(string userId)
+        public async Task<UserDto> GetCurrentUserAsync(string userId, CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Getting current user: {UserId}", userId);
 
             var user = await _unitOfWork.Repository<PBUser>()
-                .SingleOrDefaultAsync(predicate: u => u.Id == userId);
+                .SingleOrDefaultAsync(predicate: u => u.SupabaseUserId == userId, cancellationToken: cancellationToken);
 
             if (user == null)
             {
@@ -174,6 +202,239 @@ namespace Infrastructure.Services
             }
 
             return _mapper.Map<UserDto>(user);
+        }
+
+        public async Task ForgotPasswordAsync(ForgotPasswordRequestDto request, CancellationToken cancellationToken = default)
+        {
+            _logger.LogInformation("Password reset requested for email: {Email}", request.Email);
+
+            try
+            {
+                // Send password reset email via Supabase
+                await _supabaseClient.Auth.ResetPasswordForEmail(request.Email).WaitAsync(cancellationToken);
+
+                _logger.LogInformation("Password reset email sent successfully to: {Email}", request.Email);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send password reset email to: {Email}", request.Email);
+                throw new CustomErrorException(
+                    StatusCodes.Status500InternalServerError,
+                    ErrorCode.INTERNAL_SERVER_ERROR,
+                    ErrorMessageConstant.PasswordResetFailed);
+            }
+        }
+
+        public async Task ResetPasswordAsync(ResetPasswordRequestDto request, CancellationToken cancellationToken = default)
+        {
+            _logger.LogInformation("Attempting to reset password for email: {Email}", request.Email);
+
+            try
+            {
+                // Verify the reset token (OTP)
+                var session = await _supabaseClient.Auth.VerifyOTP(
+                    request.Email,
+                    request.Code,
+                    Supabase.Gotrue.Constants.EmailOtpType.Recovery).WaitAsync(cancellationToken);
+
+                if (session?.User == null)
+                {
+                    _logger.LogWarning("Invalid reset code for email: {Email}", request.Email);
+                    throw new CustomErrorException(
+                        StatusCodes.Status400BadRequest,
+                        ErrorCode.BADREQUEST,
+                        ErrorMessageConstant.InvalidResetToken);
+                }
+
+                // Update user's password
+                var userAttributes = new Supabase.Gotrue.UserAttributes
+                {
+                    Password = request.Password
+                };
+
+                await _supabaseClient.Auth.Update(userAttributes).WaitAsync(cancellationToken);
+
+                _logger.LogInformation("Password reset successfully for email: {Email}", request.Email);
+            }
+            catch (CustomErrorException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to reset password for email: {Email}", request.Email);
+                throw new CustomErrorException(
+                    StatusCodes.Status500InternalServerError,
+                    ErrorCode.INTERNAL_SERVER_ERROR,
+                    ErrorMessageConstant.PasswordResetFailed);
+            }
+        }
+
+        public async Task ChangePasswordAsync(ChangePasswordRequestDto request, string userId, CancellationToken cancellationToken = default)
+        {
+            _logger.LogInformation("Attempting to change password for user: {UserId}", userId);
+
+            try
+            {
+                // Verify current password by attempting to sign in
+                var user = await _unitOfWork.Repository<PBUser>()
+                    .SingleOrDefaultAsync(predicate: u => u.Id == userId, cancellationToken: cancellationToken);
+
+                if (user == null)
+                {
+                    _logger.LogWarning("User not found: {UserId}", userId);
+                    throw new CustomErrorException(
+                        StatusCodes.Status404NotFound,
+                        ErrorCode.NOT_FOUND,
+                        ErrorMessageConstant.UserNotFound);
+                }
+
+                // Verify current password
+                try
+                {
+                    await _supabaseClient.Auth.SignIn(user.Email, request.CurrentPassword).WaitAsync(cancellationToken);
+                }
+                catch
+                {
+                    _logger.LogWarning("Invalid current password for user: {UserId}", userId);
+                    throw new CustomErrorException(
+                        StatusCodes.Status401Unauthorized,
+                        ErrorCode.UNAUTHORIZED,
+                        "Current password is incorrect");
+                }
+
+                // Update to new password
+                var userAttributes = new Supabase.Gotrue.UserAttributes
+                {
+                    Password = request.NewPassword
+                };
+
+                await _supabaseClient.Auth.Update(userAttributes).WaitAsync(cancellationToken);
+
+                _logger.LogInformation("Password changed successfully for user: {UserId}", userId);
+            }
+            catch (CustomErrorException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to change password for user: {UserId}", userId);
+                throw new CustomErrorException(
+                    StatusCodes.Status500InternalServerError,
+                    ErrorCode.INTERNAL_SERVER_ERROR,
+                    ErrorMessageConstant.PasswordChangeFailed);
+            }
+        }
+
+        public async Task VerifyEmailAsync(VerifyEmailRequestDto request, CancellationToken cancellationToken = default)
+        {
+            _logger.LogInformation("Attempting to verify email: {Email}", request.Email);
+
+            try
+            {
+                // Verify OTP
+                var session = await _supabaseClient.Auth.VerifyOTP(
+                    request.Email,
+                    request.Token,
+                    Supabase.Gotrue.Constants.EmailOtpType.Signup).WaitAsync(cancellationToken);
+
+                if (session?.User == null)
+                {
+                    _logger.LogWarning("Invalid verification token for email: {Email}", request.Email);
+                    throw new CustomErrorException(
+                        StatusCodes.Status400BadRequest,
+                        ErrorCode.BADREQUEST,
+                        ErrorMessageConstant.InvalidVerificationToken);
+                }
+
+                _logger.LogInformation("Email verified successfully: {Email}", request.Email);
+            }
+            catch (CustomErrorException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to verify email: {Email}", request.Email);
+                throw new CustomErrorException(
+                    StatusCodes.Status500InternalServerError,
+                    ErrorCode.INTERNAL_SERVER_ERROR,
+                    ErrorMessageConstant.EmailVerificationFailed);
+            }
+        }
+
+        public async Task ResendVerificationEmailAsync(ResendVerificationRequestDto request, CancellationToken cancellationToken = default)
+        {
+            _logger.LogInformation("Resending verification email to: {Email}", request.Email);
+
+            try
+            {
+                // Resend signup confirmation email
+                await _supabaseClient.Auth.ResetPasswordForEmail(request.Email).WaitAsync(cancellationToken);
+
+                _logger.LogInformation("Verification email resent successfully to: {Email}", request.Email);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to resend verification email to: {Email}", request.Email);
+                throw new CustomErrorException(
+                    StatusCodes.Status500InternalServerError,
+                    ErrorCode.INTERNAL_SERVER_ERROR,
+                    "Failed to resend verification email");
+            }
+        }
+
+        public async Task LogoutAsync(string accessToken, CancellationToken cancellationToken = default)
+        {
+            _logger.LogInformation("Attempting to logout user and blacklist token");
+
+            try
+            {
+                // Decode token (no validation — it was already validated by the JWT pipeline)
+                var handler = new JwtSecurityTokenHandler();
+                string? jti = null;
+                TimeSpan ttl = TimeSpan.FromMinutes(60); // safe fallback
+
+                if (!string.IsNullOrEmpty(accessToken) && handler.CanReadToken(accessToken))
+                {
+                    var jwt = handler.ReadJwtToken(accessToken);
+                    jti = jwt.Id; // 'jti' claim
+
+                    var expiry = jwt.ValidTo; // UTC datetime
+                    var remaining = expiry - DateTime.UtcNow;
+                    ttl = remaining > TimeSpan.Zero ? remaining : TimeSpan.FromSeconds(30);
+
+                    _logger.LogInformation(
+                        "Token decoded for blacklisting. Jti: {Jti}, ExpiresAt: {ExpiresAt}, RemainingTtl: {Ttl}",
+                        jti, expiry, ttl);
+                }
+                else
+                {
+                    _logger.LogWarning("Logout called with missing or unreadable access token — skipping blacklist step");
+                }
+
+                // Blacklist the token in Redis
+                if (jti != null)
+                    await _tokenBlacklist.BlacklistTokenAsync(jti, ttl, cancellationToken);
+
+                // Invalidate server-side Supabase session
+                await _supabaseClient.Auth.SignOut().WaitAsync(cancellationToken);
+
+                _logger.LogInformation("User logged out successfully. Jti: {Jti}", jti);
+            }
+            catch (CustomErrorException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to logout user");
+                throw new CustomErrorException(
+                    StatusCodes.Status500InternalServerError,
+                    ErrorCode.INTERNAL_SERVER_ERROR,
+                    ErrorMessageConstant.LogoutFailed);
+            }
         }
     }
 }

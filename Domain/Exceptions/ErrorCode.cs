@@ -19,5 +19,6 @@ namespace Domain.Exceptions
         public const string BADREQUEST = "BADREQUEST";
         public const string CONFLICT = "CONFLICT";
         public const string FORBIDDEN = "FORBIDDEN";
+        public const string VALIDATION_ERROR = "VALIDATION_ERROR";
     }
 }

@@ -23,6 +23,138 @@ namespace Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Domain.Entities.Ai.AiModelConfig", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<bool>("IsEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("LastUpdatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("LastUpdatedTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("MaxOutputTokens")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Provider")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ProviderModelId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<decimal?>("Temperature")
+                        .HasPrecision(3, 2)
+                        .HasColumnType("numeric(3,2)");
+
+                    b.Property<int>("TimeoutSeconds")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(60);
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DisplayName")
+                        .IsUnique();
+
+                    b.HasIndex("Provider", "ProviderModelId")
+                        .IsUnique();
+
+                    b.ToTable("AiModelConfigs", "ai");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Ai.AiPromptTemplate", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("IsEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("LastUpdatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("LastUpdatedTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("SystemPrompt")
+                        .IsRequired()
+                        .HasMaxLength(8000)
+                        .HasColumnType("character varying(8000)");
+
+                    b.Property<int>("UseCase")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("VersionLabel")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.HasIndex("UseCase");
+
+                    b.ToTable("AiPromptTemplates", "ai");
+                });
+
             modelBuilder.Entity("Domain.Entities.Catalog.CompatibilityRule", b =>
                 {
                     b.Property<string>("Id")
@@ -110,9 +242,13 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<string>("ThumbnailUrl")
+                    b.Property<string>("ThumbnailPublicId")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
+
+                    b.Property<string>("ThumbnailUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<string>("TypeId")
                         .IsRequired()
@@ -178,6 +314,60 @@ namespace Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("SpeciesEnvironment", "catalog");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Catalog.SpeciesImage", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Caption")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("LastUpdatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("LastUpdatedTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PublicId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<int>("SortOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<string>("SpeciesId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SpeciesId", "CreatedTime");
+
+                    b.HasIndex("SpeciesId", "SortOrder");
+
+                    b.ToTable("SpeciesImages", "catalog");
                 });
 
             modelBuilder.Entity("Domain.Entities.Catalog.SpeciesProfile", b =>
@@ -373,6 +563,14 @@ namespace Infrastructure.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("text");
 
+                    b.Property<string>("AvatarPublicId")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("AvatarUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.Property<string>("CreatedBy")
                         .HasColumnType("text");
 
@@ -387,11 +585,13 @@ namespace Infrastructure.Migrations
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("FullName")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("LastUpdatedBy")
                         .HasColumnType("text");
@@ -399,20 +599,30 @@ namespace Infrastructure.Migrations
                     b.Property<DateTime?>("LastUpdatedTime")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("Role")
-                        .HasColumnType("integer");
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<string>("SupabaseUserId")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("Username")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("PBUsers");
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("SupabaseUserId")
+                        .IsUnique();
+
+                    b.ToTable("PBUsers", "profile");
                 });
 
             modelBuilder.Entity("Domain.Entities.Project.Tank", b =>
@@ -452,6 +662,14 @@ namespace Infrastructure.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
+                    b.Property<string>("ThumbnailPublicId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("ThumbnailUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.Property<string>("UserId")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -474,6 +692,60 @@ namespace Infrastructure.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Tanks", "project");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Project.TankImage", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Caption")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("LastUpdatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("LastUpdatedTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PublicId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<int>("SortOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<string>("TankId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TankId", "CreatedTime");
+
+                    b.HasIndex("TankId", "SortOrder");
+
+                    b.ToTable("TankImages", "project");
                 });
 
             modelBuilder.Entity("Domain.Entities.Project.TankItem", b =>
@@ -617,6 +889,17 @@ namespace Infrastructure.Migrations
                     b.Navigation("Species");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Catalog.SpeciesImage", b =>
+                {
+                    b.HasOne("Domain.Entities.Catalog.Species", "Species")
+                        .WithMany("SpeciesImages")
+                        .HasForeignKey("SpeciesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Species");
+                });
+
             modelBuilder.Entity("Domain.Entities.Catalog.SpeciesProfile", b =>
                 {
                     b.HasOne("Domain.Entities.Catalog.Species", "Species")
@@ -647,6 +930,17 @@ namespace Infrastructure.Migrations
                     b.Navigation("Tag");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Project.TankImage", b =>
+                {
+                    b.HasOne("Domain.Entities.Project.Tank", "Tank")
+                        .WithMany("TankImages")
+                        .HasForeignKey("TankId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tank");
+                });
+
             modelBuilder.Entity("Domain.Entities.Project.TankItem", b =>
                 {
                     b.HasOne("Domain.Entities.Project.Tank", "Tank")
@@ -673,6 +967,8 @@ namespace Infrastructure.Migrations
                 {
                     b.Navigation("SpeciesEnvironment");
 
+                    b.Navigation("SpeciesImages");
+
                     b.Navigation("SpeciesProfile");
 
                     b.Navigation("SpeciesTags");
@@ -694,6 +990,8 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.Project.Tank", b =>
                 {
+                    b.Navigation("TankImages");
+
                     b.Navigation("TankItems");
 
                     b.Navigation("TankSnapshots");

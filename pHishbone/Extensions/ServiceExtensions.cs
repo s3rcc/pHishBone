@@ -1,3 +1,5 @@
+using Application.Common.Interfaces;
+using Application.Constants;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -61,47 +63,84 @@ namespace pHishbone.Extensions
             })
             .AddJwtBearer(options =>
             {
+                var supabaseUrl = configuration["Supabase:Url"];
+                var jwksUrl = $"{supabaseUrl}/auth/v1/.well-known/jwks.json";
+
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(jwtSecret)),
-                    ValidateIssuer = false, // Supabase doesn't require issuer validation
+                    // We need to fetch the keys and set them explicitly because some middleware versions
+                    // fail to fetch purely from MetadataAddress without full OpenID config
+                    IssuerSigningKeyResolver = (token, securityToken, kid, validationParameters) =>
+                    {
+                        var client = new HttpClient();
+                        var json = client.GetStringAsync(jwksUrl).Result;
+                        var keys = new JsonWebKeySet(json).GetSigningKeys();
+                        return keys;
+                    },
+                    ValidateIssuer = true,
+                    ValidIssuer = $"{supabaseUrl}/auth/v1",
                     ValidateAudience = true,
-                    ValidAudience = "authenticated", // Supabase default audience
+                    ValidAudience = "authenticated",
                     ValidateLifetime = true,
-                    ClockSkew = TimeSpan.Zero // No tolerance for expired tokens
+                    ClockSkew = TimeSpan.Zero
                 };
 
                 // Map Supabase JWT claims to ASP.NET Core claims
                 options.Events = new JwtBearerEvents
                 {
-                    OnTokenValidated = context =>
+                    OnTokenValidated = async context =>
                     {
                         if (context.Principal?.Identity is ClaimsIdentity identity)
                         {
-                            // Map 'sub' claim to NameIdentifier
+                            // Map 'sub' → NameIdentifier
                             var subClaim = identity.FindFirst("sub");
                             if (subClaim != null && !identity.HasClaim(ClaimTypes.NameIdentifier, subClaim.Value))
-                            {
                                 identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, subClaim.Value));
-                            }
 
-                            // Map 'email' claim
+                            // Map 'email' → Email
                             var emailClaim = identity.FindFirst("email");
                             if (emailClaim != null && !identity.HasClaim(ClaimTypes.Email, emailClaim.Value))
-                            {
                                 identity.AddClaim(new Claim(ClaimTypes.Email, emailClaim.Value));
-                            }
 
-                            // Map 'role' or 'app_metadata.role' to Role claim
+                            // Map 'role' → Role
                             var roleClaim = identity.FindFirst("role") ?? identity.FindFirst("app_metadata.role");
                             if (roleClaim != null && !identity.HasClaim(ClaimTypes.Role, roleClaim.Value))
-                            {
                                 identity.AddClaim(new Claim(ClaimTypes.Role, roleClaim.Value));
-                            }
                         }
 
+                        // ── Blacklist check ──────────────────────────────────
+                        var jtiClaim = context.Principal?.FindFirst("jti")
+                                    ?? context.Principal?.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti);
+
+                        if (jtiClaim != null)
+                        {
+                            var blacklistService = context.HttpContext.RequestServices
+                                .GetRequiredService<ITokenBlacklistService>();
+
+                            if (await blacklistService.IsTokenBlacklistedAsync(jtiClaim.Value))
+                            {
+                                context.Fail(ErrorMessageConstant.TokenRevoked);
+                                return;
+                            }
+                        }
+                        // ────────────────────────────────────────────────────
+                    },
+                    OnAuthenticationFailed = context =>
+                    {
+                        var logger = context.HttpContext.RequestServices
+                            .GetRequiredService<ILoggerFactory>()
+                            .CreateLogger("JwtAuthentication");
+                        logger.LogError(context.Exception, "JWT Authentication failed");
+                        return Task.CompletedTask;
+                    },
+                    OnChallenge = context =>
+                    {
+                        var logger = context.HttpContext.RequestServices
+                            .GetRequiredService<ILoggerFactory>()
+                            .CreateLogger("JwtAuthentication");
+                        logger.LogWarning("JWT Challenge triggered. Error: {Error}, Description: {Desc}",
+                            context.Error, context.ErrorDescription);
                         return Task.CompletedTask;
                     }
                 };

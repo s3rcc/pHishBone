@@ -1,0 +1,36 @@
+using Application.DTOs.ImageDTOs;
+using Microsoft.AspNetCore.Http;
+
+namespace Application.Services
+{
+    /// <summary>
+    /// Service interface for Species image management operations.
+    /// </summary>
+    public interface ISpeciesImageService
+    {
+        /// <summary>
+        /// Get all images for a species.
+        /// </summary>
+        Task<IEnumerable<ImageResponseDto>> GetImagesAsync(string speciesId, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Add a single image to a species gallery via file upload.
+        /// </summary>
+        Task<ImageResponseDto> AddImageAsync(string speciesId, CreateImageDto dto, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Add multiple images to a species gallery concurrently.
+        /// </summary>
+        Task<List<ImageResponseDto>> AddImagesAsync(string speciesId, List<IFormFile> files, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Remove an image from a species gallery and delete from CDN.
+        /// </summary>
+        Task RemoveImageAsync(string speciesId, string imageId, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Set the main thumbnail image for a species from an existing gallery image.
+        /// </summary>
+        Task SetThumbnailAsync(string speciesId, SetSpeciesThumbnailDto dto, CancellationToken cancellationToken = default);
+    }
+}

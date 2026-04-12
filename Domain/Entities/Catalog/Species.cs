@@ -12,6 +12,7 @@ namespace Domain.Entities.Catalog
         public string ScientificName { get; set; } = string.Empty;
         public string CommonName { get; set; } = string.Empty;
         public string? ThumbnailUrl { get; set; }
+        public string? ThumbnailPublicId { get; set; }
         public string Slug { get; set; } = string.Empty;
 
         // Navigation properties
@@ -19,5 +20,7 @@ namespace Domain.Entities.Catalog
         public SpeciesEnvironment? SpeciesEnvironment { get; set; }
         public SpeciesProfile? SpeciesProfile { get; set; }
         public ICollection<SpeciesTag> SpeciesTags { get; set; } = new List<SpeciesTag>();
+        public ICollection<SpeciesImage> SpeciesImages { get; set; } = new List<SpeciesImage>();
     }
 }
+
