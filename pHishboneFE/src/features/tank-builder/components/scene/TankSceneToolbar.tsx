@@ -1,18 +1,15 @@
 import type { ReactElement } from 'react';
-import { Box, Chip, Stack, Switch, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
+import { Box, Chip, Stack, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
 import ThreeDRotationRoundedIcon from '@mui/icons-material/ThreeDRotationRounded';
 import ViewInArRoundedIcon from '@mui/icons-material/ViewInArRounded';
 import ViewWeekRoundedIcon from '@mui/icons-material/ViewWeekRounded';
-import BubbleChartRoundedIcon from '@mui/icons-material/BubbleChartRounded';
 import { useTranslation } from 'react-i18next';
 import type { TankSceneToolbarProps, TankSceneViewMode } from '../../types';
 
 export function TankSceneToolbar({
     viewMode,
     volumeLiters,
-    showSceneBubbles,
     onChangeViewMode,
-    onToggleSceneBubbles,
 }: TankSceneToolbarProps): ReactElement {
     const { t } = useTranslation();
 
@@ -73,31 +70,6 @@ export function TankSceneToolbar({
                         {t('TankBuilder.view2d')}
                     </ToggleButton>
                 </ToggleButtonGroup>
-
-                <Stack
-                    direction="row"
-                    spacing={1}
-                    alignItems="center"
-                    sx={{
-                        px: 1.25,
-                        py: 0.35,
-                        borderRadius: 999,
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        bgcolor: 'background.paper',
-                    }}
-                >
-                    <BubbleChartRoundedIcon color="primary" fontSize="small" />
-                    <Typography variant="caption" fontWeight={700}>
-                        {t('TankBuilder.bubbles')}
-                    </Typography>
-                    <Switch
-                        size="small"
-                        checked={showSceneBubbles}
-                        onChange={(event) => onToggleSceneBubbles(event.target.checked)}
-                        inputProps={{ 'aria-label': t('TankBuilder.toggleBubbles') }}
-                    />
-                </Stack>
             </Stack>
         </Stack>
     );

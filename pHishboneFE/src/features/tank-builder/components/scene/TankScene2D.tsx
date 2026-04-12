@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { getFishRenderScale, getSceneFishRenderState } from '../../helpers/scene';
 import type { BuilderSceneViewportProps } from '../../types';
 
+const FISH_SPRITE_MIRROR_X = -1;
+
 function useElapsedSeconds(): number {
     const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
@@ -107,7 +109,7 @@ export function TankScene2D({
                                 top: `${renderState.projection.topPercent + renderState.bobOffsetPercent}%`,
                                 width: spriteWidth,
                                 height: spriteHeight,
-                                transform: `translate(-50%, -50%) scaleX(${renderState.facingDirection})`,
+                                transform: `translate(-50%, -50%) scaleX(${renderState.facingDirection * FISH_SPRITE_MIRROR_X})`,
                                 opacity: 0.68 + renderState.projection.depthPercent / 320,
                                 zIndex: Math.round(renderState.projection.depthPercent),
                                 cursor: 'pointer',

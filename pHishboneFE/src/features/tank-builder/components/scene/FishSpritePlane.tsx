@@ -12,6 +12,14 @@ interface FishSpritePlaneProps extends TankSceneFishSpriteProps {
 
 const BODY_SEGMENTS = 20;
 const HEIGHT_SEGMENTS = 8;
+const FISH_SPRITE_MIRROR_X = -1;
+const SWIM_PHASE_BASE_SPEED = 4.4;
+const SWIM_PHASE_SPEED_FACTOR = 15;
+const YAW_WOBBLE_AMOUNT = 0.04;
+const PITCH_WOBBLE_AMOUNT = 0.012;
+const ROLL_WOBBLE_AMOUNT = 0.02;
+const BODY_WAVE_VERTICAL_AMOUNT = 0.01;
+const BODY_WAVE_LATERAL_AMOUNT = 0.024;
 const TRANSPARENT_TEXTURE_URL =
     'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
 
@@ -89,10 +97,10 @@ export function FishSpritePlane({
 
         const elapsedSeconds = state.clock.getElapsedTime();
         const animatedPosition = getAnimatedFishWorldPosition(fish, dimensions, elapsedSeconds);
-        const swimPhase = elapsedSeconds * (3.2 + fish.speed * 18) + fish.phase * Math.PI * 2;
-        const yawWobble = Math.sin(swimPhase * 0.8) * 0.08;
-        const pitchWobble = Math.cos(swimPhase * 0.6) * 0.025;
-        const rollWobble = Math.sin(swimPhase * 0.5) * 0.045;
+        const swimPhase = elapsedSeconds * (SWIM_PHASE_BASE_SPEED + fish.speed * SWIM_PHASE_SPEED_FACTOR) + fish.phase * Math.PI * 2;
+        const yawWobble = Math.sin(swimPhase * 0.8) * YAW_WOBBLE_AMOUNT;
+        const pitchWobble = Math.cos(swimPhase * 0.6) * PITCH_WOBBLE_AMOUNT;
+        const rollWobble = Math.sin(swimPhase * 0.5) * ROLL_WOBBLE_AMOUNT;
 
         group.position.set(animatedPosition.x, animatedPosition.y, animatedPosition.z);
         group.rotation.set(
@@ -115,8 +123,8 @@ export function FishSpritePlane({
             const wavePhase = swimPhase * 2.2 + normalizedX * Math.PI * 2.7;
 
             positions[offset] = baseX;
-            positions[offset + 1] = baseY + Math.cos(wavePhase * 0.55) * planeHeight * 0.018 * tailInfluence;
-            positions[offset + 2] = Math.sin(wavePhase) * planeWidth * 0.048 * tailInfluence * sideFalloff;
+            positions[offset + 1] = baseY + Math.cos(wavePhase * 0.55) * planeHeight * BODY_WAVE_VERTICAL_AMOUNT * tailInfluence;
+            positions[offset + 2] = Math.sin(wavePhase) * planeWidth * BODY_WAVE_LATERAL_AMOUNT * tailInfluence * sideFalloff;
         }
 
         positionAttribute.needsUpdate = true;
@@ -125,7 +133,7 @@ export function FishSpritePlane({
 
     return (
         <group ref={groupRef}>
-            <mesh scale={isSelected ? 1.15 : 1.08} renderOrder={20}>
+            <mesh scale={[FISH_SPRITE_MIRROR_X * (isSelected ? 1.15 : 1.08), isSelected ? 1.15 : 1.08, 1]} renderOrder={20}>
                 <planeGeometry args={[planeWidth, planeHeight, 1, 1]} />
                 <meshBasicMaterial
                     color={isSelected ? '#75f7ff' : '#45b8cf'}
@@ -141,6 +149,7 @@ export function FishSpritePlane({
 
             <mesh
                 ref={bodyMeshRef}
+                scale={[FISH_SPRITE_MIRROR_X, 1, 1]}
                 onClick={(event) => {
                     event.stopPropagation();
                     onSelect(fish.speciesId);

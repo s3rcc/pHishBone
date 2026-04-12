@@ -22,6 +22,13 @@ export const DietTypeLabels: Record<DietType, string> = {
     2: 'Omnivore',
 };
 
+export type CompatibilitySeverity = 0 | 1 | 2; // Info = 0, Warning = 1, Danger = 2
+export const CompatibilitySeverityLabels: Record<CompatibilitySeverity, string> = {
+    0: 'Info',
+    1: 'Warning',
+    2: 'Danger',
+};
+
 // ─── Common ──────────────────────────────────────────────────────────────────
 
 export interface ApiResponse<T> {
@@ -253,11 +260,11 @@ export interface CompatibilityRuleFilter {
 export interface CreateCompatibilityRulePayload {
     subjectTagId: string;
     objectTagId: string;
-    severity: string;
+    severity: CompatibilitySeverity;
     message: string;
 }
 
 export interface UpdateCompatibilityRulePayload {
-    severity: string;
+    severity: CompatibilitySeverity;
     message: string;
 }
