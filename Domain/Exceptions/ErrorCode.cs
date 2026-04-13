@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,5 +20,6 @@ namespace Domain.Exceptions
         public const string CONFLICT = "CONFLICT";
         public const string FORBIDDEN = "FORBIDDEN";
         public const string VALIDATION_ERROR = "VALIDATION_ERROR";
+        public const string RATE_LIMITED = "RATE_LIMITED";
     }
 }

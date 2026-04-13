@@ -6,6 +6,7 @@ using Application.DTOs.AuthDTOs;
 using Application.DTOs.PBUserDTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace pHishbone.Controllers
 {
@@ -34,6 +35,7 @@ namespace pHishbone.Controllers
         /// Register a new user account
         /// </summary>
         [HttpPost(ApiEndpointConstant.Auth.Register)]
+        [EnableRateLimiting(RateLimitConstant.AuthPolicy)]
         [ProducesResponseType(typeof(ApiResponse<LoginResponseDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Register([FromBody] RegisterRequestDto request, CancellationToken cancellationToken)
@@ -50,6 +52,7 @@ namespace pHishbone.Controllers
         /// Login with email and password
         /// </summary>
         [HttpPost(ApiEndpointConstant.Auth.Login)]
+        [EnableRateLimiting(RateLimitConstant.AuthPolicy)]
         [ProducesResponseType(typeof(ApiResponse<LoginResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Login([FromBody] LoginRequestDto request, CancellationToken cancellationToken)

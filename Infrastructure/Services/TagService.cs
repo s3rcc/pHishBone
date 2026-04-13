@@ -9,6 +9,7 @@ using Infrastructure.Common.Interfaces;
 using Infrastructure.Paginate;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Services
 {
@@ -16,15 +17,32 @@ namespace Infrastructure.Services
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
+        private readonly ICacheService _cache;
+        private readonly ILogger<TagService> _logger;
 
-        public TagService(IUnitOfWork unitOfWork, IMapper mapper)
+        public TagService(
+            IUnitOfWork unitOfWork,
+            IMapper mapper,
+            ICacheService cache,
+            ILogger<TagService> logger)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
+            _cache = cache;
+            _logger = logger;
         }
 
         public async Task<TagDto> GetByIdAsync(string id, CancellationToken cancellationToken = default)
         {
+            // ── Cache-aside: check cache first ──
+            var cacheKey = CacheKeyConstant.TagById + id;
+            var cached = await _cache.GetAsync<TagDto>(cacheKey, cancellationToken);
+            if (cached != null)
+            {
+                _logger.LogInformation("Tag {TagId} served from cache", id);
+                return cached;
+            }
+
             var tag = await _unitOfWork.Repository<Tag>().SingleOrDefaultAsync(
                 predicate: t => t.Id == id,
                 cancellationToken: cancellationToken
@@ -39,21 +57,42 @@ namespace Infrastructure.Services
                 );
             }
 
-            return _mapper.Map<TagDto>(tag);
+            var dto = _mapper.Map<TagDto>(tag);
+            await _cache.SetAsync(cacheKey, dto, TimeSpan.FromMinutes(CacheKeyConstant.DefaultExpiryMinutes), cancellationToken);
+            return dto;
         }
 
         public async Task<ICollection<TagDto>> GetListAsync(CancellationToken cancellationToken = default)
         {
+            // ── Cache-aside: check cache first ──
+            var cached = await _cache.GetAsync<ICollection<TagDto>>(CacheKeyConstant.TagAll, cancellationToken);
+            if (cached != null)
+            {
+                _logger.LogInformation("Tag list served from cache");
+                return cached;
+            }
+
             var tags = await _unitOfWork.Repository<Tag>().GetListAsync(
                 orderBy: q => q.OrderBy(t => t.Name),
                 cancellationToken: cancellationToken
             );
 
-            return _mapper.Map<ICollection<TagDto>>(tags);
+            var dtos = _mapper.Map<ICollection<TagDto>>(tags);
+            await _cache.SetAsync(CacheKeyConstant.TagAll, dtos, TimeSpan.FromMinutes(CacheKeyConstant.ListExpiryMinutes), cancellationToken);
+            return dtos;
         }
 
         public async Task<PaginationResponse<TagDto>> GetPaginatedListAsync(TagFilterDto filter, CancellationToken cancellationToken = default)
         {
+            // ── Cache-aside with filter-based key ──
+            var cacheKey = $"{CacheKeyConstant.TagPaginated}{filter.Page}:{filter.Size}:{filter.SearchTerm}:{filter.SortBy}:{filter.IsAscending}";
+            var cached = await _cache.GetAsync<PaginationResponse<TagDto>>(cacheKey, cancellationToken);
+            if (cached != null)
+            {
+                _logger.LogInformation("Tag paginated list served from cache");
+                return cached;
+            }
+
             var tags = await _unitOfWork.Repository<Tag>().GetPagingListAsync(
                 predicate: string.IsNullOrWhiteSpace(filter.SearchTerm) ? null :
                     t => t.Code.Contains(filter.SearchTerm) || t.Name.Contains(filter.SearchTerm),
@@ -64,7 +103,7 @@ namespace Infrastructure.Services
                 cancellationToken: cancellationToken
             );
 
-            return new PaginationResponse<TagDto>
+            var result = new PaginationResponse<TagDto>
             {
                 Size = tags.Size,
                 Page = tags.Page,
@@ -72,6 +111,9 @@ namespace Infrastructure.Services
                 TotalPages = tags.TotalPages,
                 Items = _mapper.Map<IList<TagDto>>(tags.Items)
             };
+
+            await _cache.SetAsync(cacheKey, result, TimeSpan.FromMinutes(CacheKeyConstant.ListExpiryMinutes), cancellationToken);
+            return result;
         }
 
         // ─── Code Normalizer ──────────────────────────────────────────────
@@ -154,6 +196,9 @@ namespace Infrastructure.Services
             await _unitOfWork.Repository<Tag>().InsertAsync(tag, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+            // ── Invalidate tag caches ──
+            await InvalidateTagCachesAsync(cancellationToken);
+
             return _mapper.Map<TagDto>(tag);
         }
 
@@ -198,6 +243,9 @@ namespace Infrastructure.Services
             var tags = _mapper.Map<List<Tag>>(dtos);
             await _unitOfWork.Repository<Tag>().InsertRangeAsync(tags, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            // ── Invalidate tag caches ──
+            await InvalidateTagCachesAsync(cancellationToken);
 
             return _mapper.Map<ICollection<TagDto>>(tags);
         }
@@ -253,6 +301,9 @@ namespace Infrastructure.Services
             await _unitOfWork.Repository<Tag>().Update(tag);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+            // ── Invalidate tag caches ──
+            await InvalidateTagCachesAsync(cancellationToken);
+
             return _mapper.Map<TagDto>(tag);
         }
 
@@ -274,6 +325,18 @@ namespace Infrastructure.Services
 
             _unitOfWork.Repository<Tag>().Delete(tag);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            // ── Invalidate tag caches ──
+            await InvalidateTagCachesAsync(cancellationToken);
+        }
+
+        /// <summary>
+        /// Invalidate all tag-related cache entries after a mutation.
+        /// </summary>
+        private async Task InvalidateTagCachesAsync(CancellationToken ct = default)
+        {
+            _logger.LogInformation("Invalidating all tag caches");
+            await _cache.RemoveByPrefixAsync(CacheKeyConstant.TagPrefix, ct);
         }
     }
 }

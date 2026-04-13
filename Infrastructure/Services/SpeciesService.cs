@@ -24,6 +24,7 @@ namespace Infrastructure.Services
         private readonly IPhotoService _photoService;
         private readonly ApplicationDbContext _dbContext;
         private readonly ILogger<SpeciesService> _logger;
+        private readonly ICacheService _cache;
 
         public SpeciesService(
             IUnitOfWork unitOfWork,
@@ -31,7 +32,8 @@ namespace Infrastructure.Services
             ICurrentUserService currentUserService,
             IPhotoService photoService,
             ApplicationDbContext dbContext,
-            ILogger<SpeciesService> logger)
+            ILogger<SpeciesService> logger,
+            ICacheService cache)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
@@ -39,10 +41,20 @@ namespace Infrastructure.Services
             _photoService = photoService;
             _dbContext = dbContext;
             _logger = logger;
+            _cache = cache;
         }
 
         public async Task<SpeciesDto> GetByIdAsync(string id, CancellationToken cancellationToken = default)
         {
+            // ── Cache-aside: check cache first ──
+            var cacheKey = CacheKeyConstant.SpeciesById + id;
+            var cached = await _cache.GetAsync<SpeciesDto>(cacheKey, cancellationToken);
+            if (cached != null)
+            {
+                _logger.LogInformation("Species {SpeciesId} served from cache", id);
+                return cached;
+            }
+
             var species = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
                 predicate: s => s.Id == id,
                 include: q => q.Include(s => s.Type),
@@ -58,7 +70,9 @@ namespace Infrastructure.Services
                 );
             }
 
-            return _mapper.Map<SpeciesDto>(species);
+            var dto = _mapper.Map<SpeciesDto>(species);
+            await _cache.SetAsync(cacheKey, dto, TimeSpan.FromMinutes(CacheKeyConstant.DefaultExpiryMinutes), cancellationToken);
+            return dto;
         }
 
         public async Task<SpeciesDetailDto> GetDetailByIdAsync(string id, CancellationToken cancellationToken = default)
@@ -88,6 +102,15 @@ namespace Infrastructure.Services
 
         public async Task<SpeciesDetailDto> GetDetailBySlugAsync(string slug, CancellationToken cancellationToken = default)
         {
+            // ── Cache-aside by slug ──
+            var cacheKey = CacheKeyConstant.SpeciesBySlug + slug;
+            var cached = await _cache.GetAsync<SpeciesDetailDto>(cacheKey, cancellationToken);
+            if (cached != null)
+            {
+                _logger.LogInformation("Species by slug {Slug} served from cache", slug);
+                return cached;
+            }
+
             var species = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
                 predicate: s => s.Slug == slug,
                 include: q => q
@@ -108,7 +131,9 @@ namespace Infrastructure.Services
                 );
             }
 
-            return _mapper.Map<SpeciesDetailDto>(species);
+            var dto = _mapper.Map<SpeciesDetailDto>(species);
+            await _cache.SetAsync(cacheKey, dto, TimeSpan.FromMinutes(CacheKeyConstant.DefaultExpiryMinutes), cancellationToken);
+            return dto;
         }
 
         public async Task<ICollection<SpeciesDto>> GetListAsync(CancellationToken cancellationToken = default)
@@ -227,7 +252,10 @@ namespace Infrastructure.Services
             // 9. Save all changes in one transaction
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            // 10. Return full detail
+            // 10. Invalidate species caches
+            await InvalidateSpeciesCachesAsync(cancellationToken);
+
+            // 11. Return full detail
             return await GetDetailByIdAsync(species.Id, cancellationToken);
         }
 
@@ -367,7 +395,10 @@ namespace Infrastructure.Services
             // 8. Save all changes in one transaction
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            // 9. Return full detail
+            // 9. Invalidate species caches
+            await InvalidateSpeciesCachesAsync(cancellationToken);
+
+            // 10. Return full detail
             return await GetDetailByIdAsync(species.Id, cancellationToken);
         }
 
@@ -392,6 +423,9 @@ namespace Infrastructure.Services
             species.DeletedBy = _currentUserService.GetUserId();
             await _unitOfWork.Repository<Species>().Update(species);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            // Invalidate species caches
+            await InvalidateSpeciesCachesAsync(cancellationToken);
         }
 
         public async Task<PaginationResponse<SpeciesDto>> SearchHybridAsync(SpeciesFilterDto filter, CancellationToken cancellationToken = default)
@@ -502,6 +536,15 @@ namespace Infrastructure.Services
                 cancellationToken: cancellationToken
             );
             return existing != null;
+        }
+
+        /// <summary>
+        /// Invalidate all species-related cache entries after a mutation.
+        /// </summary>
+        private async Task InvalidateSpeciesCachesAsync(CancellationToken ct = default)
+        {
+            _logger.LogInformation("Invalidating all species caches");
+            await _cache.RemoveByPrefixAsync(CacheKeyConstant.SpeciesPrefix, ct);
         }
 
         #endregion
