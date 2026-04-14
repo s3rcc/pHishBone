@@ -315,6 +315,23 @@
             "pendingBadge": "Đang chờ",
             "stagedHint": "Ảnh chờ xử lý (sẽ tải lên khi lưu)"
         },
+        "AiGeneration": {
+            "button": "Tao Noi Dung",
+            "title": "Tao Noi Dung Cho Loai",
+            "description": "Dung tro ly AI cua he thong de dien form loai tu ten ca. Hay kiem tra lai ket qua truoc khi luu.",
+            "fishNameLabel": "Ten Ca",
+            "fishNameHelper": "Ban co the dung ten thuong goi, ten khoa hoc, hoac ca hai.",
+            "fishNameRequired": "Ten ca la bat buoc.",
+            "modelLabel": "Mo Hinh AI",
+            "modelRequired": "Can chon mot mo hinh AI.",
+            "generate": "Tao",
+            "success": "Da tao noi dung cho loai. Hay xem lai va luu khi san sang.",
+            "noModels": "Hien khong co mo hinh AI nao dang bat. Hay cau hinh trong phan Quan ly AI truoc.",
+            "existingSpeciesFound": "Da tim thay ban ghi loai co san cho '{{name}}'. Da chuyen sang ban ghi do.",
+            "currentSpeciesMatched": "Ban nhap hien tai khop chinh xac voi tu khoa tra cuu. Hay thu ten ca cu the hon hoac dung ca ten thuong goi cung ten khoa hoc.",
+            "emptyResult": "Phan hoi AI khong chua ban nhap duoc tao.",
+            "errorUnexpected": "Khong the tao noi dung cho loai luc nay."
+        },
         "waterType": {
             "0": "Nước Ngọt",
             "1": "Nước Lợ",

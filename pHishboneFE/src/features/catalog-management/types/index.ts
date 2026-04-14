@@ -195,6 +195,70 @@ export interface UpdateSpeciesPayload {
     tagIds: string[];
 }
 
+export type AiProvider = 0 | 1; // OpenRouter = 0, Groq = 1
+
+export interface AvailableAiModelDto {
+    id: string;
+    displayName: string;
+    provider: AiProvider;
+    providerModelId: string;
+    isEnabled: boolean;
+    maxOutputTokens: number | null;
+    temperature: number | null;
+    timeoutSeconds: number;
+    description: string | null;
+    createdTime: string;
+    lastUpdatedTime: string | null;
+}
+
+export interface GenerateFishInformationPayload {
+    fishName: string;
+    modelConfigId: string;
+}
+
+export interface AiGeneratedSpeciesDraftEnvironmentDto {
+    phMin: number;
+    phMax: number;
+    tempMin: number;
+    tempMax: number;
+    minTankVolume: number;
+    waterType: WaterType;
+    waterTypeName: string;
+}
+
+export interface AiGeneratedSpeciesDraftProfileDto {
+    adultSize: number;
+    bioLoadFactor: number;
+    swimLevel: SwimLevel;
+    swimLevelName: string;
+    dietType: DietType;
+    dietTypeName: string;
+    preferredFood?: string | null;
+    isSchooling: boolean;
+    minGroupSize: number;
+    origin?: string | null;
+    description?: string | null;
+}
+
+export interface AiGeneratedSpeciesDraftDto {
+    commonName: string;
+    scientificName: string;
+    typeId: string;
+    typeName: string;
+    thumbnailUrl?: string | null;
+    environment: AiGeneratedSpeciesDraftEnvironmentDto;
+    profile: AiGeneratedSpeciesDraftProfileDto;
+    tagIds: string[];
+    tagCodes: string[];
+}
+
+export interface AiFishInformationResponseDto {
+    modelConfigId: string;
+    promptTemplateId?: string | null;
+    existingSpecies?: SpeciesDetailDto | null;
+    generatedDraft?: AiGeneratedSpeciesDraftDto | null;
+}
+
 // ─── Form shape (used by react-hook-form) ────────────────────────────────────
 
 export interface SpeciesFormValues {

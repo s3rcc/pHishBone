@@ -315,6 +315,23 @@
             "pendingBadge": "Pending",
             "stagedHint": "Staged images (will upload on save)"
         },
+        "AiGeneration": {
+            "button": "Generate Content",
+            "title": "Generate Species Content",
+            "description": "Use the AI catalog assistant to fill the species form from a fish name. Review the result before saving.",
+            "fishNameLabel": "Fish Name",
+            "fishNameHelper": "You can use a common name, scientific name, or both.",
+            "fishNameRequired": "Fish name is required.",
+            "modelLabel": "AI Model",
+            "modelRequired": "An AI model is required.",
+            "generate": "Generate",
+            "success": "Species content generated. Review and save when ready.",
+            "noModels": "No enabled AI models are available right now. Please configure one in AI Management first.",
+            "existingSpeciesFound": "An existing species was found for '{{name}}'. Redirected to that entry.",
+            "currentSpeciesMatched": "The current draft matched the lookup exactly. Try a more specific fish name or include both common and scientific names.",
+            "emptyResult": "The AI response did not contain a generated draft.",
+            "errorUnexpected": "Unable to generate species content right now."
+        },
         "waterType": {
             "0": "Fresh",
             "1": "Brackish",

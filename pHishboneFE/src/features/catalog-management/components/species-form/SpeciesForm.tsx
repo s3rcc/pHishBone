@@ -10,18 +10,26 @@ import Paper from '@mui/material/Paper';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { SuspenseLoader } from '../../../../components/layout/SuspenseLoader';
 import { useMuiSnackbar } from '../../../../hooks/useMuiSnackbar';
 import { parseValidationErrors, getValidationSummary } from '../../../../lib/parseValidationErrors';
 import { useCreateSpecies, useUpdateSpecies, useUploadSpeciesImageBatch } from '../../hooks/useCatalog';
-import type { CreateSpeciesPayload, SpeciesDetailDto, SpeciesFormValues, UpdateSpeciesPayload } from '../../types';
+import type {
+    AiGeneratedSpeciesDraftDto,
+    CreateSpeciesPayload,
+    SpeciesDetailDto,
+    SpeciesFormValues,
+    UpdateSpeciesPayload,
+} from '../../types';
 import { TaxonomyTab } from './TaxonomyTab';
 import { EnvironmentTab } from './EnvironmentTab';
 import { ProfileTab } from './ProfileTab';
 import { IndexingTab } from './IndexingTab';
 import { GalleryTab } from './GalleryTab';
+import { GenerateSpeciesContentDialog } from './GenerateSpeciesContentDialog';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -87,6 +95,49 @@ function toPayload(values: SpeciesFormValues): CreateSpeciesPayload {
     };
 }
 
+function buildAiFishName(values: SpeciesFormValues): string {
+    const commonName = values.commonName.trim();
+    const scientificName = values.scientificName.trim();
+
+    if (commonName && scientificName) {
+        if (commonName.toLowerCase() === scientificName.toLowerCase()) {
+            return commonName;
+        }
+
+        return `${commonName} (${scientificName})`;
+    }
+
+    return commonName || scientificName;
+}
+
+function applyGeneratedDraftToForm(
+    currentValues: SpeciesFormValues,
+    generatedDraft: AiGeneratedSpeciesDraftDto,
+): SpeciesFormValues {
+    return {
+        commonName: generatedDraft.commonName,
+        scientificName: generatedDraft.scientificName,
+        typeId: generatedDraft.typeId,
+        thumbnailUrl: generatedDraft.thumbnailUrl ?? currentValues.thumbnailUrl,
+        phMin: generatedDraft.environment.phMin,
+        phMax: generatedDraft.environment.phMax,
+        tempMin: generatedDraft.environment.tempMin,
+        tempMax: generatedDraft.environment.tempMax,
+        minTankVolume: generatedDraft.environment.minTankVolume,
+        waterType: generatedDraft.environment.waterType,
+        adultSize: generatedDraft.profile.adultSize,
+        bioLoadFactor: generatedDraft.profile.bioLoadFactor,
+        swimLevel: generatedDraft.profile.swimLevel,
+        dietType: generatedDraft.profile.dietType,
+        preferredFood: generatedDraft.profile.preferredFood ?? '',
+        isSchooling: generatedDraft.profile.isSchooling,
+        minGroupSize: generatedDraft.profile.isSchooling ? generatedDraft.profile.minGroupSize : 0,
+        origin: generatedDraft.profile.origin ?? '',
+        description: generatedDraft.profile.description ?? '',
+        tagIds: generatedDraft.tagIds,
+    };
+}
+
 // ─── Tab panel helper ─────────────────────────────────────────────────────────
 
 interface TabPanelProps {
@@ -108,6 +159,7 @@ export const SpeciesForm: React.FC<SpeciesFormProps> = ({ mode, speciesId, defau
     const navigate = useNavigate();
     const { showSnackbar } = useMuiSnackbar();
     const [activeTab, setActiveTab] = useState(0);
+    const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
     const stagedFilesRef = useRef<File[]>([]);
 
@@ -147,6 +199,24 @@ export const SpeciesForm: React.FC<SpeciesFormProps> = ({ mode, speciesId, defau
     const handleStagedFilesChange = useCallback((files: File[]) => {
         stagedFilesRef.current = files;
     }, []);
+
+    const handleOpenGenerateDialog = useCallback(() => {
+        setIsGenerateDialogOpen(true);
+    }, []);
+
+    const handleCloseGenerateDialog = useCallback(() => {
+        setIsGenerateDialogOpen(false);
+    }, []);
+
+    const handleGeneratedDraft = useCallback((generatedDraft: AiGeneratedSpeciesDraftDto) => {
+        const nextValues = applyGeneratedDraftToForm(methods.getValues(), generatedDraft);
+
+        methods.reset(nextValues, { keepDefaultValues: true });
+        setActiveTab(0);
+        setSubmitError(null);
+    }, [methods]);
+
+    const generatedFishName = buildAiFishName(methods.getValues());
 
     const handleSubmit = methods.handleSubmit(async (values) => {
         setSubmitError(null);
@@ -229,6 +299,19 @@ export const SpeciesForm: React.FC<SpeciesFormProps> = ({ mode, speciesId, defau
                         {mode === 'create' ? t('Catalog.Species.newEntry') : t('Catalog.Species.editEntry')}
                     </Typography>
                     <Box sx={{ flexGrow: 1 }} />
+                    {speciesId && (
+                        <Button
+                            type="button"
+                            variant="outlined"
+                            size="small"
+                            startIcon={<AutoAwesomeIcon />}
+                            onClick={handleOpenGenerateDialog}
+                            disabled={isPending}
+                            sx={{ borderRadius: '4px' }}
+                        >
+                            {t('Catalog.AiGeneration.button')}
+                        </Button>
+                    )}
                     {(isDirty || stagedFilesRef.current.length > 0) && (
                         <Typography variant="caption" color="warning.main" sx={{ mr: 1 }}>
                             {t('Catalog.Species.unsavedChanges')}
@@ -319,6 +402,16 @@ export const SpeciesForm: React.FC<SpeciesFormProps> = ({ mode, speciesId, defau
                         </Suspense>
                     </TabPanel>
                 </Paper>
+
+                {speciesId && isGenerateDialogOpen && (
+                    <GenerateSpeciesContentDialog
+                        open={isGenerateDialogOpen}
+                        speciesId={speciesId}
+                        initialFishName={generatedFishName}
+                        onClose={handleCloseGenerateDialog}
+                        onGeneratedDraft={handleGeneratedDraft}
+                    />
+                )}
             </Box>
         </FormProvider>
     );
