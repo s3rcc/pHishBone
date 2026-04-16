@@ -34,7 +34,7 @@ import { useMuiSnackbar } from '../../../hooks/useMuiSnackbar';
 import { speciesApi } from '../api/catalogApi';
 import { useCreateSpecies, useDeleteSpecies, useSpeciesPaginated, useTypesList } from '../hooks/useCatalog';
 import { CreateSpeciesDialog } from './CreateSpeciesDialog';
-import type { SpeciesDto, SpeciesFilter } from '../types';
+import type { DietType, SpeciesDto, SpeciesFilter, SpeciesProfilePayload, SwimLevel } from '../types';
 
 // ─── Species Table (Suspense boundary) ───────────────────────────────────────
 
@@ -293,6 +293,24 @@ export const SpeciesIndexPage: React.FC = () => {
         async (species: SpeciesDto) => {
             try {
                 const detail = await speciesApi.getDetailById(species.id);
+
+                // Normalize older/partial data so we don't re-send an invalid MinGroupSize=0.
+                const defaultProfile: SpeciesProfilePayload = {
+                    adultSize: 5,
+                    bioLoadFactor: 1,
+                    swimLevel: 1 as SwimLevel,
+                    dietType: 2 as DietType,
+                    isSchooling: false,
+                    minGroupSize: 1,
+                };
+
+                const normalizedProfile: SpeciesProfilePayload = detail.profile
+                    ? {
+                        ...detail.profile,
+                        minGroupSize: detail.profile.isSchooling ? detail.profile.minGroupSize : 1,
+                    }
+                    : defaultProfile;
+
                 const result = await createSpecies({
                     commonName: `Copy of ${detail.commonName}`,
                     scientificName: detail.scientificName,
@@ -302,10 +320,7 @@ export const SpeciesIndexPage: React.FC = () => {
                         phMin: 6.5, phMax: 7.5, tempMin: 22, tempMax: 28,
                         minTankVolume: 40, waterType: 0,
                     },
-                    profile: detail.profile ?? {
-                        adultSize: 5, bioLoadFactor: 1, swimLevel: 1, dietType: 2,
-                        isSchooling: false, minGroupSize: 0,
-                    },
+                    profile: normalizedProfile,
                     tagIds: detail.tags?.map((tag) => tag.id) ?? [],
                 });
                 showSnackbar(t('Catalog.Species.cloneSuccess'), 'success');

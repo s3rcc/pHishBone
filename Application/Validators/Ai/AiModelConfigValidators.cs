@@ -30,6 +30,11 @@ namespace Application.Validators.Ai
             RuleFor(x => x.Description)
                 .MaximumLength(1000)
                 .WithMessage(AiErrorMessageConstant.AiModelDescriptionTooLong);
+
+            RuleFor(x => x.IsEnabled)
+                .Equal(true)
+                .When(x => x.IsDefault)
+                .WithMessage(AiErrorMessageConstant.AiDefaultModelMustBeEnabled);
         }
     }
 
@@ -59,6 +64,11 @@ namespace Application.Validators.Ai
             RuleFor(x => x.Description)
                 .MaximumLength(1000)
                 .WithMessage(AiErrorMessageConstant.AiModelDescriptionTooLong);
+
+            RuleFor(x => x.IsEnabled)
+                .Equal(true)
+                .When(x => x.IsDefault)
+                .WithMessage(AiErrorMessageConstant.AiDefaultModelMustBeEnabled);
         }
     }
 }

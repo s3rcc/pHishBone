@@ -110,7 +110,8 @@ function CreateSpeciesFormInner({ onClose }: { onClose: () => void }) {
                     swimLevel: 1,
                     dietType: 2,
                     isSchooling: false,
-                    minGroupSize: 0,
+                    // Backend validates MinGroupSize >= 1 even when not schooling.
+                    minGroupSize: 1,
                 },
                 tagIds: [],
             });

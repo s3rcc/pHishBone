@@ -141,6 +141,7 @@ namespace Application.Constants
         {
             public const string Base = "api/ai/models";
             public const string Available = "available";
+            public const string Default = "default";
         }
     }
 }

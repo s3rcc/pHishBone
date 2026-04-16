@@ -1,7 +1,6 @@
 import { axiosInstance } from '../../../lib/axiosInstance';
 import type {
     AiFishInformationResponseDto,
-    AvailableAiModelDto,
     ApiResponse,
     CreateSpeciesPayload,
     CreateTagPayload,
@@ -83,13 +82,6 @@ export const speciesApi = {
             '/api/catalog/species/ai/fish-information',
             payload,
         );
-        return data.data;
-    },
-};
-
-export const aiModelSelectionApi = {
-    getAvailable: async (): Promise<AvailableAiModelDto[]> => {
-        const { data } = await axiosInstance.get<ApiResponse<AvailableAiModelDto[]>>('/api/ai/models/available');
         return data.data;
     },
 };

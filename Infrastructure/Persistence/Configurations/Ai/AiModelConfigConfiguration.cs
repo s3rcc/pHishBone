@@ -24,6 +24,9 @@ namespace Infrastructure.Persistence.Configurations.Ai
             builder.Property(x => x.IsEnabled)
                 .HasDefaultValue(true);
 
+            builder.Property(x => x.IsDefault)
+                .HasDefaultValue(false);
+
             builder.Property(x => x.TimeoutSeconds)
                 .HasDefaultValue(60);
 
@@ -39,6 +42,11 @@ namespace Infrastructure.Persistence.Configurations.Ai
 
             builder.HasIndex(x => new { x.Provider, x.ProviderModelId })
                 .HasFilter("\"DeletedTime\" IS NULL")
+                .IsUnique();
+
+            // Ensure a single default model across all non-deleted configs.
+            builder.HasIndex(x => x.IsDefault)
+                .HasFilter("\"DeletedTime\" IS NULL AND \"IsDefault\" = TRUE")
                 .IsUnique();
         }
     }

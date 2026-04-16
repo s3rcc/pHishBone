@@ -1,5 +1,6 @@
 import React, { Suspense, useCallback, useMemo, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
+import type { UseFormSetValue } from 'react-hook-form';
 import { useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import Alert from '@mui/material/Alert';
@@ -16,7 +17,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { SuspenseLoader } from '../../../../components/layout/SuspenseLoader';
 import { useMuiSnackbar } from '../../../../hooks/useMuiSnackbar';
 import { parseValidationErrors, getValidationSummary } from '../../../../lib/parseValidationErrors';
-import { useCreateSpecies, useUpdateSpecies, useUploadSpeciesImageBatch } from '../../hooks/useCatalog';
+import { useCreateSpecies, useGenerateFishInformation, useUpdateSpecies, useUploadSpeciesImageBatch } from '../../hooks/useCatalog';
 import type {
     AiGeneratedSpeciesDraftDto,
     CreateSpeciesPayload,
@@ -29,7 +30,6 @@ import { EnvironmentTab } from './EnvironmentTab';
 import { ProfileTab } from './ProfileTab';
 import { IndexingTab } from './IndexingTab';
 import { GalleryTab } from './GalleryTab';
-import { GenerateSpeciesContentDialog } from './GenerateSpeciesContentDialog';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -42,6 +42,10 @@ interface SpeciesFormProps {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function buildDefaultValues(detail?: SpeciesDetailDto): SpeciesFormValues {
+    const isSchooling = detail?.profile?.isSchooling ?? false;
+    const rawMinGroupSize = detail?.profile?.minGroupSize;
+    const minGroupSize = isSchooling ? (rawMinGroupSize ?? 2) : 1;
+
     return {
         commonName: detail?.commonName ?? '',
         scientificName: detail?.scientificName ?? '',
@@ -58,8 +62,8 @@ function buildDefaultValues(detail?: SpeciesDetailDto): SpeciesFormValues {
         swimLevel: detail?.profile?.swimLevel ?? 1,
         dietType: detail?.profile?.dietType ?? 2,
         preferredFood: detail?.profile?.preferredFood ?? '',
-        isSchooling: detail?.profile?.isSchooling ?? false,
-        minGroupSize: detail?.profile?.minGroupSize ?? 0,
+        isSchooling,
+        minGroupSize,
         origin: detail?.profile?.origin ?? '',
         description: detail?.profile?.description ?? '',
         tagIds: detail?.tags?.map((tag) => tag.id) ?? [],
@@ -87,7 +91,9 @@ function toPayload(values: SpeciesFormValues): CreateSpeciesPayload {
             dietType: values.dietType,
             preferredFood: values.preferredFood || undefined,
             isSchooling: values.isSchooling,
-            minGroupSize: values.isSchooling ? values.minGroupSize : 0,
+            // Backend validates MinGroupSize >= 1 even when not schooling.
+            // UI enforces >= 2 when schooling, but we still clamp defensively.
+            minGroupSize: values.isSchooling ? Math.max(2, values.minGroupSize) : 1,
             origin: values.origin || undefined,
             description: values.description || undefined,
         },
@@ -131,11 +137,24 @@ function applyGeneratedDraftToForm(
         dietType: generatedDraft.profile.dietType,
         preferredFood: generatedDraft.profile.preferredFood ?? '',
         isSchooling: generatedDraft.profile.isSchooling,
-        minGroupSize: generatedDraft.profile.isSchooling ? generatedDraft.profile.minGroupSize : 0,
+        minGroupSize: generatedDraft.profile.isSchooling ? Math.max(2, generatedDraft.profile.minGroupSize) : 1,
         origin: generatedDraft.profile.origin ?? '',
         description: generatedDraft.profile.description ?? '',
         tagIds: generatedDraft.tagIds,
     };
+}
+
+function setFormValues(
+    setValue: UseFormSetValue<SpeciesFormValues>,
+    nextValues: SpeciesFormValues,
+) {
+    for (const key of Object.keys(nextValues) as (keyof SpeciesFormValues)[]) {
+        setValue(key, nextValues[key], {
+            shouldDirty: true,
+            shouldTouch: false,
+            shouldValidate: false,
+        });
+    }
 }
 
 // ─── Tab panel helper ─────────────────────────────────────────────────────────
@@ -159,14 +178,14 @@ export const SpeciesForm: React.FC<SpeciesFormProps> = ({ mode, speciesId, defau
     const navigate = useNavigate();
     const { showSnackbar } = useMuiSnackbar();
     const [activeTab, setActiveTab] = useState(0);
-    const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
     const stagedFilesRef = useRef<File[]>([]);
 
     const { mutateAsync: createSpecies, isPending: isCreating } = useCreateSpecies();
     const { mutateAsync: updateSpecies, isPending: isUpdating } = useUpdateSpecies();
     const { mutateAsync: uploadBatch, isPending: isUploading } = useUploadSpeciesImageBatch();
-    const isPending = isCreating || isUpdating || isUploading;
+    const { mutateAsync: generateFishInformation, isPending: isGenerating } = useGenerateFishInformation();
+    const isPending = isCreating || isUpdating || isUploading || isGenerating;
 
     const TAB_LABELS = [
         t('Catalog.form.tabTaxonomy'),
@@ -200,23 +219,37 @@ export const SpeciesForm: React.FC<SpeciesFormProps> = ({ mode, speciesId, defau
         stagedFilesRef.current = files;
     }, []);
 
-    const handleOpenGenerateDialog = useCallback(() => {
-        setIsGenerateDialogOpen(true);
-    }, []);
+    const handleGenerate = useCallback(async () => {
+        const fishName = buildAiFishName(methods.getValues());
+        if (!fishName.trim()) {
+            showSnackbar(t('Catalog.AiGeneration.errorMissingName'), 'error');
+            return;
+        }
 
-    const handleCloseGenerateDialog = useCallback(() => {
-        setIsGenerateDialogOpen(false);
-    }, []);
+        try {
+            const result = await generateFishInformation({ fishName: fishName.trim() });
 
-    const handleGeneratedDraft = useCallback((generatedDraft: AiGeneratedSpeciesDraftDto) => {
-        const nextValues = applyGeneratedDraftToForm(methods.getValues(), generatedDraft);
+            if (result.generatedDraft) {
+                const nextValues = applyGeneratedDraftToForm(methods.getValues(), result.generatedDraft);
+                setFormValues(methods.setValue, nextValues);
+                setActiveTab(0);
+                showSnackbar(t('Catalog.AiGeneration.success'), 'success');
+                return;
+            }
 
-        methods.reset(nextValues, { keepDefaultValues: true });
-        setActiveTab(0);
-        setSubmitError(null);
-    }, [methods]);
+            if (result.existingSpecies) {
+                const nextValues = buildDefaultValues(result.existingSpecies);
+                setFormValues(methods.setValue, nextValues);
+                setActiveTab(0);
+                showSnackbar(t('Catalog.AiGeneration.success'), 'success');
+                return;
+            }
 
-    const generatedFishName = buildAiFishName(methods.getValues());
+            showSnackbar(t('Catalog.AiGeneration.errorUnexpected'), 'error');
+        } catch (err: unknown) {
+            showSnackbar(getValidationSummary(err, t('Catalog.AiGeneration.errorUnexpected')), 'error');
+        }
+    }, [generateFishInformation, methods, showSnackbar, t]);
 
     const handleSubmit = methods.handleSubmit(async (values) => {
         setSubmitError(null);
@@ -305,7 +338,7 @@ export const SpeciesForm: React.FC<SpeciesFormProps> = ({ mode, speciesId, defau
                             variant="outlined"
                             size="small"
                             startIcon={<AutoAwesomeIcon />}
-                            onClick={handleOpenGenerateDialog}
+                            onClick={() => void handleGenerate()}
                             disabled={isPending}
                             sx={{ borderRadius: '4px' }}
                         >
@@ -402,16 +435,6 @@ export const SpeciesForm: React.FC<SpeciesFormProps> = ({ mode, speciesId, defau
                         </Suspense>
                     </TabPanel>
                 </Paper>
-
-                {speciesId && isGenerateDialogOpen && (
-                    <GenerateSpeciesContentDialog
-                        open={isGenerateDialogOpen}
-                        speciesId={speciesId}
-                        initialFishName={generatedFishName}
-                        onClose={handleCloseGenerateDialog}
-                        onGeneratedDraft={handleGeneratedDraft}
-                    />
-                )}
             </Box>
         </FormProvider>
     );

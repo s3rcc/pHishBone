@@ -195,25 +195,9 @@ export interface UpdateSpeciesPayload {
     tagIds: string[];
 }
 
-export type AiProvider = 0 | 1; // OpenRouter = 0, Groq = 1
-
-export interface AvailableAiModelDto {
-    id: string;
-    displayName: string;
-    provider: AiProvider;
-    providerModelId: string;
-    isEnabled: boolean;
-    maxOutputTokens: number | null;
-    temperature: number | null;
-    timeoutSeconds: number;
-    description: string | null;
-    createdTime: string;
-    lastUpdatedTime: string | null;
-}
-
 export interface GenerateFishInformationPayload {
     fishName: string;
-    modelConfigId: string;
+    modelConfigId?: string;
 }
 
 export interface AiGeneratedSpeciesDraftEnvironmentDto {

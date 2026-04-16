@@ -45,23 +45,25 @@ namespace Infrastructure.Services
             var normalizedFishName = NormalizeFishName(dto.FishName);
             _logger.LogInformation("Generating fish information for fish name {FishName} using model config {ModelConfigId}", normalizedFishName, dto.ModelConfigId);
 
-            var existingSpeciesStopwatch = Stopwatch.StartNew();
-            var existingSpecies = await TryGetExistingSpeciesAsync(normalizedFishName, cancellationToken);
-            existingSpeciesStopwatch.Stop();
-            _logger.LogInformation("Fish information stage ExistingSpeciesCheck completed in {ElapsedMs} ms", existingSpeciesStopwatch.ElapsedMilliseconds);
-            if (existingSpecies != null)
-            {
-                totalStopwatch.Stop();
-                _logger.LogInformation("Fish information request resolved from existing catalog in {ElapsedMs} ms", totalStopwatch.ElapsedMilliseconds);
-                return new AiFishInformationResponseDto
-                {
-                    ModelConfigId = dto.ModelConfigId,
-                    ExistingSpecies = _mapper.Map<SpeciesDetailDto>(existingSpecies)
-                };
-            }
+            // var existingSpeciesStopwatch = Stopwatch.StartNew();
+            // var existingSpecies = await TryGetExistingSpeciesAsync(normalizedFishName, cancellationToken);
+            // existingSpeciesStopwatch.Stop();
+            // _logger.LogInformation("Fish information stage ExistingSpeciesCheck completed in {ElapsedMs} ms", existingSpeciesStopwatch.ElapsedMilliseconds);
+            // if (existingSpecies != null)
+            // {
+            //     totalStopwatch.Stop();
+            //     _logger.LogInformation("Fish information request resolved from existing catalog in {ElapsedMs} ms", totalStopwatch.ElapsedMilliseconds);
+            //     return new AiFishInformationResponseDto
+            //     {
+            //         ModelConfigId = dto.ModelConfigId,
+            //         ExistingSpecies = _mapper.Map<SpeciesDetailDto>(existingSpecies)
+            //     };
+            // }
 
             var dependencyLoadStopwatch = Stopwatch.StartNew();
-            var modelConfig = await GetEnabledModelAsync(dto.ModelConfigId, cancellationToken);
+            var modelConfig = string.IsNullOrWhiteSpace(dto.ModelConfigId)
+                ? await GetDefaultEnabledModelAsync(cancellationToken)
+                : await GetEnabledModelAsync(dto.ModelConfigId!, cancellationToken);
             var promptTemplate = await GetActivePromptAsync(AiPromptUseCase.FishInformation, cancellationToken);
             var vocabulary = await LoadVocabularyAsync(cancellationToken);
             dependencyLoadStopwatch.Stop();
@@ -156,6 +158,37 @@ namespace Infrastructure.Services
             }
 
             return modelConfig;
+        }
+
+        private async Task<AiModelConfig> GetDefaultEnabledModelAsync(CancellationToken cancellationToken = default)
+        {
+            var defaultModel = await _unitOfWork.Repository<AiModelConfig>().SingleOrDefaultAsync(
+                predicate: x => x.DeletedTime == null && x.IsEnabled && x.IsDefault,
+                cancellationToken: cancellationToken
+            );
+
+            if (defaultModel != null)
+            {
+                return defaultModel;
+            }
+
+            var enabled = await _unitOfWork.Repository<AiModelConfig>().GetListAsync(
+                predicate: x => x.DeletedTime == null && x.IsEnabled,
+                orderBy: q => q.OrderByDescending(x => x.IsDefault).ThenBy(x => x.DisplayName),
+                cancellationToken: cancellationToken
+            );
+
+            var fallback = enabled.FirstOrDefault();
+            if (fallback == null)
+            {
+                throw new CustomErrorException(
+                    StatusCodes.Status404NotFound,
+                    ErrorCode.NOT_FOUND,
+                    AiErrorMessageConstant.AiEnabledModelMissing
+                );
+            }
+
+            return fallback;
         }
 
         private async Task<AiPromptTemplate> GetActivePromptAsync(AiPromptUseCase useCase, CancellationToken cancellationToken = default)

@@ -319,6 +319,7 @@
             "button": "Generate Content",
             "title": "Generate Species Content",
             "description": "Use the AI catalog assistant to fill the species form from a fish name. Review the result before saving.",
+            "errorMissingName": "Please enter a common name or scientific name first.",
             "fishNameLabel": "Fish Name",
             "fishNameHelper": "You can use a common name, scientific name, or both.",
             "fishNameRequired": "Fish name is required.",
@@ -487,6 +488,8 @@
             "tokensPositive": "Must be a positive number",
             "fieldDescription": "Description",
             "fieldEnabled": "Enabled",
+            "fieldDefault": "Default Model",
+            "defaultBadge": "Default",
             "deleteTitle": "Delete Model?",
             "deleteConfirm": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone."
         },

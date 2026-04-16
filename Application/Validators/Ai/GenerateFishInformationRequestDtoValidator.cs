@@ -13,14 +13,14 @@ namespace Application.Validators.Ai
                 .MaximumLength(200);
 
             RuleFor(x => x.ModelConfigId)
-                .NotEmpty().WithMessage(AiErrorMessageConstant.ModelConfigIdRequired)
                 .Must(BeValidGuid)
+                .When(x => !string.IsNullOrWhiteSpace(x.ModelConfigId))
                 .WithMessage("Model configuration ID must be a valid GUID");
         }
 
-        private static bool BeValidGuid(string value)
+        private static bool BeValidGuid(string? value)
         {
-            return Guid.TryParse(value, out _);
+            return string.IsNullOrWhiteSpace(value) || Guid.TryParse(value, out _);
         }
     }
 }

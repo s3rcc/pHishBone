@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { aiModelSelectionApi, compatibilityRuleApi, speciesApi, speciesImageApi, tagsApi, typesApi } from '../api/catalogApi';
+import { compatibilityRuleApi, speciesApi, speciesImageApi, tagsApi, typesApi } from '../api/catalogApi';
 import type {
     CompatibilityRuleFilter,
     CreateCompatibilityRulePayload,
@@ -22,7 +22,6 @@ export const CATALOG_KEYS = {
     speciesPaginated: (filter: SpeciesFilter) => ['catalog', 'species', 'paginated', filter] as const,
     speciesDetail: (id: string) => ['catalog', 'species', 'detail', id] as const,
     speciesImages: (id: string) => ['catalog', 'species', 'images', id] as const,
-    availableAiModels: ['catalog', 'species', 'ai-models', 'available'] as const,
     typesList: ['catalog', 'types', 'list'] as const,
     typesPaginated: (filter: TypeFilter) => ['catalog', 'types', 'paginated', filter] as const,
     tagsList: ['catalog', 'tags', 'list'] as const,
@@ -52,14 +51,6 @@ export function useSpeciesImages(speciesId: string) {
     return useSuspenseQuery({
         queryKey: CATALOG_KEYS.speciesImages(speciesId),
         queryFn: () => speciesImageApi.getAll(speciesId),
-    });
-}
-
-export function useAvailableAiModels() {
-    return useSuspenseQuery({
-        queryKey: CATALOG_KEYS.availableAiModels,
-        queryFn: aiModelSelectionApi.getAvailable,
-        staleTime: 5 * 60 * 1000,
     });
 }
 

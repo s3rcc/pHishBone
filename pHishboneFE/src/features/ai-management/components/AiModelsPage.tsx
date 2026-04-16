@@ -1,6 +1,6 @@
 import React, { Suspense, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useForm, Controller } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -57,6 +57,7 @@ interface ModelFormValues {
     provider: AiProvider;
     providerModelId: string;
     isEnabled: boolean;
+    isDefault: boolean;
     maxOutputTokens: string;
     temperature: string;
     timeoutSeconds: string;
@@ -137,6 +138,15 @@ function ModelsTable({
                                     <Typography variant="body2" fontWeight={500}>
                                         {row.displayName}
                                     </Typography>
+                                    {row.isDefault && (
+                                        <Chip
+                                            label={t('AiManagement.Models.defaultBadge')}
+                                            size="small"
+                                            color="primary"
+                                            variant="outlined"
+                                            sx={{ mt: 0.5, fontSize: '0.68rem' }}
+                                        />
+                                    )}
                                 </TableCell>
                                 <TableCell>
                                     <Chip
@@ -237,12 +247,14 @@ function ModelDialog({ open, editTarget, onClose }: ModelDialogProps) {
         control,
         formState: { errors },
         setError,
+        setValue,
     } = useForm<ModelFormValues>({
         defaultValues: {
             displayName: editTarget?.displayName ?? '',
             provider: editTarget?.provider ?? 0,
             providerModelId: editTarget?.providerModelId ?? '',
             isEnabled: editTarget?.isEnabled ?? true,
+            isDefault: editTarget?.isDefault ?? false,
             maxOutputTokens: editTarget?.maxOutputTokens?.toString() ?? '',
             temperature: editTarget?.temperature?.toString() ?? '',
             timeoutSeconds: editTarget?.timeoutSeconds?.toString() ?? '60',
@@ -256,6 +268,7 @@ function ModelDialog({ open, editTarget, onClose }: ModelDialogProps) {
             provider: editTarget?.provider ?? 0,
             providerModelId: editTarget?.providerModelId ?? '',
             isEnabled: editTarget?.isEnabled ?? true,
+            isDefault: editTarget?.isDefault ?? false,
             maxOutputTokens: editTarget?.maxOutputTokens?.toString() ?? '',
             temperature: editTarget?.temperature?.toString() ?? '',
             timeoutSeconds: editTarget?.timeoutSeconds?.toString() ?? '60',
@@ -263,13 +276,16 @@ function ModelDialog({ open, editTarget, onClose }: ModelDialogProps) {
         });
     }, [editTarget, reset]);
 
+    const isDefault = useWatch({ control, name: 'isDefault' });
+
     const onSubmit = handleSubmit(async (values) => {
         try {
             const base = {
                 displayName: values.displayName,
                 provider: values.provider,
                 providerModelId: values.providerModelId,
-                isEnabled: values.isEnabled,
+                isEnabled: values.isDefault ? true : values.isEnabled,
+                isDefault: values.isDefault,
                 maxOutputTokens: values.maxOutputTokens ? Number(values.maxOutputTokens) : null,
                 temperature: values.temperature ? Number(values.temperature) : null,
                 timeoutSeconds: Number(values.timeoutSeconds),
@@ -402,8 +418,29 @@ function ModelDialog({ open, editTarget, onClose }: ModelDialogProps) {
                         control={control}
                         render={({ field }) => (
                             <FormControlLabel
-                                control={<Switch {...field} checked={field.value} />}
+                                control={<Switch {...field} checked={field.value} disabled={isDefault} />}
                                 label={t('AiManagement.Models.fieldEnabled')}
+                            />
+                        )}
+                    />
+
+                    <Controller
+                        name="isDefault"
+                        control={control}
+                        render={({ field }) => (
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        {...field}
+                                        checked={field.value}
+                                        onChange={(e) => {
+                                            const checked = e.target.checked;
+                                            field.onChange(checked);
+                                            if (checked) setValue('isEnabled', true);
+                                        }}
+                                    />
+                                }
+                                label={t('AiManagement.Models.fieldDefault')}
                             />
                         )}
                     />

@@ -319,6 +319,7 @@
             "button": "Tao Noi Dung",
             "title": "Tao Noi Dung Cho Loai",
             "description": "Dung tro ly AI cua he thong de dien form loai tu ten ca. Hay kiem tra lai ket qua truoc khi luu.",
+            "errorMissingName": "Vui long nhap ten thuong goi hoac ten khoa hoc truoc.",
             "fishNameLabel": "Ten Ca",
             "fishNameHelper": "Ban co the dung ten thuong goi, ten khoa hoc, hoac ca hai.",
             "fishNameRequired": "Ten ca la bat buoc.",
@@ -487,6 +488,8 @@
             "tokensPositive": "Phải là số dương",
             "fieldDescription": "Mô Tả",
             "fieldEnabled": "Bật",
+            "fieldDefault": "Mô Hình Mặc Định",
+            "defaultBadge": "Mặc Định",
             "deleteTitle": "Xóa Mô Hình?",
             "deleteConfirm": "Bạn có chắc chắn muốn xóa \"{{name}}\"? Thao tác này không thể hoàn tác."
         },
