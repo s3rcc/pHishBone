@@ -30,9 +30,10 @@ import { useTranslation } from 'react-i18next';
 import { useDebounce } from '../../public-catalog/hooks/useDebounce';
 import type { SpeciesDto, SwimLevel } from '../../catalog-management/types';
 import { tankApi } from '../api/tankApi';
-import type { TankSpeciesDraft } from '../types';
+import type { TankListItemDto, TankMode, TankSpeciesDraft, TankStatus } from '../types';
 
 interface BuilderSidebarProps {
+    mode: TankMode;
     inventory: TankSpeciesDraft[];
     selectedSpeciesId: string | null;
     onAddSpecies: (species: SpeciesDto) => Promise<void>;
@@ -40,11 +41,30 @@ interface BuilderSidebarProps {
     onDecrementSpecies: (speciesId: string) => void;
     onRemoveSpecies: (speciesId: string) => void;
     onSelectSpecies: (speciesId: string | null) => void;
-    onClearDraft: () => void;
+    onClearInventory: () => void;
+    tankName?: string;
+    tankOptions?: TankListItemDto[];
+    selectedTankId?: string | null;
+    onTankNameChange?: (name: string) => void;
+    onSelectTank?: (tankId: string) => void;
+    onCreateTank?: () => Promise<void>;
+    onDeleteTank?: () => Promise<void>;
+    isTankMutating?: boolean;
 }
 
 function getSwimLevelTranslationKey(swimLevel: SwimLevel): string {
     return `Catalog.swimLevel.${swimLevel}`;
+}
+
+function getTankStatusTranslationKey(status: TankStatus): string {
+    switch (status) {
+        case 1:
+            return 'TankBuilder.tankStatusActive';
+        case 2:
+            return 'TankBuilder.tankStatusArchived';
+        default:
+            return 'TankBuilder.tankStatusDraft';
+    }
 }
 
 function SearchResultSkeleton(): ReactElement {
@@ -159,7 +179,157 @@ function SpeciesSearchResults({ searchTerm, onAddSpecies }: SpeciesSearchResults
     );
 }
 
+interface TankManagementTabProps {
+    mode: TankMode;
+    tankName?: string;
+    tankOptions: TankListItemDto[];
+    selectedTankId?: string | null;
+    onTankNameChange?: (name: string) => void;
+    onSelectTank?: (tankId: string) => void;
+    onCreateTank?: () => Promise<void>;
+    onDeleteTank?: () => Promise<void>;
+    isTankMutating?: boolean;
+}
+
+function TankManagementTab({
+    mode,
+    tankName,
+    tankOptions,
+    selectedTankId,
+    onTankNameChange,
+    onSelectTank,
+    onCreateTank,
+    onDeleteTank,
+    isTankMutating = false,
+}: TankManagementTabProps): ReactElement {
+    const { t } = useTranslation();
+
+    if (mode === 'guest') {
+        return (
+            <Box
+                sx={{
+                    px: 2,
+                    py: 5,
+                    borderRadius: 3,
+                    border: '1px dashed',
+                    borderColor: 'divider',
+                    textAlign: 'center',
+                    color: 'text.secondary',
+                }}
+            >
+                <Typography variant="body2">{t('TankBuilder.guestTankTabHint')}</Typography>
+            </Box>
+        );
+    }
+
+    return (
+        <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 1.5 }}>
+                <Typography variant="subtitle1" fontWeight={700}>
+                    {t('TankBuilder.myTanksTitle')}
+                </Typography>
+                <Button
+                    variant="text"
+                    color="primary"
+                    onClick={() => void onCreateTank?.()}
+                    startIcon={<AddRoundedIcon />}
+                >
+                    {t('TankBuilder.createTank')}
+                </Button>
+            </Box>
+
+            {selectedTankId ? (
+                <TextField
+                    fullWidth
+                    value={tankName ?? ''}
+                    onChange={(event) => onTankNameChange?.(event.target.value)}
+                    label={t('TankBuilder.tankNameLabel')}
+                    sx={{ mb: 2 }}
+                />
+            ) : null}
+
+            {tankOptions.length === 0 ? (
+                <Box
+                    sx={{
+                        px: 2,
+                        py: 4,
+                        borderRadius: 3,
+                        border: '1px dashed',
+                        borderColor: 'divider',
+                        textAlign: 'center',
+                        color: 'text.secondary',
+                    }}
+                >
+                    <Typography variant="body2" sx={{ mb: 1.5 }}>
+                        {t('TankBuilder.noUserTanks')}
+                    </Typography>
+                    <Button variant="contained" onClick={() => void onCreateTank?.()}>
+                        {t('TankBuilder.createFirstTank')}
+                    </Button>
+                </Box>
+            ) : (
+                <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, mb: 1.5 }}>
+                    {tankOptions.map((tank) => (
+                        <Paper
+                            key={tank.id}
+                            onClick={() => onSelectTank?.(tank.id)}
+                            sx={{
+                                px: 1.5,
+                                py: 1.25,
+                                borderRadius: 3,
+                                border: '1px solid',
+                                borderColor: selectedTankId === tank.id ? 'primary.main' : 'divider',
+                                backgroundColor:
+                                    selectedTankId === tank.id ? 'rgba(0,188,212,0.10)' : 'transparent',
+                                cursor: 'pointer',
+                                transition: 'all 0.18s ease',
+                            }}
+                        >
+                            <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1 }}>
+                                <Box sx={{ minWidth: 0 }}>
+                                    <Typography variant="body2" fontWeight={700} noWrap>
+                                        {tank.name}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary">
+                                        {t('TankBuilder.tankListMeta', {
+                                            count: tank.itemCount,
+                                            volume: tank.waterVolume,
+                                        })}
+                                    </Typography>
+                                </Box>
+                                <Chip
+                                    label={t(getTankStatusTranslationKey(tank.status))}
+                                    size="small"
+                                    variant="outlined"
+                                />
+                            </Box>
+                        </Paper>
+                    ))}
+                </List>
+            )}
+
+            {selectedTankId ? (
+                <Button
+                    fullWidth
+                    color="error"
+                    variant="outlined"
+                    onClick={() => void onDeleteTank?.()}
+                    startIcon={<DeleteOutlineRoundedIcon />}
+                    sx={{ mb: 1 }}
+                >
+                    {t('TankBuilder.deleteTank')}
+                </Button>
+            ) : null}
+
+            <Typography variant="caption" color="text.secondary">
+                {isTankMutating ? t('TankBuilder.tankSyncing') : t('TankBuilder.tankAutosave')}
+            </Typography>
+        </Box>
+    );
+}
+
 export function BuilderSidebar({
+    mode,
     inventory,
     selectedSpeciesId,
     onAddSpecies,
@@ -167,7 +337,15 @@ export function BuilderSidebar({
     onDecrementSpecies,
     onRemoveSpecies,
     onSelectSpecies,
-    onClearDraft,
+    onClearInventory,
+    tankName,
+    tankOptions = [],
+    selectedTankId,
+    onTankNameChange,
+    onSelectTank,
+    onCreateTank,
+    onDeleteTank,
+    isTankMutating = false,
 }: BuilderSidebarProps): ReactElement {
     const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState(0);
@@ -194,12 +372,12 @@ export function BuilderSidebar({
                         {t('TankBuilder.sidebarTitle')}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                        {t('TankBuilder.sidebarSubtitle')}
+                        {t(mode === 'user' ? 'TankBuilder.sidebarSubtitleUser' : 'TankBuilder.sidebarSubtitleGuest')}
                     </Typography>
                 </Box>
                 <Chip
                     icon={<WaterDropRoundedIcon />}
-                    label={t('TankBuilder.guestBadge')}
+                    label={t(mode === 'user' ? 'TankBuilder.myTankBadge' : 'TankBuilder.guestBadge')}
                     color="primary"
                     variant="outlined"
                     size="small"
@@ -242,6 +420,18 @@ export function BuilderSidebar({
                         <SpeciesSearchResults searchTerm={debouncedSearch} onAddSpecies={onAddSpecies} />
                     </Suspense>
                 </>
+            ) : activeTab === 1 ? (
+                <TankManagementTab
+                    mode={mode}
+                    tankName={tankName}
+                    tankOptions={tankOptions}
+                    selectedTankId={selectedTankId}
+                    onTankNameChange={onTankNameChange}
+                    onSelectTank={onSelectTank}
+                    onCreateTank={onCreateTank}
+                    onDeleteTank={onDeleteTank}
+                    isTankMutating={isTankMutating}
+                />
             ) : (
                 <Box
                     sx={{
@@ -265,8 +455,8 @@ export function BuilderSidebar({
                 <Typography variant="subtitle1" fontWeight={700}>
                     {t('TankBuilder.speciesSection')}
                 </Typography>
-                <Button variant="text" color="inherit" onClick={onClearDraft}>
-                    {t('TankBuilder.clearDraft')}
+                <Button variant="text" color="inherit" disabled={inventory.length === 0} onClick={onClearInventory}>
+                    {t(mode === 'user' ? 'TankBuilder.clearTank' : 'TankBuilder.clearDraft')}
                 </Button>
             </Box>
 
