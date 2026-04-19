@@ -13,13 +13,15 @@ namespace Application.Validators.Catalog
                 .NotEmpty().WithMessage(CatalogErrorMessageConstant.SpeciesCommonNameRequired)
                 .MaximumLength(200).WithMessage("Common name cannot exceed 200 characters");
 
-            // RuleFor(x => x.ScientificName)
-            //     .NotEmpty().WithMessage(CatalogErrorMessageConstant.SpeciesScientificNameRequired)
-            //     .MaximumLength(200).WithMessage("Scientific name cannot exceed 200 characters");
+            // ScientificName is optional; validate only when provided
+            RuleFor(x => x.ScientificName)
+                .MaximumLength(200).WithMessage("Scientific name cannot exceed 200 characters")
+                .When(x => !string.IsNullOrWhiteSpace(x.ScientificName));
 
-            // RuleFor(x => x.TypeId)
-            //     .NotEmpty().WithMessage(CatalogErrorMessageConstant.SpeciesTypeIdRequired)
-            //     .Must(BeValidGuid).WithMessage("Type ID must be a valid GUID");
+            // TypeId is optional; validate GUID format only when provided
+            RuleFor(x => x.TypeId)
+                .Must(id => Guid.TryParse(id, out _)).WithMessage("Type ID must be a valid GUID")
+                .When(x => !string.IsNullOrWhiteSpace(x.TypeId));
 
             RuleFor(x => x.ThumbnailUrl)
                 .MaximumLength(500).WithMessage("Thumbnail URL cannot exceed 500 characters")

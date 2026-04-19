@@ -8,9 +8,10 @@ namespace Application.DTOs.CatalogDTOs
     public class CreateSpeciesDto
     {
         public string CommonName { get; set; } = string.Empty;
-        public string? ScientificName { get; set; } = string.Empty;
-        public string? TypeId { get; set; } = string.Empty;
+        public string? ScientificName { get; set; }
+        public string? TypeId { get; set; }
         public string? ThumbnailUrl { get; set; }
+        public bool? IsActive { get; set; } = false;
 
         public EnvironmentDto Environment { get; set; } = new();
         public ProfileDto Profile { get; set; } = new();

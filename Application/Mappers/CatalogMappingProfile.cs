@@ -123,7 +123,9 @@ namespace Application.Mappers
                 .ForMember(dest => dest.Type, opt => opt.Ignore())
                 .ForMember(dest => dest.SpeciesEnvironment, opt => opt.Ignore())
                 .ForMember(dest => dest.SpeciesProfile, opt => opt.Ignore())
-                .ForMember(dest => dest.SpeciesTags, opt => opt.Ignore());
+                .ForMember(dest => dest.SpeciesTags, opt => opt.Ignore())
+                .ForMember(dest => dest.SpeciesImages, opt => opt.Ignore())
+                .ForMember(dest => dest.ThumbnailPublicId, opt => opt.Ignore());
 
             CreateMap<UpdateSpeciesDto, Species>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
@@ -137,7 +139,9 @@ namespace Application.Mappers
                 .ForMember(dest => dest.Type, opt => opt.Ignore())
                 .ForMember(dest => dest.SpeciesEnvironment, opt => opt.Ignore())
                 .ForMember(dest => dest.SpeciesProfile, opt => opt.Ignore())
-                .ForMember(dest => dest.SpeciesTags, opt => opt.Ignore());
+                .ForMember(dest => dest.SpeciesTags, opt => opt.Ignore())
+                .ForMember(dest => dest.SpeciesImages, opt => opt.Ignore())
+                .ForMember(dest => dest.ThumbnailPublicId, opt => opt.Ignore());
 
             // SpeciesImage mappings
             CreateMap<SpeciesImage, DTOs.ImageDTOs.ImageResponseDto>();

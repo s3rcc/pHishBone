@@ -171,18 +171,21 @@ namespace Infrastructure.Services
 
         public async Task<SpeciesDetailDto> CreateAsync(CreateSpeciesDto dto, CancellationToken cancellationToken = default)
         {
-            // 1. Validate TypeId exists
-            var type = await _unitOfWork.Repository<Domain.Entities.Catalog.Type>().SingleOrDefaultAsync(
-                predicate: t => t.Id == dto.TypeId,
-                cancellationToken: cancellationToken
-            );
-            if (type == null)
+            // 1. Validate TypeId exists (only when provided)
+            if (!string.IsNullOrWhiteSpace(dto.TypeId))
             {
-                throw new CustomErrorException(
-                    StatusCodes.Status400BadRequest,
-                    ErrorCode.NOT_FOUND,
-                    CatalogErrorMessageConstant.SpeciesTypeNotFound
+                var type = await _unitOfWork.Repository<Domain.Entities.Catalog.Type>().SingleOrDefaultAsync(
+                    predicate: t => t.Id == dto.TypeId,
+                    cancellationToken: cancellationToken
                 );
+                if (type == null)
+                {
+                    throw new CustomErrorException(
+                        StatusCodes.Status400BadRequest,
+                        ErrorCode.NOT_FOUND,
+                        CatalogErrorMessageConstant.SpeciesTypeNotFound
+                    );
+                }
             }
 
             // 2. Validate all TagIds exist
@@ -202,18 +205,21 @@ namespace Infrastructure.Services
                 }
             }
 
-            // 3. Check ScientificName uniqueness
-            var existingSpecies = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
-                predicate: s => s.ScientificName == dto.ScientificName && s.DeletedTime == null,
-                cancellationToken: cancellationToken
-            );
-            if (existingSpecies != null)
+            // 3. Check ScientificName uniqueness (only when provided)
+            if (!string.IsNullOrWhiteSpace(dto.ScientificName))
             {
-                throw new CustomErrorException(
-                    StatusCodes.Status400BadRequest,
-                    ErrorCode.DUPLICATE,
-                    CatalogErrorMessageConstant.SpeciesScientificNameDuplicate
+                var existingSpecies = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
+                    predicate: s => s.ScientificName == dto.ScientificName && s.DeletedTime == null,
+                    cancellationToken: cancellationToken
                 );
+                if (existingSpecies != null)
+                {
+                    throw new CustomErrorException(
+                        StatusCodes.Status400BadRequest,
+                        ErrorCode.DUPLICATE,
+                        CatalogErrorMessageConstant.SpeciesScientificNameDuplicate
+                    );
+                }
             }
 
             // 4. Generate unique slug
@@ -223,6 +229,7 @@ namespace Infrastructure.Services
             var species = _mapper.Map<Species>(dto);
             species.Slug = slug;
             species.CreatedBy = _currentUserService.GetUserId();
+            _logger.LogInformation("Creating species '{CommonName}', IsActive: {IsActive}", dto.CommonName, dto.IsActive);
             await _unitOfWork.Repository<Species>().InsertAsync(species, cancellationToken);
 
             // 6. Create SpeciesEnvironment entity with SAME ID
@@ -280,32 +287,38 @@ namespace Infrastructure.Services
                 );
             }
 
-            // 2. Validate TypeId exists
-            var type = await _unitOfWork.Repository<Domain.Entities.Catalog.Type>().SingleOrDefaultAsync(
-                predicate: t => t.Id == dto.TypeId,
-                cancellationToken: cancellationToken
-            );
-            if (type == null)
+            // 2. Validate TypeId exists (only when provided)
+            if (!string.IsNullOrWhiteSpace(dto.TypeId))
             {
-                throw new CustomErrorException(
-                    StatusCodes.Status400BadRequest,
-                    ErrorCode.NOT_FOUND,
-                    CatalogErrorMessageConstant.SpeciesTypeNotFound
+                var type = await _unitOfWork.Repository<Domain.Entities.Catalog.Type>().SingleOrDefaultAsync(
+                    predicate: t => t.Id == dto.TypeId,
+                    cancellationToken: cancellationToken
                 );
+                if (type == null)
+                {
+                    throw new CustomErrorException(
+                        StatusCodes.Status400BadRequest,
+                        ErrorCode.NOT_FOUND,
+                        CatalogErrorMessageConstant.SpeciesTypeNotFound
+                    );
+                }
             }
 
-            // 3. Validate ScientificName uniqueness (exclude current species)
-            var existingSpecies = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
-                predicate: s => s.ScientificName == dto.ScientificName && s.Id != id && s.DeletedTime == null,
-                cancellationToken: cancellationToken
-            );
-            if (existingSpecies != null)
+            // 3. Validate ScientificName uniqueness — only when provided (exclude current species)
+            if (!string.IsNullOrWhiteSpace(dto.ScientificName))
             {
-                throw new CustomErrorException(
-                    StatusCodes.Status400BadRequest,
-                    ErrorCode.DUPLICATE,
-                    CatalogErrorMessageConstant.SpeciesScientificNameDuplicate
+                var existingSpecies = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
+                    predicate: s => s.ScientificName == dto.ScientificName && s.Id != id && s.DeletedTime == null,
+                    cancellationToken: cancellationToken
                 );
+                if (existingSpecies != null)
+                {
+                    throw new CustomErrorException(
+                        StatusCodes.Status400BadRequest,
+                        ErrorCode.DUPLICATE,
+                        CatalogErrorMessageConstant.SpeciesScientificNameDuplicate
+                    );
+                }
             }
 
             // 4. Update Species properties (preserve Slug!)
@@ -496,16 +509,21 @@ namespace Infrastructure.Services
 
         private System.Linq.Expressions.Expression<Func<Species, bool>>? BuildFilterPredicate(SpeciesFilterDto filter)
         {
-            if (string.IsNullOrWhiteSpace(filter.SearchTerm) && string.IsNullOrWhiteSpace(filter.TypeId))
+            bool hasSearch = !string.IsNullOrWhiteSpace(filter.SearchTerm);
+            bool hasType = !string.IsNullOrWhiteSpace(filter.TypeId);
+            bool hasActiveFilter = filter.IsActive.HasValue;
+
+            if (!hasSearch && !hasType && !hasActiveFilter)
             {
                 return null;
             }
 
             return s =>
-                (string.IsNullOrWhiteSpace(filter.SearchTerm) ||
-                 s.CommonName.Contains(filter.SearchTerm) ||
-                 s.ScientificName.Contains(filter.SearchTerm)) &&
-                (string.IsNullOrWhiteSpace(filter.TypeId) || s.TypeId == filter.TypeId);
+                (!hasSearch ||
+                 s.CommonName.Contains(filter.SearchTerm!) ||
+                 (s.ScientificName != null && s.ScientificName.Contains(filter.SearchTerm!))) &&
+                (!hasType || s.TypeId == filter.TypeId) &&
+                (!hasActiveFilter || s.IsActive == filter.IsActive);
         }
 
         private async Task<string> GenerateUniqueSlugAsync(string commonName, CancellationToken cancellationToken = default)

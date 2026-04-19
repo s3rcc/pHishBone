@@ -11,5 +11,6 @@ namespace Application.DTOs.CatalogDTOs
         public string? TypeId { get; set; }
         public string SortBy { get; set; } = "CommonName";
         public bool IsAscending { get; set; } = true;
+        public bool? IsActive { get; set; }
     }
 }
