@@ -8,8 +8,8 @@ namespace Application.DTOs.CatalogDTOs
     public class CreateSpeciesDto
     {
         public string CommonName { get; set; } = string.Empty;
-        public string ScientificName { get; set; } = string.Empty;
-        public string TypeId { get; set; } = string.Empty;
+        public string? ScientificName { get; set; } = string.Empty;
+        public string? TypeId { get; set; } = string.Empty;
         public string? ThumbnailUrl { get; set; }
 
         public EnvironmentDto Environment { get; set; } = new();
