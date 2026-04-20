@@ -1,4 +1,4 @@
-﻿{
+{
     "Common": {
         "save": "Lưu",
         "cancel": "Hủy",
@@ -150,7 +150,13 @@
             "typeCreated": "Đã tạo loại '{{name}}'.",
             "tagCreated": "Đã tạo nhãn '{{name}}'.",
             "validationFailed": "Xác thực thất bại. Vui lòng kiểm tra các trường được đánh dấu.",
-            "unsavedChanges": "Có thay đổi chưa lưu"
+            "unsavedChanges": "Có thay đổi chưa lưu",
+            "statusActive": "Đang hoạt động",
+            "statusInactive": "Chưa kích hoạt",
+            "colStatus": "Trạng Thái",
+            "filterByStatus": "Lọc theo trạng thái",
+            "allStatuses": "Tất cả trạng thái",
+            "draftHint": "Tên khoa học và loại có thể bổ sung trong trang chỉnh sửa"
         },
         "Tags": {
             "pageTitle": "Nhãn",
@@ -292,7 +298,8 @@
             "phRange": "Khoảng pH",
             "tempRange": "Khoảng Nhiệt Độ (°C)",
             "addType": "Thêm '{{name}}'",
-            "addTag": "Thêm '{{name}}'"
+            "addTag": "Thêm '{{name}}'",
+            "fieldIsActive": "Đã xuất bản / Kích hoạt"
         },
         "Gallery": {
             "title": "Thư Viện Ảnh Loài",

@@ -3,10 +3,14 @@ import { useController, useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
+import Checkbox from '@mui/material/Checkbox';
 import CircularProgress from '@mui/material/CircularProgress';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import Grid from '@mui/material/Grid';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import { SuspenseLoader } from '../../../../components/layout/SuspenseLoader';
 import { useMuiSnackbar } from '../../../../hooks/useMuiSnackbar';
 import { useCreateType, useTypesList } from '../../hooks/useCatalog';
@@ -25,7 +29,7 @@ function TypeAutocompleteInner() {
     const { t } = useTranslation();
     const { showSnackbar } = useMuiSnackbar();
     const { control, formState: { errors } } = useFormContext<SpeciesFormValues>();
-    const { field } = useController({ name: 'typeId', control, rules: { required: t('Catalog.form.required', { field: t('Catalog.form.fieldType') }) } });
+    const { field } = useController({ name: 'typeId', control });
 
     const { data: types } = useTypesList();
     const { mutateAsync: createType, isPending: isCreatingType } = useCreateType();
@@ -117,6 +121,42 @@ function TypeAutocompleteInner() {
     );
 }
 
+// ─── IsActive Checkbox ────────────────────────────────────────────────────────
+
+function IsActiveCheckbox() {
+    const { t } = useTranslation();
+    const { control } = useFormContext<SpeciesFormValues>();
+    const { field } = useController({ name: 'isActive', control });
+
+    return (
+        <FormControlLabel
+            id="field-isActive-label"
+            control={
+                <Checkbox
+                    id="field-isActive"
+                    checked={!!field.value}
+                    onChange={(e) => field.onChange(e.target.checked)}
+                    icon={<RadioButtonUncheckedIcon />}
+                    checkedIcon={<CheckCircleOutlineIcon />}
+                    color="success"
+                    size="small"
+                />
+            }
+            label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Typography variant="body2" fontWeight={500}>
+                        {t('Catalog.form.fieldIsActive')}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                        {field.value ? t('Catalog.Species.statusActive') : t('Catalog.Species.statusInactive')}
+                    </Typography>
+                </Box>
+            }
+            sx={{ ml: 0 }}
+        />
+    );
+}
+
 // ─── Main Tab ─────────────────────────────────────────────────────────────────
 
 export const TaxonomyTab: React.FC = () => {
@@ -154,9 +194,7 @@ export const TaxonomyTab: React.FC = () => {
 
                 <Grid size={{ xs: 12, md: 6 }}>
                     <TextField
-                        {...register('scientificName', {
-                            required: t('Catalog.form.required', { field: t('Catalog.form.fieldScientificName') }),
-                        })}
+                        {...register('scientificName')}
                         label={t('Catalog.form.fieldScientificName')}
                         size="small"
                         fullWidth
@@ -173,6 +211,25 @@ export const TaxonomyTab: React.FC = () => {
                     <Suspense fallback={<SuspenseLoader />}>
                         <TypeAutocompleteInner />
                     </Suspense>
+                </Grid>
+
+                <Grid size={{ xs: 12, md: 6 }} sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            px: 1.5,
+                            py: 0.75,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            borderRadius: '4px',
+                            bgcolor: 'background.default',
+                            width: '100%',
+                        }}
+                    >
+                        <IsActiveCheckbox />
+                    </Box>
                 </Grid>
             </Grid>
         </Box>

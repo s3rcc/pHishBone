@@ -106,12 +106,13 @@ export interface TypeFilter {
 
 export interface SpeciesDto {
     id: string;
-    typeId: string;
-    typeName: string;
-    scientificName: string;
+    typeId?: string | null;
+    typeName?: string | null;
+    scientificName?: string | null;
     commonName: string;
     thumbnailUrl?: string;
     slug: string;
+    isActive?: boolean | null;
     createdTime: string;
 }
 
@@ -150,6 +151,7 @@ export interface SpeciesFilter {
     typeId?: string;
     sortBy?: string;
     isAscending?: boolean;
+    isActive?: boolean;
 }
 
 // ─── Create / Update Species Payloads ────────────────────────────────────────
@@ -177,9 +179,10 @@ export interface SpeciesProfilePayload {
 
 export interface CreateSpeciesPayload {
     commonName: string;
-    scientificName: string;
-    typeId: string;
+    scientificName?: string;
+    typeId?: string;
     thumbnailUrl?: string;
+    isActive?: boolean;
     environment: SpeciesEnvironmentPayload;
     profile: SpeciesProfilePayload;
     tagIds: string[];
@@ -187,9 +190,10 @@ export interface CreateSpeciesPayload {
 
 export interface UpdateSpeciesPayload {
     commonName: string;
-    scientificName: string;
-    typeId: string;
+    scientificName?: string;
+    typeId?: string;
     thumbnailUrl?: string;
+    isActive?: boolean;
     environment: SpeciesEnvironmentPayload;
     profile: SpeciesProfilePayload;
     tagIds: string[];
@@ -251,6 +255,7 @@ export interface SpeciesFormValues {
     scientificName: string;
     typeId: string;
     thumbnailUrl: string;
+    isActive: boolean;
     // Bio tab (environment)
     phMin: number;
     phMax: number;

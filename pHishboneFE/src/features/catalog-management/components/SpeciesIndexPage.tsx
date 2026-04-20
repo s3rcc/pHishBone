@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -26,9 +27,11 @@ import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import AddIcon from '@mui/icons-material/Add';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
 import SearchIcon from '@mui/icons-material/Search';
 import { useMuiSnackbar } from '../../../hooks/useMuiSnackbar';
 import { speciesApi } from '../api/catalogApi';
@@ -90,7 +93,7 @@ function SpeciesTable({
                                 </TableSortLabel>
                             </TableCell>
                             <TableCell>{t('Catalog.Species.colType')}</TableCell>
-                            <TableCell sx={{ width: 200 }}>{t('Catalog.Species.colTags')}</TableCell>
+                            <TableCell sx={{ width: 100 }}>{t('Catalog.Species.colStatus')}</TableCell>
                             <TableCell align="right" sx={{ width: 100 }}>{t('Catalog.Species.colActions')}</TableCell>
                         </TableRow>
                     </TableHead>
@@ -104,79 +107,115 @@ function SpeciesTable({
                                 </TableCell>
                             </TableRow>
                         )}
-                        {data.items.map((species) => (
-                            <TableRow
-                                key={species.id}
-                                hover
-                                sx={{ '&:last-child td': { border: 0 } }}
-                            >
-                                <TableCell sx={{ p: 1 }}>
-                                    {species.thumbnailUrl ? (
-                                        <Box
-                                            component="img"
-                                            src={species.thumbnailUrl}
-                                            alt={species.commonName}
-                                            sx={{
-                                                width: 40,
-                                                height: 40,
-                                                objectFit: 'cover',
-                                                borderRadius: '4px',
-                                                border: '1px solid',
-                                                borderColor: 'divider',
-                                            }}
-                                        />
-                                    ) : (
-                                        <Box
-                                            sx={{
-                                                width: 40,
-                                                height: 40,
-                                                borderRadius: '4px',
-                                                bgcolor: 'action.hover',
-                                                border: '1px solid',
-                                                borderColor: 'divider',
-                                            }}
-                                        />
-                                    )}
-                                </TableCell>
-                                <TableCell>
-                                    <Typography variant="body2" fontWeight={500}>
-                                        {species.commonName}
-                                    </Typography>
-                                </TableCell>
-                                <TableCell>
-                                    <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
-                                        {species.scientificName}
-                                    </Typography>
-                                </TableCell>
-                                <TableCell>
-                                    <Typography variant="body2">{species.typeName}</Typography>
-                                </TableCell>
-                                <TableCell>
-                                    <Typography variant="caption" color="text.secondary">—</Typography>
-                                </TableCell>
-                                <TableCell align="right">
-                                    <Tooltip title={t('Catalog.Species.editTooltip')}>
-                                        <IconButton size="small" onClick={() => onEdit(species.id)}>
-                                            <EditIcon fontSize="small" />
-                                        </IconButton>
-                                    </Tooltip>
-                                    <Tooltip title={t('Catalog.Species.cloneTooltip')}>
-                                        <IconButton size="small" onClick={() => onClone(species)}>
-                                            <ContentCopyIcon fontSize="small" />
-                                        </IconButton>
-                                    </Tooltip>
-                                    <Tooltip title={t('Catalog.Species.deleteTooltip')}>
-                                        <IconButton
-                                            size="small"
-                                            color="error"
-                                            onClick={() => onDelete(species)}
-                                        >
-                                            <DeleteIcon fontSize="small" />
-                                        </IconButton>
-                                    </Tooltip>
-                                </TableCell>
-                            </TableRow>
-                        ))}
+                        {data.items.map((species) => {
+                            const isActive = species.isActive === true;
+                            return (
+                                <TableRow
+                                    key={species.id}
+                                    hover
+                                    sx={{
+                                        '&:last-child td': { border: 0 },
+                                        ...(isActive && {
+                                            bgcolor: (theme) =>
+                                                theme.palette.mode === 'dark'
+                                                    ? 'rgba(76, 175, 80, 0.08)'
+                                                    : 'rgba(76, 175, 80, 0.05)',
+                                            '&:hover': {
+                                                bgcolor: (theme) =>
+                                                    theme.palette.mode === 'dark'
+                                                        ? 'rgba(76, 175, 80, 0.14)'
+                                                        : 'rgba(76, 175, 80, 0.10)',
+                                            },
+                                        }),
+                                    }}
+                                >
+                                    <TableCell sx={{ p: 1 }}>
+                                        {species.thumbnailUrl ? (
+                                            <Box
+                                                component="img"
+                                                src={species.thumbnailUrl}
+                                                alt={species.commonName}
+                                                sx={{
+                                                    width: 40,
+                                                    height: 40,
+                                                    objectFit: 'cover',
+                                                    borderRadius: '4px',
+                                                    border: '1px solid',
+                                                    borderColor: 'divider',
+                                                }}
+                                            />
+                                        ) : (
+                                            <Box
+                                                sx={{
+                                                    width: 40,
+                                                    height: 40,
+                                                    borderRadius: '4px',
+                                                    bgcolor: 'action.hover',
+                                                    border: '1px solid',
+                                                    borderColor: 'divider',
+                                                }}
+                                            />
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Typography variant="body2" fontWeight={500}>
+                                            {species.commonName}
+                                        </Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
+                                            {species.scientificName ?? '—'}
+                                        </Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Typography variant="body2">{species.typeName ?? '—'}</Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                        {isActive ? (
+                                            <Chip
+                                                id={`status-active-${species.id}`}
+                                                icon={<CheckCircleIcon sx={{ fontSize: '0.9rem !important' }} />}
+                                                label={t('Catalog.Species.statusActive')}
+                                                size="small"
+                                                color="success"
+                                                variant="outlined"
+                                                sx={{ fontSize: '0.72rem', height: 22 }}
+                                            />
+                                        ) : (
+                                            <Chip
+                                                id={`status-inactive-${species.id}`}
+                                                icon={<PauseCircleOutlineIcon sx={{ fontSize: '0.9rem !important' }} />}
+                                                label={t('Catalog.Species.statusInactive')}
+                                                size="small"
+                                                variant="outlined"
+                                                sx={{ fontSize: '0.72rem', height: 22, color: 'text.disabled', borderColor: 'divider' }}
+                                            />
+                                        )}
+                                    </TableCell>
+                                    <TableCell align="right">
+                                        <Tooltip title={t('Catalog.Species.editTooltip')}>
+                                            <IconButton size="small" onClick={() => onEdit(species.id)}>
+                                                <EditIcon fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
+                                        <Tooltip title={t('Catalog.Species.cloneTooltip')}>
+                                            <IconButton size="small" onClick={() => onClone(species)}>
+                                                <ContentCopyIcon fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
+                                        <Tooltip title={t('Catalog.Species.deleteTooltip')}>
+                                            <IconButton
+                                                size="small"
+                                                color="error"
+                                                onClick={() => onDelete(species)}
+                                            >
+                                                <DeleteIcon fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })}
                     </TableBody>
                 </Table>
             </TableContainer>
@@ -233,6 +272,7 @@ export const SpeciesIndexPage: React.FC = () => {
 
     const [searchTerm, setSearchTerm] = useState('');
     const [typeId, setTypeId] = useState('');
+    const [activeFilter, setActiveFilter] = useState<'' | 'active' | 'inactive'>('');
     const [page, setPage] = useState(1);
     const [size, setSize] = useState(25);
     const [sortBy, setSortBy] = useState('CommonName');
@@ -245,8 +285,16 @@ export const SpeciesIndexPage: React.FC = () => {
     const { mutateAsync: createSpecies } = useCreateSpecies();
 
     const filter = useMemo<SpeciesFilter>(
-        () => ({ page, size, searchTerm: searchTerm || undefined, typeId: typeId || undefined, sortBy, isAscending }),
-        [page, size, searchTerm, typeId, sortBy, isAscending],
+        () => ({
+            page,
+            size,
+            searchTerm: searchTerm || undefined,
+            typeId: typeId || undefined,
+            sortBy,
+            isAscending,
+            isActive: activeFilter === 'active' ? true : activeFilter === 'inactive' ? false : undefined,
+        }),
+        [page, size, searchTerm, typeId, sortBy, isAscending, activeFilter],
     );
 
     const handleSort = useCallback(
@@ -269,6 +317,11 @@ export const SpeciesIndexPage: React.FC = () => {
 
     const handleTypeChange = useCallback((value: string) => {
         setTypeId(value);
+        setPage(1);
+    }, []);
+
+    const handleActiveFilterChange = useCallback((value: string) => {
+        setActiveFilter(value as '' | 'active' | 'inactive');
         setPage(1);
     }, []);
 
@@ -313,9 +366,10 @@ export const SpeciesIndexPage: React.FC = () => {
 
                 const result = await createSpecies({
                     commonName: `Copy of ${detail.commonName}`,
-                    scientificName: detail.scientificName,
-                    typeId: detail.typeId,
+                    scientificName: detail.scientificName ?? undefined,
+                    typeId: detail.typeId ?? undefined,
                     thumbnailUrl: detail.thumbnailUrl,
+                    isActive: false, // clones start as inactive drafts
                     environment: detail.environment ?? {
                         phMin: 6.5, phMax: 7.5, tempMin: 22, tempMax: 28,
                         minTankVolume: 40, waterType: 0,
@@ -385,6 +439,20 @@ export const SpeciesIndexPage: React.FC = () => {
                 <Suspense fallback={<CircularProgress size={24} />}>
                     <TypeFilterSelect value={typeId} onChange={handleTypeChange} />
                 </Suspense>
+                {/* Active status filter */}
+                <TextField
+                    select
+                    label={t('Catalog.Species.filterByStatus')}
+                    size="small"
+                    value={activeFilter}
+                    onChange={(e) => handleActiveFilterChange(e.target.value)}
+                    sx={{ width: 160 }}
+                    inputProps={{ id: 'filter-isActive' }}
+                >
+                    <MenuItem value="">{t('Catalog.Species.allStatuses')}</MenuItem>
+                    <MenuItem value="active">{t('Catalog.Species.statusActive')}</MenuItem>
+                    <MenuItem value="inactive">{t('Catalog.Species.statusInactive')}</MenuItem>
+                </TextField>
             </Box>
 
             {/* Table */}
@@ -425,7 +493,7 @@ export const SpeciesIndexPage: React.FC = () => {
                     <DialogContentText variant="body2">
                         {t('Catalog.Species.deleteConfirm', {
                             name: deleteTarget?.commonName,
-                            scientific: deleteTarget?.scientificName,
+                            scientific: deleteTarget?.scientificName ?? '—',
                         })}
                     </DialogContentText>
                     {deleteError && (

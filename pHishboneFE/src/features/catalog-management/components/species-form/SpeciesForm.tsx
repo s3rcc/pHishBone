@@ -51,6 +51,7 @@ function buildDefaultValues(detail?: SpeciesDetailDto): SpeciesFormValues {
         scientificName: detail?.scientificName ?? '',
         typeId: detail?.typeId ?? '',
         thumbnailUrl: detail?.thumbnailUrl ?? '',
+        isActive: detail?.isActive ?? false,
         phMin: detail?.environment?.phMin ?? 6.5,
         phMax: detail?.environment?.phMax ?? 7.5,
         tempMin: detail?.environment?.tempMin ?? 22,
@@ -73,9 +74,10 @@ function buildDefaultValues(detail?: SpeciesDetailDto): SpeciesFormValues {
 function toPayload(values: SpeciesFormValues): CreateSpeciesPayload {
     return {
         commonName: values.commonName,
-        scientificName: values.scientificName,
-        typeId: values.typeId,
+        scientificName: values.scientificName || undefined,
+        typeId: values.typeId || undefined,
         thumbnailUrl: values.thumbnailUrl || undefined,
+        isActive: values.isActive,
         environment: {
             phMin: values.phMin,
             phMax: values.phMax,
@@ -125,6 +127,7 @@ function applyGeneratedDraftToForm(
         scientificName: generatedDraft.scientificName,
         typeId: generatedDraft.typeId,
         thumbnailUrl: generatedDraft.thumbnailUrl ?? currentValues.thumbnailUrl,
+        isActive: currentValues.isActive,
         phMin: generatedDraft.environment.phMin,
         phMax: generatedDraft.environment.phMax,
         tempMin: generatedDraft.environment.tempMin,

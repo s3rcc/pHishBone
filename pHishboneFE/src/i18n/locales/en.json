@@ -150,7 +150,13 @@
             "typeCreated": "Type '{{name}}' created.",
             "tagCreated": "Tag '{{name}}' created.",
             "validationFailed": "Validation failed. Please check the highlighted fields.",
-            "unsavedChanges": "Unsaved changes"
+            "unsavedChanges": "Unsaved changes",
+            "statusActive": "Active",
+            "statusInactive": "Inactive",
+            "colStatus": "Status",
+            "filterByStatus": "Filter by Status",
+            "allStatuses": "All statuses",
+            "draftHint": "Scientific name and type can be added in the edit view"
         },
         "Tags": {
             "pageTitle": "Tags",
@@ -292,7 +298,8 @@
             "phRange": "pH Range",
             "tempRange": "Temperature Range (°C)",
             "addType": "Add '{{name}}'",
-            "addTag": "Add '{{name}}'"
+            "addTag": "Add '{{name}}'",
+            "fieldIsActive": "Published / Active"
         },
         "Gallery": {
             "title": "Species Gallery",
