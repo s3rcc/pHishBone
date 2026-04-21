@@ -11,7 +11,6 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import ScienceIcon from '@mui/icons-material/Science';
 import ShieldIcon from '@mui/icons-material/Shield';
-import GroupsIcon from '@mui/icons-material/Groups';
 import FilterNoneIcon from '@mui/icons-material/FilterNone';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import ShareRoundedIcon from '@mui/icons-material/ShareRounded';

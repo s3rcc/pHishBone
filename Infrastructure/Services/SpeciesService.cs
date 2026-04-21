@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces;
 using Application.Constants;
 using Application.DTOs.CatalogDTOs;
@@ -149,23 +149,23 @@ namespace Infrastructure.Services
 
         public async Task<PaginationResponse<SpeciesDto>> GetPaginatedListAsync(SpeciesFilterDto filter, CancellationToken cancellationToken = default)
         {
-            var species = await _unitOfWork.Repository<Species>().GetPagingListAsync(
-                predicate: BuildFilterPredicate(filter),
-                include: q => q.Include(s => s.Type),
-                page: filter.Page,
-                size: filter.Size,
-                sortBy: filter.SortBy,
-                isAsc: filter.IsAscending,
-                cancellationToken: cancellationToken
-            );
+            var query = BuildFilteredQuery(filter);
+            query = ApplySortToQuery(query, filter.SortBy, filter.IsAscending);
+
+            var totalCount = await query.CountAsync(cancellationToken);
+            var items = await query
+                .Skip((filter.Page - 1) * filter.Size)
+                .Take(filter.Size)
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
 
             return new PaginationResponse<SpeciesDto>
             {
-                Size = species.Size,
-                Page = species.Page,
-                Total = species.Total,
-                TotalPages = species.TotalPages,
-                Items = _mapper.Map<IList<SpeciesDto>>(species.Items)
+                Size = filter.Size,
+                Page = filter.Page,
+                Total = totalCount,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)filter.Size),
+                Items = _mapper.Map<IList<SpeciesDto>>(items)
             };
         }
 
@@ -445,48 +445,38 @@ namespace Infrastructure.Services
         {
             var searchTerm = filter.SearchTerm;
             _logger.LogInformation("Executing hybrid species search for term: {SearchTerm}, Page: {Page}, Size: {Size}", searchTerm, filter.Page, filter.Size);
-            
-            // Debug log to verify search term is received correctly
-            if (string.IsNullOrWhiteSpace(searchTerm))
-            {
-                _logger.LogWarning("Search term is empty or null");
-            }
-            else
-            {
-                _logger.LogDebug("Search term received: '{SearchTerm}'", searchTerm);
-            }
 
-            // If no search term, return gracefully paginated list as a sensible default
+            // If no search term, fall back to the rich-filter paginated query
             if (string.IsNullOrWhiteSpace(searchTerm))
             {
                 return await GetPaginatedListAsync(filter, cancellationToken);
             }
 
-            // [Reasoning] FromSqlInterpolated is used for safe, parameterized raw SQL.
-            // EF Core converts {searchTerm} interpolation holes into $1/$2 SQL parameters — NOT string concatenation.
-            // Logic:
-            //   1. FTS match via websearch_to_tsquery('simple') — handles multi-word, bilingual, scientific names.
-            //      'simple' dict is used instead of 'english' to avoid mangling Vietnamese words.
-            //   2. Trigram similarity > 0.15 — deliberately low to catch short typos (e.g. "cá ho" → "cá hề").
-            //      Default PG threshold (0.3) is too strict for short Vietnamese tokens.
-            //   3. Ranking: FTS rank * 2.0 ensures exact word matches always outrank fuzzy trigram matches.
-            var query = _dbContext.Species
+            // Step 1: Run the FTS + trigram search to get a relevance-ranked candidate set.
+            // [Reasoning] FromSqlInterpolated uses safe parameterized SQL (no string concatenation).
+            //   - FTS via websearch_to_tsquery('simple') handles multi-word, bilingual, and scientific names.
+            //   - 'simple' dict avoids mangling Vietnamese tokens (unlike 'english' dict).
+            //   - Trigram threshold 0.1 catches short typos ("cá ho" → "cá hề").
+            //   - Ranking weights FTS match 3x over common-name trigram, scientific 1x.
+            var ftsQuery = _dbContext.Species
                 .FromSqlInterpolated($@"
                     SELECT * FROM catalog.""Species""
-                    WHERE 
+                    WHERE
                         ""FtsVector"" @@ websearch_to_tsquery('simple', {searchTerm})
                         OR similarity(""CommonName"", {searchTerm}) > 0.1
                         OR similarity(""ScientificName"", {searchTerm}) > 0.1
-                    ORDER BY 
+                    ORDER BY
                     (
                         COALESCE(ts_rank(""FtsVector"", websearch_to_tsquery('simple', {searchTerm})), 0) * 3.0
                         + COALESCE(similarity(""CommonName"", {searchTerm}), 0) * 1.5
                         + COALESCE(similarity(""ScientificName"", {searchTerm}), 0)
                     ) DESC");
 
-            var totalCount = await query.CountAsync(cancellationToken);
+            // Step 2: Apply all additional filters on top of the FTS result set.
+            var filteredQuery = ApplyExtendedFilters(ftsQuery, filter);
 
-            var results = await query
+            var totalCount = await filteredQuery.CountAsync(cancellationToken);
+            var results = await filteredQuery
                 .Include(s => s.Type)
                 .AsNoTracking()
                 .Skip((filter.Page - 1) * filter.Size)
@@ -507,23 +497,124 @@ namespace Infrastructure.Services
 
         #region Private Helper Methods
 
-        private System.Linq.Expressions.Expression<Func<Species, bool>>? BuildFilterPredicate(SpeciesFilterDto filter)
+        /// <summary>
+        /// Builds the base EF Core query with all cross-table filters applied.
+        /// Used by GetPaginatedListAsync for the non-search path.
+        /// </summary>
+        private IQueryable<Species> BuildFilteredQuery(SpeciesFilterDto filter)
         {
-            bool hasSearch = !string.IsNullOrWhiteSpace(filter.SearchTerm);
-            bool hasType = !string.IsNullOrWhiteSpace(filter.TypeId);
-            bool hasActiveFilter = filter.IsActive.HasValue;
+            IQueryable<Species> query = _dbContext.Species
+                .Include(s => s.Type)
+                .Include(s => s.SpeciesEnvironment)
+                .Include(s => s.SpeciesProfile)
+                .Include(s => s.SpeciesTags)
+                .AsQueryable();
 
-            if (!hasSearch && !hasType && !hasActiveFilter)
+            return ApplyExtendedFilters(query, filter);
+        }
+
+        /// <summary>
+        /// Applies all non-FTS filters (type, environment, profile, tags) to an arbitrary
+        /// Species IQueryable. Shared between BuildFilteredQuery and SearchHybridAsync.
+        /// </summary>
+        private static IQueryable<Species> ApplyExtendedFilters(IQueryable<Species> query, SpeciesFilterDto filter)
+        {
+            // ── Species-level filters ────────────────────────────────────────
+            if (!string.IsNullOrWhiteSpace(filter.TypeId))
+                query = query.Where(s => s.TypeId == filter.TypeId);
+
+            if (filter.IsActive.HasValue)
+                query = query.Where(s => s.IsActive == filter.IsActive);
+
+            // ── SpeciesEnvironment filters ────────────────────────────────────
+            // pH overlap: species range [PhMin, PhMax] must overlap with filter range [PhMin, PhMax]
+            // i.e. species.PhMin <= filter.PhMax AND species.PhMax >= filter.PhMin
+            if (filter.PhMin.HasValue)
+                query = query.Where(s =>
+                    s.SpeciesEnvironment != null &&
+                    s.SpeciesEnvironment.PhMax >= filter.PhMin.Value);
+
+            if (filter.PhMax.HasValue)
+                query = query.Where(s =>
+                    s.SpeciesEnvironment != null &&
+                    s.SpeciesEnvironment.PhMin <= filter.PhMax.Value);
+
+            // Temperature overlap (same logic as pH)
+            if (filter.TempMin.HasValue)
+                query = query.Where(s =>
+                    s.SpeciesEnvironment != null &&
+                    s.SpeciesEnvironment.TempMax >= filter.TempMin.Value);
+
+            if (filter.TempMax.HasValue)
+                query = query.Where(s =>
+                    s.SpeciesEnvironment != null &&
+                    s.SpeciesEnvironment.TempMin <= filter.TempMax.Value);
+
+            if (filter.WaterType.HasValue)
+                query = query.Where(s =>
+                    s.SpeciesEnvironment != null &&
+                    s.SpeciesEnvironment.WaterType == filter.WaterType.Value);
+
+            // ── SpeciesProfile filters ────────────────────────────────────────
+            if (filter.DietType.HasValue)
+                query = query.Where(s =>
+                    s.SpeciesProfile != null &&
+                    s.SpeciesProfile.DietType == filter.DietType.Value);
+
+            if (filter.SwimLevel.HasValue)
+                query = query.Where(s =>
+                    s.SpeciesProfile != null &&
+                    s.SpeciesProfile.SwimLevel == filter.SwimLevel.Value);
+
+            if (!string.IsNullOrWhiteSpace(filter.Origin))
+                query = query.Where(s =>
+                    s.SpeciesProfile != null &&
+                    s.SpeciesProfile.Origin != null &&
+                    s.SpeciesProfile.Origin.ToLower().Contains(filter.Origin.ToLower()));
+
+            if (filter.IsSchooling.HasValue)
+                query = query.Where(s =>
+                    s.SpeciesProfile != null &&
+                    s.SpeciesProfile.IsSchooling == filter.IsSchooling.Value);
+
+            if (filter.MaxAdultSize.HasValue)
+                query = query.Where(s =>
+                    s.SpeciesProfile != null &&
+                    s.SpeciesProfile.AdultSize <= filter.MaxAdultSize.Value);
+
+            // ── SpeciesTags filter (species must have ALL specified tags) ──────
+            if (filter.TagIds != null && filter.TagIds.Count > 0)
             {
-                return null;
+                foreach (var tagId in filter.TagIds)
+                {
+                    var capturedTagId = tagId; // avoid closure capture
+                    query = query.Where(s =>
+                        s.SpeciesTags.Any(st => st.TagId == capturedTagId));
+                }
             }
 
-            return s =>
-                (!hasSearch ||
-                 s.CommonName.Contains(filter.SearchTerm!) ||
-                 (s.ScientificName != null && s.ScientificName.Contains(filter.SearchTerm!))) &&
-                (!hasType || s.TypeId == filter.TypeId) &&
-                (!hasActiveFilter || s.IsActive == filter.IsActive);
+            return query;
+        }
+
+        /// <summary>
+        /// Applies sorting to an arbitrary Species IQueryable.
+        /// Supports sorting by top-level Species properties only.
+        /// </summary>
+        private static IQueryable<Species> ApplySortToQuery(IQueryable<Species> query, string sortBy, bool isAscending)
+        {
+            return sortBy?.ToLower() switch
+            {
+                "commonname" => isAscending
+                    ? query.OrderBy(s => s.CommonName)
+                    : query.OrderByDescending(s => s.CommonName),
+                "scientificname" => isAscending
+                    ? query.OrderBy(s => s.ScientificName)
+                    : query.OrderByDescending(s => s.ScientificName),
+                "createdtime" => isAscending
+                    ? query.OrderBy(s => s.CreatedTime)
+                    : query.OrderByDescending(s => s.CreatedTime),
+                _ => query.OrderBy(s => s.CommonName)
+            };
         }
 
         private async Task<string> GenerateUniqueSlugAsync(string commonName, CancellationToken cancellationToken = default)

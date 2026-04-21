@@ -25,7 +25,8 @@ export const tankApi = {
     },
 
     searchSpecies: async (query: string): Promise<SpeciesDto[]> => {
-        return publicCatalogApi.searchSpecies(query);
+        const response = await publicCatalogApi.searchSpecies({ searchTerm: query });
+        return response.items;
     },
 
     getSpeciesDetailBySlug: async (slug: string): Promise<SpeciesDetailDto> => {
