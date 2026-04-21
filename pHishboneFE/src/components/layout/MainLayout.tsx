@@ -294,12 +294,14 @@ function NavAuthSection() {
     }
 
     return (
-        <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button variant="text" onClick={() => navigate({ to: '/login' })}>
-                {t('Navigation.login')}
-            </Button>
-            <Button variant="contained" onClick={() => navigate({ to: '/register' })}>
-                {t('Navigation.register')}
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mr: 2, cursor: 'pointer' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21 21L15 15M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+            </Box>
+            <Button variant="contained" onClick={() => navigate({ to: '/register' })} sx={{ bgcolor: '#00d4ff', color: '#000', fontWeight: 600, px: 3, borderRadius: '4px', textTransform: 'none', '&:hover': { bgcolor: '#33ddff' } }}>
+                Get Started
             </Button>
         </Box>
     );
@@ -337,22 +339,32 @@ export function MainLayout() {
                     <Toolbar disableGutters sx={{ py: 0.5 }}>
                         {/* Logo */}
                         <Box
-                            sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', flexGrow: 1 }}
+                            sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer', mr: 4 }}
                             onClick={() => navigate({ to: '/' })}
                         >
-                            <WavesIcon sx={{ color: 'primary.main', fontSize: 28 }} />
+                            <WavesIcon sx={{ color: '#00d4ff', fontSize: 28 }} />
                             <Typography
                                 variant="h6"
                                 fontWeight={800}
                                 sx={{
-                                    background: 'linear-gradient(90deg, #00BCD4, #1DE9B6)',
-                                    WebkitBackgroundClip: 'text',
-                                    WebkitTextFillColor: 'transparent',
+                                    color: '#fff',
                                     letterSpacing: '-0.5px',
                                 }}
                             >
-                                pHishbone
+                                AquaScaper
                             </Typography>
+                        </Box>
+
+                        {/* DESKTOP NAVIGATION LINKS */}
+                        <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 3, flexGrow: 1, alignItems: 'center' }}>
+                            <Typography onClick={() => navigate({ to: '/explore' })} sx={{ cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, color: '#00d4ff', borderBottom: '2px solid #00d4ff', pb: 0.5 }}>
+                                Catalog
+                            </Typography>
+                            {['Algorithms', 'Community', 'Pro'].map((item) => (
+                                <Typography key={item} sx={{ cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500, color: 'text.secondary', '&:hover': { color: 'text.primary' } }}>
+                                    {item}
+                                </Typography>
+                            ))}
                         </Box>
 
                         {/* Auth section – ErrorBoundary catches 401/network errors and shows unauthenticated UI */}
