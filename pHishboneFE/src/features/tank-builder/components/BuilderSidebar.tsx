@@ -169,7 +169,7 @@ function SpeciesSearchResults({ searchTerm, onAddSpecies }: SpeciesSearchResults
                     />
 
                     <Tooltip title={t('TankBuilder.addSpecies')}>
-                        <IconButton color="primary" onClick={() => onAddSpecies(species)}>
+                        <IconButton type="button" color="primary" onClick={() => onAddSpecies(species)}>
                             <AddRoundedIcon />
                         </IconButton>
                     </Tooltip>
@@ -229,6 +229,7 @@ function TankManagementTab({
                     {t('TankBuilder.myTanksTitle')}
                 </Typography>
                 <Button
+                    type="button"
                     variant="text"
                     color="primary"
                     onClick={() => void onCreateTank?.()}
@@ -263,7 +264,7 @@ function TankManagementTab({
                     <Typography variant="body2" sx={{ mb: 1.5 }}>
                         {t('TankBuilder.noUserTanks')}
                     </Typography>
-                    <Button variant="contained" onClick={() => void onCreateTank?.()}>
+                    <Button type="button" variant="contained" onClick={() => void onCreateTank?.()}>
                         {t('TankBuilder.createFirstTank')}
                     </Button>
                 </Box>
@@ -310,6 +311,7 @@ function TankManagementTab({
 
             {selectedTankId ? (
                 <Button
+                    type="button"
                     fullWidth
                     color="error"
                     variant="outlined"
@@ -455,7 +457,7 @@ export function BuilderSidebar({
                 <Typography variant="subtitle1" fontWeight={700}>
                     {t('TankBuilder.speciesSection')}
                 </Typography>
-                <Button variant="text" color="inherit" disabled={inventory.length === 0} onClick={onClearInventory}>
+                <Button type="button" variant="text" color="inherit" disabled={inventory.length === 0} onClick={onClearInventory}>
                     {t(mode === 'user' ? 'TankBuilder.clearTank' : 'TankBuilder.clearDraft')}
                 </Button>
             </Box>
@@ -516,7 +518,7 @@ export function BuilderSidebar({
                             </Box>
 
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
-                                <IconButton size="small" onClick={() => onDecrementSpecies(item.speciesId)}>
+                                <IconButton type="button" size="small" onClick={() => onDecrementSpecies(item.speciesId)}>
                                     <RemoveRoundedIcon fontSize="small" />
                                 </IconButton>
                                 <Typography
@@ -526,10 +528,10 @@ export function BuilderSidebar({
                                 >
                                     {item.quantity}
                                 </Typography>
-                                <IconButton size="small" color="primary" onClick={() => onIncrementSpecies(item.speciesId)}>
+                                <IconButton type="button" size="small" color="primary" onClick={() => onIncrementSpecies(item.speciesId)}>
                                     <AddRoundedIcon fontSize="small" />
                                 </IconButton>
-                                <IconButton size="small" color="error" onClick={() => onRemoveSpecies(item.speciesId)}>
+                                <IconButton type="button" size="small" color="error" onClick={() => onRemoveSpecies(item.speciesId)}>
                                     <DeleteOutlineRoundedIcon fontSize="small" />
                                 </IconButton>
                             </Box>

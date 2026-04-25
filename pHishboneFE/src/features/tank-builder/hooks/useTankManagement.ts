@@ -56,7 +56,7 @@ export function useTankSpeciesDetails(items: TankItemResponseDto[]) {
         ),
     ).sort();
 
-    return useSuspenseQuery({
+    return useQuery({
         queryKey: TANK_BUILDER_KEYS.tankSpeciesDetails(speciesIds),
         queryFn: async (): Promise<SpeciesDetailDto[]> => {
             if (speciesIds.length === 0) {
@@ -65,6 +65,7 @@ export function useTankSpeciesDetails(items: TankItemResponseDto[]) {
 
             return Promise.all(speciesIds.map((speciesId) => tankApi.getSpeciesDetailById(speciesId)));
         },
+        placeholderData: (previousData) => previousData ?? [],
         staleTime: 10 * 60 * 1000,
     });
 }

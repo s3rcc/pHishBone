@@ -104,6 +104,16 @@ function areDimensionsEqual(left: TankDimensions, right: TankDimensions): boolea
     return left.length === right.length && left.width === right.width && left.height === right.height;
 }
 
+function getSpeciesReferenceIds(items: TankItemResponseDto[]): string[] {
+    return Array.from(
+        new Set(
+            items
+                .filter((item) => item.itemType === 1)
+                .map((item) => item.referenceId),
+        ),
+    ).sort();
+}
+
 interface UserTankWorkspaceContentProps {
     selectedTankId: string;
     onSelectTank: (tankId: string) => void;
@@ -125,7 +135,7 @@ function UserTankWorkspaceContent({
     const { data: tanks } = useUserTanks();
     const { data: tank } = useTankDetail(selectedTankId);
     const { data: items } = useTankItems(selectedTankId);
-    const { data: speciesDetails } = useTankSpeciesDetails(items);
+    const { data: speciesDetails = [] } = useTankSpeciesDetails(items);
 
     const [tankName, setTankName] = useState(tank.name);
     const [dimensions, setDimensions] = useState<TankDimensions>(() => mapTankToDimensions(tank));
@@ -143,6 +153,10 @@ function UserTankWorkspaceContent({
     const debouncedDimensions = useDebounce(dimensions, 450);
 
     const analysisQuery = useUserTankAnalysis(selectedTankId, inventory.length > 0);
+    const expectedSpeciesIds = useMemo(() => getSpeciesReferenceIds(items), [items]);
+    const hasAllSpeciesDetails =
+        expectedSpeciesIds.length === 0
+        || expectedSpeciesIds.every((speciesId) => speciesDetails.some((detail) => detail.id === speciesId));
 
     const speciesItemMap = useMemo(
         () =>
@@ -156,10 +170,15 @@ function UserTankWorkspaceContent({
 
     useEffect(() => {
         const nextDimensions = mapTankToDimensions(tank);
-        const nextInventory = buildInventory(items, speciesDetails);
 
         setTankName(tank.name);
         setDimensions(nextDimensions);
+
+        if (!hasAllSpeciesDetails) {
+            return;
+        }
+
+        const nextInventory = buildInventory(items, speciesDetails);
         setInventory(nextInventory);
         setSceneFish((previousFish) => reconcileSceneFish(previousFish, nextInventory, nextDimensions));
         setSelectedSpeciesId((current) =>
@@ -167,7 +186,7 @@ function UserTankWorkspaceContent({
                 ? current
                 : (nextInventory[0]?.speciesId ?? null),
         );
-    }, [items, speciesDetails, tank]);
+    }, [hasAllSpeciesDetails, items, speciesDetails, tank]);
 
     useEffect(() => {
         const currentDimensions = mapTankToDimensions(tank);
