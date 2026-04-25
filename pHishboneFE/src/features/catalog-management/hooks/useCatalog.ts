@@ -1,11 +1,12 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { speciesApi, speciesImageApi, tagsApi, typesApi, compatibilityRuleApi } from '../api/catalogApi';
+import { compatibilityRuleApi, speciesApi, speciesImageApi, tagsApi, typesApi } from '../api/catalogApi';
 import type {
     CompatibilityRuleFilter,
     CreateCompatibilityRulePayload,
     CreateSpeciesPayload,
     CreateTagPayload,
     CreateTypePayload,
+    GenerateFishInformationPayload,
     SpeciesFilter,
     TagFilter,
     TypeFilter,
@@ -114,6 +115,12 @@ export function useDeleteSpecies() {
     return useMutation({
         mutationFn: (id: string) => speciesApi.delete(id),
         onSuccess: () => { void qc.invalidateQueries({ queryKey: ['catalog', 'species'] }); },
+    });
+}
+
+export function useGenerateFishInformation() {
+    return useMutation({
+        mutationFn: (payload: GenerateFishInformationPayload) => speciesApi.generateFishInformation(payload),
     });
 }
 

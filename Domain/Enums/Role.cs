@@ -6,14 +6,14 @@ namespace Domain.Enums
     public enum Role
     {
         /// <summary>
-        /// Regular user with basic permissions
+        /// Default role assigned to every newly registered user.
         /// </summary>
-        User = 0,
+        Member = 0,
 
         /// <summary>
-        /// Moderator with elevated permissions
+        /// Catalog curator with elevated write access to knowledge content.
         /// </summary>
-        Moderator = 1,
+        KnowledgeManager = 1,
 
         /// <summary>
         /// Administrator with full permissions

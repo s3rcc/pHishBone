@@ -17,6 +17,8 @@ namespace Application.Constants
             public const string ResendVerification = "resend-verification";
             public const string MeAvatar = "me/avatar";
             public const string ChangeEmail = "change-email";
+            public const string Users = "users";
+            public const string UserRole = "users/{id}/role";
         }
 
         public static class Tag
@@ -141,6 +143,7 @@ namespace Application.Constants
         {
             public const string Base = "api/ai/models";
             public const string Available = "available";
+            public const string Default = "default";
         }
     }
 }

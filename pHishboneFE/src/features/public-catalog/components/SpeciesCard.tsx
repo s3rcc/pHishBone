@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback } from 'react';
 import {
     Card,
     CardContent,
@@ -9,24 +9,22 @@ import {
     Stack,
 } from '@mui/material';
 import { useNavigate } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import type { SpeciesDto } from '../../catalog-management/types';
 
 interface SpeciesCardProps {
     species: SpeciesDto;
-    /** Pre-resolved tags to display on the card (max 3) */
-    tags?: string[];
 }
 
 const PLACEHOLDER_IMG = 'https://placehold.co/400x280/0A1628/00BCD4?text=No+Image';
 
-export const SpeciesCard: React.FC<SpeciesCardProps> = ({ species, tags }) => {
+export const SpeciesCard: React.FC<SpeciesCardProps> = ({ species }) => {
     const navigate = useNavigate();
+    const { t } = useTranslation();
 
     const handleClick = useCallback(() => {
         void navigate({ to: '/explore/$slug', params: { slug: species.slug } });
     }, [navigate, species.slug]);
-
-    const displayTags = useMemo(() => (tags ?? []).slice(0, 3), [tags]);
 
     return (
         <Card
@@ -44,18 +42,35 @@ export const SpeciesCard: React.FC<SpeciesCardProps> = ({ species, tags }) => {
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
+                position: 'relative',
             }}
         >
+            {/* Active indicator dot */}
+            {species.isActive === true && (
+                <Box
+                    sx={{
+                        position: 'absolute',
+                        top: 10,
+                        right: 10,
+                        width: 10,
+                        height: 10,
+                        borderRadius: '50%',
+                        bgcolor: '#1DE9B6',
+                        boxShadow: '0 0 6px #1DE9B6',
+                        zIndex: 1,
+                    }}
+                />
+            )}
+
             <CardMedia
                 component="img"
                 loading="lazy"
-                height={200}
+                height={190}
                 image={species.thumbnailUrl || PLACEHOLDER_IMG}
                 alt={species.commonName}
-                sx={{
-                    objectFit: 'cover',
-                }}
+                sx={{ objectFit: 'cover' }}
             />
+
             <CardContent
                 sx={{
                     flexGrow: 1,
@@ -63,50 +78,69 @@ export const SpeciesCard: React.FC<SpeciesCardProps> = ({ species, tags }) => {
                     flexDirection: 'column',
                     gap: 0.5,
                     p: 2,
-                    '&:last-child': { pb: 2 },
+                    pb: '12px !important',
                 }}
             >
+                {/* Type badge */}
+                {species.typeName && (
+                    <Chip
+                        label={species.typeName}
+                        size="small"
+                        sx={{
+                            alignSelf: 'flex-start',
+                            height: 20,
+                            fontSize: '0.65rem',
+                            fontWeight: 700,
+                            letterSpacing: 0.5,
+                            borderRadius: 1,
+                            bgcolor: 'rgba(0,188,212,0.12)',
+                            color: 'primary.main',
+                            mb: 0.5,
+                        }}
+                    />
+                )}
+
                 <Typography
                     variant="subtitle1"
                     fontWeight={700}
                     noWrap
-                    sx={{ lineHeight: 1.3 }}
+                    sx={{ lineHeight: 1.35 }}
                 >
                     {species.commonName}
                 </Typography>
-                <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    noWrap
-                    sx={{ fontStyle: 'italic', mb: 1 }}
-                >
-                    {species.scientificName}
-                </Typography>
 
-                {displayTags.length > 0 && (
-                    <Box sx={{ mt: 'auto' }}>
-                        <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
-                            {displayTags.map((tag) => (
-                                <Chip
-                                    key={tag}
-                                    label={tag}
-                                    size="small"
-                                    variant="outlined"
-                                    sx={{
-                                        borderRadius: 2,
-                                        fontSize: '0.7rem',
-                                        height: 24,
-                                        borderColor: 'primary.light',
-                                        color: 'primary.dark',
-                                    }}
-                                />
-                            ))}
-                        </Stack>
-                    </Box>
+                {species.scientificName && (
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        noWrap
+                        sx={{ fontStyle: 'italic', fontSize: '0.78rem' }}
+                    >
+                        {species.scientificName}
+                    </Typography>
                 )}
+
+                <Stack
+                    direction="row"
+                    spacing={0.5}
+                    alignItems="center"
+                    sx={{ mt: 'auto', pt: 1 }}
+                >
+                    <Typography
+                        variant="caption"
+                        color="text.disabled"
+                        sx={{ fontSize: '0.68rem' }}
+                    >
+                        {t('PublicCatalog.type')}:{' '}
+                        <Box component="span" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                            {species.typeName ?? '—'}
+                        </Box>
+                    </Typography>
+                </Stack>
             </CardContent>
         </Card>
     );
 };
 
 export default SpeciesCard;
+

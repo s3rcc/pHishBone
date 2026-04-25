@@ -1,4 +1,4 @@
-using Application.Common;
+﻿using Application.Common;
 using Application.Common.Interfaces;
 using Application.Constants;
 using Application.DTOs.CatalogDTOs;
@@ -24,6 +24,7 @@ namespace Infrastructure.Services
         private readonly IPhotoService _photoService;
         private readonly ApplicationDbContext _dbContext;
         private readonly ILogger<SpeciesService> _logger;
+        private readonly ICacheService _cache;
 
         public SpeciesService(
             IUnitOfWork unitOfWork,
@@ -31,7 +32,8 @@ namespace Infrastructure.Services
             ICurrentUserService currentUserService,
             IPhotoService photoService,
             ApplicationDbContext dbContext,
-            ILogger<SpeciesService> logger)
+            ILogger<SpeciesService> logger,
+            ICacheService cache)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
@@ -39,10 +41,20 @@ namespace Infrastructure.Services
             _photoService = photoService;
             _dbContext = dbContext;
             _logger = logger;
+            _cache = cache;
         }
 
         public async Task<SpeciesDto> GetByIdAsync(string id, CancellationToken cancellationToken = default)
         {
+            // ── Cache-aside: check cache first ──
+            var cacheKey = CacheKeyConstant.SpeciesById + id;
+            var cached = await _cache.GetAsync<SpeciesDto>(cacheKey, cancellationToken);
+            if (cached != null)
+            {
+                _logger.LogInformation("Species {SpeciesId} served from cache", id);
+                return cached;
+            }
+
             var species = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
                 predicate: s => s.Id == id,
                 include: q => q.Include(s => s.Type),
@@ -58,7 +70,9 @@ namespace Infrastructure.Services
                 );
             }
 
-            return _mapper.Map<SpeciesDto>(species);
+            var dto = _mapper.Map<SpeciesDto>(species);
+            await _cache.SetAsync(cacheKey, dto, TimeSpan.FromMinutes(CacheKeyConstant.DefaultExpiryMinutes), cancellationToken);
+            return dto;
         }
 
         public async Task<SpeciesDetailDto> GetDetailByIdAsync(string id, CancellationToken cancellationToken = default)
@@ -88,6 +102,15 @@ namespace Infrastructure.Services
 
         public async Task<SpeciesDetailDto> GetDetailBySlugAsync(string slug, CancellationToken cancellationToken = default)
         {
+            // ── Cache-aside by slug ──
+            var cacheKey = CacheKeyConstant.SpeciesBySlug + slug;
+            var cached = await _cache.GetAsync<SpeciesDetailDto>(cacheKey, cancellationToken);
+            if (cached != null)
+            {
+                _logger.LogInformation("Species by slug {Slug} served from cache", slug);
+                return cached;
+            }
+
             var species = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
                 predicate: s => s.Slug == slug,
                 include: q => q
@@ -108,7 +131,9 @@ namespace Infrastructure.Services
                 );
             }
 
-            return _mapper.Map<SpeciesDetailDto>(species);
+            var dto = _mapper.Map<SpeciesDetailDto>(species);
+            await _cache.SetAsync(cacheKey, dto, TimeSpan.FromMinutes(CacheKeyConstant.DefaultExpiryMinutes), cancellationToken);
+            return dto;
         }
 
         public async Task<ICollection<SpeciesDto>> GetListAsync(CancellationToken cancellationToken = default)
@@ -124,40 +149,43 @@ namespace Infrastructure.Services
 
         public async Task<PaginationResponse<SpeciesDto>> GetPaginatedListAsync(SpeciesFilterDto filter, CancellationToken cancellationToken = default)
         {
-            var species = await _unitOfWork.Repository<Species>().GetPagingListAsync(
-                predicate: BuildFilterPredicate(filter),
-                include: q => q.Include(s => s.Type),
-                page: filter.Page,
-                size: filter.Size,
-                sortBy: filter.SortBy,
-                isAsc: filter.IsAscending,
-                cancellationToken: cancellationToken
-            );
+            var query = BuildFilteredQuery(filter);
+            query = ApplySortToQuery(query, filter.SortBy, filter.IsAscending);
+
+            var totalCount = await query.CountAsync(cancellationToken);
+            var items = await query
+                .Skip((filter.Page - 1) * filter.Size)
+                .Take(filter.Size)
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
 
             return new PaginationResponse<SpeciesDto>
             {
-                Size = species.Size,
-                Page = species.Page,
-                Total = species.Total,
-                TotalPages = species.TotalPages,
-                Items = _mapper.Map<IList<SpeciesDto>>(species.Items)
+                Size = filter.Size,
+                Page = filter.Page,
+                Total = totalCount,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)filter.Size),
+                Items = _mapper.Map<IList<SpeciesDto>>(items)
             };
         }
 
         public async Task<SpeciesDetailDto> CreateAsync(CreateSpeciesDto dto, CancellationToken cancellationToken = default)
         {
-            // 1. Validate TypeId exists
-            var type = await _unitOfWork.Repository<Domain.Entities.Catalog.Type>().SingleOrDefaultAsync(
-                predicate: t => t.Id == dto.TypeId,
-                cancellationToken: cancellationToken
-            );
-            if (type == null)
+            // 1. Validate TypeId exists (only when provided)
+            if (!string.IsNullOrWhiteSpace(dto.TypeId))
             {
-                throw new CustomErrorException(
-                    StatusCodes.Status400BadRequest,
-                    ErrorCode.NOT_FOUND,
-                    CatalogErrorMessageConstant.SpeciesTypeNotFound
+                var type = await _unitOfWork.Repository<Domain.Entities.Catalog.Type>().SingleOrDefaultAsync(
+                    predicate: t => t.Id == dto.TypeId,
+                    cancellationToken: cancellationToken
                 );
+                if (type == null)
+                {
+                    throw new CustomErrorException(
+                        StatusCodes.Status400BadRequest,
+                        ErrorCode.NOT_FOUND,
+                        CatalogErrorMessageConstant.SpeciesTypeNotFound
+                    );
+                }
             }
 
             // 2. Validate all TagIds exist
@@ -177,18 +205,21 @@ namespace Infrastructure.Services
                 }
             }
 
-            // 3. Check ScientificName uniqueness
-            var existingSpecies = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
-                predicate: s => s.ScientificName == dto.ScientificName && s.DeletedTime == null,
-                cancellationToken: cancellationToken
-            );
-            if (existingSpecies != null)
+            // 3. Check ScientificName uniqueness (only when provided)
+            if (!string.IsNullOrWhiteSpace(dto.ScientificName))
             {
-                throw new CustomErrorException(
-                    StatusCodes.Status400BadRequest,
-                    ErrorCode.DUPLICATE,
-                    CatalogErrorMessageConstant.SpeciesScientificNameDuplicate
+                var existingSpecies = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
+                    predicate: s => s.ScientificName == dto.ScientificName && s.DeletedTime == null,
+                    cancellationToken: cancellationToken
                 );
+                if (existingSpecies != null)
+                {
+                    throw new CustomErrorException(
+                        StatusCodes.Status400BadRequest,
+                        ErrorCode.DUPLICATE,
+                        CatalogErrorMessageConstant.SpeciesScientificNameDuplicate
+                    );
+                }
             }
 
             // 4. Generate unique slug
@@ -198,6 +229,7 @@ namespace Infrastructure.Services
             var species = _mapper.Map<Species>(dto);
             species.Slug = slug;
             species.CreatedBy = _currentUserService.GetUserId();
+            _logger.LogInformation("Creating species '{CommonName}', IsActive: {IsActive}", dto.CommonName, dto.IsActive);
             await _unitOfWork.Repository<Species>().InsertAsync(species, cancellationToken);
 
             // 6. Create SpeciesEnvironment entity with SAME ID
@@ -227,7 +259,10 @@ namespace Infrastructure.Services
             // 9. Save all changes in one transaction
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            // 10. Return full detail
+            // 10. Invalidate species caches
+            await InvalidateSpeciesCachesAsync(cancellationToken);
+
+            // 11. Return full detail
             return await GetDetailByIdAsync(species.Id, cancellationToken);
         }
 
@@ -252,32 +287,38 @@ namespace Infrastructure.Services
                 );
             }
 
-            // 2. Validate TypeId exists
-            var type = await _unitOfWork.Repository<Domain.Entities.Catalog.Type>().SingleOrDefaultAsync(
-                predicate: t => t.Id == dto.TypeId,
-                cancellationToken: cancellationToken
-            );
-            if (type == null)
+            // 2. Validate TypeId exists (only when provided)
+            if (!string.IsNullOrWhiteSpace(dto.TypeId))
             {
-                throw new CustomErrorException(
-                    StatusCodes.Status400BadRequest,
-                    ErrorCode.NOT_FOUND,
-                    CatalogErrorMessageConstant.SpeciesTypeNotFound
+                var type = await _unitOfWork.Repository<Domain.Entities.Catalog.Type>().SingleOrDefaultAsync(
+                    predicate: t => t.Id == dto.TypeId,
+                    cancellationToken: cancellationToken
                 );
+                if (type == null)
+                {
+                    throw new CustomErrorException(
+                        StatusCodes.Status400BadRequest,
+                        ErrorCode.NOT_FOUND,
+                        CatalogErrorMessageConstant.SpeciesTypeNotFound
+                    );
+                }
             }
 
-            // 3. Validate ScientificName uniqueness (exclude current species)
-            var existingSpecies = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
-                predicate: s => s.ScientificName == dto.ScientificName && s.Id != id && s.DeletedTime == null,
-                cancellationToken: cancellationToken
-            );
-            if (existingSpecies != null)
+            // 3. Validate ScientificName uniqueness — only when provided (exclude current species)
+            if (!string.IsNullOrWhiteSpace(dto.ScientificName))
             {
-                throw new CustomErrorException(
-                    StatusCodes.Status400BadRequest,
-                    ErrorCode.DUPLICATE,
-                    CatalogErrorMessageConstant.SpeciesScientificNameDuplicate
+                var existingSpecies = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
+                    predicate: s => s.ScientificName == dto.ScientificName && s.Id != id && s.DeletedTime == null,
+                    cancellationToken: cancellationToken
                 );
+                if (existingSpecies != null)
+                {
+                    throw new CustomErrorException(
+                        StatusCodes.Status400BadRequest,
+                        ErrorCode.DUPLICATE,
+                        CatalogErrorMessageConstant.SpeciesScientificNameDuplicate
+                    );
+                }
             }
 
             // 4. Update Species properties (preserve Slug!)
@@ -367,7 +408,10 @@ namespace Infrastructure.Services
             // 8. Save all changes in one transaction
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            // 9. Return full detail
+            // 9. Invalidate species caches
+            await InvalidateSpeciesCachesAsync(cancellationToken);
+
+            // 10. Return full detail
             return await GetDetailByIdAsync(species.Id, cancellationToken);
         }
 
@@ -392,54 +436,47 @@ namespace Infrastructure.Services
             species.DeletedBy = _currentUserService.GetUserId();
             await _unitOfWork.Repository<Species>().Update(species);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            // Invalidate species caches
+            await InvalidateSpeciesCachesAsync(cancellationToken);
         }
 
         public async Task<PaginationResponse<SpeciesDto>> SearchHybridAsync(SpeciesFilterDto filter, CancellationToken cancellationToken = default)
         {
             var searchTerm = filter.SearchTerm;
             _logger.LogInformation("Executing hybrid species search for term: {SearchTerm}, Page: {Page}, Size: {Size}", searchTerm, filter.Page, filter.Size);
-            
-            // Debug log to verify search term is received correctly
-            if (string.IsNullOrWhiteSpace(searchTerm))
-            {
-                _logger.LogWarning("Search term is empty or null");
-            }
-            else
-            {
-                _logger.LogDebug("Search term received: '{SearchTerm}'", searchTerm);
-            }
 
-            // If no search term, return gracefully paginated list as a sensible default
+            // If no search term, fall back to the rich-filter paginated query
             if (string.IsNullOrWhiteSpace(searchTerm))
             {
                 return await GetPaginatedListAsync(filter, cancellationToken);
             }
 
-            // [Reasoning] FromSqlInterpolated is used for safe, parameterized raw SQL.
-            // EF Core converts {searchTerm} interpolation holes into $1/$2 SQL parameters — NOT string concatenation.
-            // Logic:
-            //   1. FTS match via websearch_to_tsquery('simple') — handles multi-word, bilingual, scientific names.
-            //      'simple' dict is used instead of 'english' to avoid mangling Vietnamese words.
-            //   2. Trigram similarity > 0.15 — deliberately low to catch short typos (e.g. "cá ho" → "cá hề").
-            //      Default PG threshold (0.3) is too strict for short Vietnamese tokens.
-            //   3. Ranking: FTS rank * 2.0 ensures exact word matches always outrank fuzzy trigram matches.
-            var query = _dbContext.Species
+            // Step 1: Run the FTS + trigram search to get a relevance-ranked candidate set.
+            // [Reasoning] FromSqlInterpolated uses safe parameterized SQL (no string concatenation).
+            //   - FTS via websearch_to_tsquery('simple') handles multi-word, bilingual, and scientific names.
+            //   - 'simple' dict avoids mangling Vietnamese tokens (unlike 'english' dict).
+            //   - Trigram threshold 0.1 catches short typos ("cá ho" → "cá hề").
+            //   - Ranking weights FTS match 3x over common-name trigram, scientific 1x.
+            var ftsQuery = _dbContext.Species
                 .FromSqlInterpolated($@"
                     SELECT * FROM catalog.""Species""
-                    WHERE 
+                    WHERE
                         ""FtsVector"" @@ websearch_to_tsquery('simple', {searchTerm})
                         OR similarity(""CommonName"", {searchTerm}) > 0.1
                         OR similarity(""ScientificName"", {searchTerm}) > 0.1
-                    ORDER BY 
+                    ORDER BY
                     (
                         COALESCE(ts_rank(""FtsVector"", websearch_to_tsquery('simple', {searchTerm})), 0) * 3.0
                         + COALESCE(similarity(""CommonName"", {searchTerm}), 0) * 1.5
                         + COALESCE(similarity(""ScientificName"", {searchTerm}), 0)
                     ) DESC");
 
-            var totalCount = await query.CountAsync(cancellationToken);
+            // Step 2: Apply all additional filters on top of the FTS result set.
+            var filteredQuery = ApplyExtendedFilters(ftsQuery, filter);
 
-            var results = await query
+            var totalCount = await filteredQuery.CountAsync(cancellationToken);
+            var results = await filteredQuery
                 .Include(s => s.Type)
                 .AsNoTracking()
                 .Skip((filter.Page - 1) * filter.Size)
@@ -460,18 +497,124 @@ namespace Infrastructure.Services
 
         #region Private Helper Methods
 
-        private System.Linq.Expressions.Expression<Func<Species, bool>>? BuildFilterPredicate(SpeciesFilterDto filter)
+        /// <summary>
+        /// Builds the base EF Core query with all cross-table filters applied.
+        /// Used by GetPaginatedListAsync for the non-search path.
+        /// </summary>
+        private IQueryable<Species> BuildFilteredQuery(SpeciesFilterDto filter)
         {
-            if (string.IsNullOrWhiteSpace(filter.SearchTerm) && string.IsNullOrWhiteSpace(filter.TypeId))
+            IQueryable<Species> query = _dbContext.Species
+                .Include(s => s.Type)
+                .Include(s => s.SpeciesEnvironment)
+                .Include(s => s.SpeciesProfile)
+                .Include(s => s.SpeciesTags)
+                .AsQueryable();
+
+            return ApplyExtendedFilters(query, filter);
+        }
+
+        /// <summary>
+        /// Applies all non-FTS filters (type, environment, profile, tags) to an arbitrary
+        /// Species IQueryable. Shared between BuildFilteredQuery and SearchHybridAsync.
+        /// </summary>
+        private static IQueryable<Species> ApplyExtendedFilters(IQueryable<Species> query, SpeciesFilterDto filter)
+        {
+            // ── Species-level filters ────────────────────────────────────────
+            if (!string.IsNullOrWhiteSpace(filter.TypeId))
+                query = query.Where(s => s.TypeId == filter.TypeId);
+
+            if (filter.IsActive.HasValue)
+                query = query.Where(s => s.IsActive == filter.IsActive);
+
+            // ── SpeciesEnvironment filters ────────────────────────────────────
+            // pH overlap: species range [PhMin, PhMax] must overlap with filter range [PhMin, PhMax]
+            // i.e. species.PhMin <= filter.PhMax AND species.PhMax >= filter.PhMin
+            if (filter.PhMin.HasValue)
+                query = query.Where(s =>
+                    s.SpeciesEnvironment != null &&
+                    s.SpeciesEnvironment.PhMax >= filter.PhMin.Value);
+
+            if (filter.PhMax.HasValue)
+                query = query.Where(s =>
+                    s.SpeciesEnvironment != null &&
+                    s.SpeciesEnvironment.PhMin <= filter.PhMax.Value);
+
+            // Temperature overlap (same logic as pH)
+            if (filter.TempMin.HasValue)
+                query = query.Where(s =>
+                    s.SpeciesEnvironment != null &&
+                    s.SpeciesEnvironment.TempMax >= filter.TempMin.Value);
+
+            if (filter.TempMax.HasValue)
+                query = query.Where(s =>
+                    s.SpeciesEnvironment != null &&
+                    s.SpeciesEnvironment.TempMin <= filter.TempMax.Value);
+
+            if (filter.WaterType.HasValue)
+                query = query.Where(s =>
+                    s.SpeciesEnvironment != null &&
+                    s.SpeciesEnvironment.WaterType == filter.WaterType.Value);
+
+            // ── SpeciesProfile filters ────────────────────────────────────────
+            if (filter.DietType.HasValue)
+                query = query.Where(s =>
+                    s.SpeciesProfile != null &&
+                    s.SpeciesProfile.DietType == filter.DietType.Value);
+
+            if (filter.SwimLevel.HasValue)
+                query = query.Where(s =>
+                    s.SpeciesProfile != null &&
+                    s.SpeciesProfile.SwimLevel == filter.SwimLevel.Value);
+
+            if (!string.IsNullOrWhiteSpace(filter.Origin))
+                query = query.Where(s =>
+                    s.SpeciesProfile != null &&
+                    s.SpeciesProfile.Origin != null &&
+                    s.SpeciesProfile.Origin.ToLower().Contains(filter.Origin.ToLower()));
+
+            if (filter.IsSchooling.HasValue)
+                query = query.Where(s =>
+                    s.SpeciesProfile != null &&
+                    s.SpeciesProfile.IsSchooling == filter.IsSchooling.Value);
+
+            if (filter.MaxAdultSize.HasValue)
+                query = query.Where(s =>
+                    s.SpeciesProfile != null &&
+                    s.SpeciesProfile.AdultSize <= filter.MaxAdultSize.Value);
+
+            // ── SpeciesTags filter (species must have ALL specified tags) ──────
+            if (filter.TagIds != null && filter.TagIds.Count > 0)
             {
-                return null;
+                foreach (var tagId in filter.TagIds)
+                {
+                    var capturedTagId = tagId; // avoid closure capture
+                    query = query.Where(s =>
+                        s.SpeciesTags.Any(st => st.TagId == capturedTagId));
+                }
             }
 
-            return s =>
-                (string.IsNullOrWhiteSpace(filter.SearchTerm) ||
-                 s.CommonName.Contains(filter.SearchTerm) ||
-                 s.ScientificName.Contains(filter.SearchTerm)) &&
-                (string.IsNullOrWhiteSpace(filter.TypeId) || s.TypeId == filter.TypeId);
+            return query;
+        }
+
+        /// <summary>
+        /// Applies sorting to an arbitrary Species IQueryable.
+        /// Supports sorting by top-level Species properties only.
+        /// </summary>
+        private static IQueryable<Species> ApplySortToQuery(IQueryable<Species> query, string sortBy, bool isAscending)
+        {
+            return sortBy?.ToLower() switch
+            {
+                "commonname" => isAscending
+                    ? query.OrderBy(s => s.CommonName)
+                    : query.OrderByDescending(s => s.CommonName),
+                "scientificname" => isAscending
+                    ? query.OrderBy(s => s.ScientificName)
+                    : query.OrderByDescending(s => s.ScientificName),
+                "createdtime" => isAscending
+                    ? query.OrderBy(s => s.CreatedTime)
+                    : query.OrderByDescending(s => s.CreatedTime),
+                _ => query.OrderBy(s => s.CommonName)
+            };
         }
 
         private async Task<string> GenerateUniqueSlugAsync(string commonName, CancellationToken cancellationToken = default)
@@ -502,6 +645,15 @@ namespace Infrastructure.Services
                 cancellationToken: cancellationToken
             );
             return existing != null;
+        }
+
+        /// <summary>
+        /// Invalidate all species-related cache entries after a mutation.
+        /// </summary>
+        private async Task InvalidateSpeciesCachesAsync(CancellationToken ct = default)
+        {
+            _logger.LogInformation("Invalidating all species caches");
+            await _cache.RemoveByPrefixAsync(CacheKeyConstant.SpeciesPrefix, ct);
         }
 
         #endregion

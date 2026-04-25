@@ -106,12 +106,13 @@ export interface TypeFilter {
 
 export interface SpeciesDto {
     id: string;
-    typeId: string;
-    typeName: string;
-    scientificName: string;
+    typeId?: string | null;
+    typeName?: string | null;
+    scientificName?: string | null;
     commonName: string;
     thumbnailUrl?: string;
     slug: string;
+    isActive?: boolean | null;
     createdTime: string;
 }
 
@@ -150,6 +151,7 @@ export interface SpeciesFilter {
     typeId?: string;
     sortBy?: string;
     isAscending?: boolean;
+    isActive?: boolean;
 }
 
 // ─── Create / Update Species Payloads ────────────────────────────────────────
@@ -177,9 +179,10 @@ export interface SpeciesProfilePayload {
 
 export interface CreateSpeciesPayload {
     commonName: string;
-    scientificName: string;
-    typeId: string;
+    scientificName?: string;
+    typeId?: string;
     thumbnailUrl?: string;
+    isActive?: boolean;
     environment: SpeciesEnvironmentPayload;
     profile: SpeciesProfilePayload;
     tagIds: string[];
@@ -187,12 +190,61 @@ export interface CreateSpeciesPayload {
 
 export interface UpdateSpeciesPayload {
     commonName: string;
-    scientificName: string;
-    typeId: string;
+    scientificName?: string;
+    typeId?: string;
     thumbnailUrl?: string;
+    isActive?: boolean;
     environment: SpeciesEnvironmentPayload;
     profile: SpeciesProfilePayload;
     tagIds: string[];
+}
+
+export interface GenerateFishInformationPayload {
+    fishName: string;
+    modelConfigId?: string;
+}
+
+export interface AiGeneratedSpeciesDraftEnvironmentDto {
+    phMin: number;
+    phMax: number;
+    tempMin: number;
+    tempMax: number;
+    minTankVolume: number;
+    waterType: WaterType;
+    waterTypeName: string;
+}
+
+export interface AiGeneratedSpeciesDraftProfileDto {
+    adultSize: number;
+    bioLoadFactor: number;
+    swimLevel: SwimLevel;
+    swimLevelName: string;
+    dietType: DietType;
+    dietTypeName: string;
+    preferredFood?: string | null;
+    isSchooling: boolean;
+    minGroupSize: number;
+    origin?: string | null;
+    description?: string | null;
+}
+
+export interface AiGeneratedSpeciesDraftDto {
+    commonName: string;
+    scientificName: string;
+    typeId: string;
+    typeName: string;
+    thumbnailUrl?: string | null;
+    environment: AiGeneratedSpeciesDraftEnvironmentDto;
+    profile: AiGeneratedSpeciesDraftProfileDto;
+    tagIds: string[];
+    tagCodes: string[];
+}
+
+export interface AiFishInformationResponseDto {
+    modelConfigId: string;
+    promptTemplateId?: string | null;
+    existingSpecies?: SpeciesDetailDto | null;
+    generatedDraft?: AiGeneratedSpeciesDraftDto | null;
 }
 
 // ─── Form shape (used by react-hook-form) ────────────────────────────────────
@@ -203,6 +255,7 @@ export interface SpeciesFormValues {
     scientificName: string;
     typeId: string;
     thumbnailUrl: string;
+    isActive: boolean;
     // Bio tab (environment)
     phMin: number;
     phMax: number;

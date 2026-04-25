@@ -1,10 +1,15 @@
+using Application.Constants;
+using Domain.Exceptions;
 using Infrastructure;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
 using pHishbone.Extensions;
 using pHishbone.Middleware;
 using Serilog;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using System.Text.Json;
+using System.Threading.RateLimiting;
 
 // Configure Serilog early to catch startup errors
 Log.Logger = new LoggerConfiguration()
@@ -44,10 +49,82 @@ try
     builder.Services.AddApplicationServices();
 
     // Add CORS
-    builder.Services.AddCorsPolicy();
+    builder.Services.AddCorsPolicy(builder.Configuration);
 
     // Add JWT Authentication
     builder.Services.AddJwtAuthentication(builder.Configuration);
+
+    // Add Rate Limiting
+    var rateLimitSection = builder.Configuration.GetSection("RateLimiting");
+    var globalPermitLimit = rateLimitSection.GetValue("GlobalPermitLimit", RateLimitConstant.GlobalPermitLimit);
+    var globalWindowSeconds = rateLimitSection.GetValue("GlobalWindowSeconds", RateLimitConstant.GlobalWindowSeconds);
+    var authPermitLimit = rateLimitSection.GetValue("AuthPermitLimit", RateLimitConstant.AuthPermitLimit);
+    var authWindowSeconds = rateLimitSection.GetValue("AuthWindowSeconds", RateLimitConstant.AuthWindowSeconds);
+
+    builder.Services.AddRateLimiter(options =>
+    {
+        options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+        options.OnRejected = async (context, cancellationToken) =>
+        {
+            context.HttpContext.Response.ContentType = "application/json";
+            context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+
+            if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+            {
+                context.HttpContext.Response.Headers.RetryAfter = retryAfter.TotalSeconds.ToString("0");
+            }
+
+            var errorDetail = new ErrorDetail
+            {
+                ErrorCode = ErrorCode.RATE_LIMITED,
+                Message = RateLimitConstant.RateLimitExceeded
+            };
+
+            var jsonOptions = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+            await context.HttpContext.Response.WriteAsync(
+                JsonSerializer.Serialize(errorDetail, jsonOptions), cancellationToken);
+
+            var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>()
+                .CreateLogger("RateLimiting");
+            logger.LogWarning(
+                "Rate limit exceeded for {ClientIp} on {Path}",
+                context.HttpContext.Connection.RemoteIpAddress,
+                context.HttpContext.Request.Path);
+        };
+
+        // Global sliding window policy
+        options.AddSlidingWindowLimiter(RateLimitConstant.GlobalPolicy, limiter =>
+        {
+            limiter.PermitLimit = globalPermitLimit;
+            limiter.Window = TimeSpan.FromSeconds(globalWindowSeconds);
+            limiter.SegmentsPerWindow = 4;
+            limiter.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            limiter.QueueLimit = 0;
+        });
+
+        // Strict auth endpoint policy
+        options.AddSlidingWindowLimiter(RateLimitConstant.AuthPolicy, limiter =>
+        {
+            limiter.PermitLimit = authPermitLimit;
+            limiter.Window = TimeSpan.FromSeconds(authWindowSeconds);
+            limiter.SegmentsPerWindow = 2;
+            limiter.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            limiter.QueueLimit = 0;
+        });
+
+        // Partition by client IP for global policy
+        options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+            RateLimitPartition.GetSlidingWindowLimiter(
+                partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                factory: _ => new SlidingWindowRateLimiterOptions
+                {
+                    PermitLimit = globalPermitLimit,
+                    Window = TimeSpan.FromSeconds(globalWindowSeconds),
+                    SegmentsPerWindow = 4,
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                    QueueLimit = 0
+                }));
+    });
 
     // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
     builder.Services.AddEndpointsApiExplorer();
@@ -120,11 +197,12 @@ try
     var app = builder.Build();
 
     // Configure the HTTP request pipeline.
-    if (app.Environment.IsDevelopment())
-    {
-        app.UseSwagger();
-        app.UseSwaggerUI();
-    }
+    // Enable Swagger in all environments for container verification
+    app.UseSwagger();
+    app.UseSwaggerUI();
+
+    // Add root redirect to Swagger
+    app.MapGet("/", () => Results.Redirect("/swagger/index.html"));
 
     // Serilog request logging
     app.UseSerilogRequestLogging();
@@ -137,6 +215,9 @@ try
     app.UseHttpsRedirection();
 
     app.UseCors("AllowAll");
+
+    // Rate limiting — after CORS, before Auth
+    app.UseRateLimiter();
 
     // Authentication must come BEFORE Authorization
     app.UseAuthentication();

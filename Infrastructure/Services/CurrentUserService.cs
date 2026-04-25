@@ -60,7 +60,8 @@ namespace Infrastructure.Services
         /// </summary>
         public string? GetRole()
         {
-            return User?.FindFirst(ClaimTypes.Role)?.Value 
+            return User?.FindFirst("app_role")?.Value
+                ?? User?.FindFirst(ClaimTypes.Role)?.Value 
                 ?? User?.FindFirst("role")?.Value
                 ?? User?.FindFirst("app_metadata.role")?.Value;
         }

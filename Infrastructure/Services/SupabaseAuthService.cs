@@ -7,9 +7,6 @@ using Domain.Exceptions;
 using Infrastructure.Common.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Supabase.Gotrue;
-using Supabase.Gotrue.Interfaces;
 using System.IdentityModel.Tokens.Jwt;
 
 namespace Infrastructure.Services
@@ -82,7 +79,7 @@ namespace Infrastructure.Services
                 Username = request.Username,
                 Email = request.Email,
                 SupabaseUserId = authResponse.User.Id,
-                Role = Domain.Enums.Role.User, // Default role
+                Role = Domain.Enums.Role.Member,
                 CreatedBy = authResponse.User.Id
             };
 
@@ -142,12 +139,31 @@ namespace Infrastructure.Services
             };
         }
 
-        public async Task<LoginResponseDto> RefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
+        public async Task<LoginResponseDto> RefreshTokenAsync(string accessToken, string refreshToken, CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Attempting to refresh token");
 
-            // Set the session with the refresh token, then refresh
-            var session = await _supabaseClient.Auth.RefreshSession().WaitAsync(cancellationToken);
+            if (string.IsNullOrWhiteSpace(refreshToken))
+            {
+                _logger.LogWarning("Refresh token request rejected because the refresh token was missing");
+                throw new CustomErrorException(
+                    StatusCodes.Status401Unauthorized,
+                    ErrorCode.UNAUTHORIZED,
+                    ErrorMessageConstant.InvalidRefreshToken);
+            }
+
+            if (string.IsNullOrWhiteSpace(accessToken))
+            {
+                _logger.LogWarning("Refresh token request rejected because the access token transport cookie was missing");
+                throw new CustomErrorException(
+                    StatusCodes.Status401Unauthorized,
+                    ErrorCode.UNAUTHORIZED,
+                    ErrorMessageConstant.MissingRefreshSession);
+            }
+
+            var session = await _supabaseClient.Auth
+                .SetSession(accessToken, refreshToken, true)
+                .WaitAsync(cancellationToken);
 
             if (session?.User == null)
             {
@@ -155,7 +171,7 @@ namespace Infrastructure.Services
                 throw new CustomErrorException(
                     StatusCodes.Status401Unauthorized,
                     ErrorCode.UNAUTHORIZED,
-                    "Invalid or expired refresh token");
+                    ErrorMessageConstant.InvalidRefreshToken);
             }
 
             // Get user from local database
@@ -385,7 +401,7 @@ namespace Infrastructure.Services
             }
         }
 
-        public async Task LogoutAsync(string accessToken, CancellationToken cancellationToken = default)
+        public async Task LogoutAsync(string accessToken, string refreshToken, CancellationToken cancellationToken = default)
         {
             _logger.LogInformation("Attempting to logout user and blacklist token");
 
@@ -418,8 +434,22 @@ namespace Infrastructure.Services
                 if (jti != null)
                     await _tokenBlacklist.BlacklistTokenAsync(jti, ttl, cancellationToken);
 
-                // Invalidate server-side Supabase session
-                await _supabaseClient.Auth.SignOut().WaitAsync(cancellationToken);
+                if (!string.IsNullOrWhiteSpace(accessToken) && !string.IsNullOrWhiteSpace(refreshToken))
+                {
+                    try
+                    {
+                        await _supabaseClient.Auth.SetSession(accessToken, refreshToken, true).WaitAsync(cancellationToken);
+                        await _supabaseClient.Auth.SignOut().WaitAsync(cancellationToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to invalidate Supabase session during logout");
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("Logout called without a complete Supabase session cookie set");
+                }
 
                 _logger.LogInformation("User logged out successfully. Jti: {Jti}", jti);
             }

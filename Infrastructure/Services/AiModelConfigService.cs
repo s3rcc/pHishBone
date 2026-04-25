@@ -36,7 +36,7 @@ namespace Infrastructure.Services
         {
             var items = await _unitOfWork.Repository<AiModelConfig>().GetListAsync(
                 predicate: x => x.DeletedTime == null,
-                orderBy: q => q.OrderBy(x => x.DisplayName),
+                orderBy: q => q.OrderByDescending(x => x.IsDefault).ThenBy(x => x.DisplayName),
                 cancellationToken: cancellationToken
             );
 
@@ -68,11 +68,41 @@ namespace Infrastructure.Services
         {
             var items = await _unitOfWork.Repository<AiModelConfig>().GetListAsync(
                 predicate: x => x.DeletedTime == null && x.IsEnabled,
-                orderBy: q => q.OrderBy(x => x.DisplayName),
+                orderBy: q => q.OrderByDescending(x => x.IsDefault).ThenBy(x => x.DisplayName),
                 cancellationToken: cancellationToken
             );
 
             return _mapper.Map<ICollection<AiModelConfigDto>>(items);
+        }
+
+        public async Task<AiModelConfigDto> GetDefaultAsync(CancellationToken cancellationToken = default)
+        {
+            var defaultModel = await _unitOfWork.Repository<AiModelConfig>().SingleOrDefaultAsync(
+                predicate: x => x.DeletedTime == null && x.IsEnabled && x.IsDefault,
+                cancellationToken: cancellationToken
+            );
+
+            if (defaultModel != null)
+            {
+                return _mapper.Map<AiModelConfigDto>(defaultModel);
+            }
+
+            var fallback = await _unitOfWork.Repository<AiModelConfig>().SingleOrDefaultAsync(
+                predicate: x => x.DeletedTime == null && x.IsEnabled,
+                orderBy: q => q.OrderBy(x => x.DisplayName),
+                cancellationToken: cancellationToken
+            );
+
+            if (fallback == null)
+            {
+                throw new CustomErrorException(
+                    StatusCodes.Status404NotFound,
+                    ErrorCode.NOT_FOUND,
+                    AiErrorMessageConstant.AiEnabledModelMissing
+                );
+            }
+
+            return _mapper.Map<AiModelConfigDto>(fallback);
         }
 
         public async Task<AiModelConfigDto> CreateAsync(CreateAiModelConfigDto dto, CancellationToken cancellationToken = default)
@@ -82,6 +112,13 @@ namespace Infrastructure.Services
 
             var entity = _mapper.Map<AiModelConfig>(dto);
             entity.CreatedBy = _currentUserService.GetUserId();
+
+            if (dto.IsDefault)
+            {
+                await UnsetOtherDefaultsAsync(excludedId: null, cancellationToken);
+                // Commit the unset first to avoid unique index races when inserting a new default.
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }
 
             await _unitOfWork.Repository<AiModelConfig>().InsertAsync(entity, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -95,6 +132,13 @@ namespace Infrastructure.Services
 
             var entity = await GetEntityByIdAsync(id, cancellationToken);
             await EnsureModelUniquenessAsync(dto.DisplayName, dto.ProviderModelId, dto.Provider, id, cancellationToken);
+
+            if (dto.IsDefault && !entity.IsDefault)
+            {
+                await UnsetOtherDefaultsAsync(excludedId: id, cancellationToken);
+                // Commit the unset first to avoid unique index races when promoting this model to default.
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }
 
             _mapper.Map(dto, entity);
             entity.LastUpdatedBy = _currentUserService.GetUserId();
@@ -181,6 +225,22 @@ namespace Infrastructure.Services
                  x.ProviderModelId.Contains(normalizedSearch)) &&
                 (!filter.Provider.HasValue || x.Provider == filter.Provider.Value) &&
                 (!filter.IsEnabled.HasValue || x.IsEnabled == filter.IsEnabled.Value);
+        }
+
+        private async Task UnsetOtherDefaultsAsync(string? excludedId, CancellationToken cancellationToken)
+        {
+            var defaults = await _unitOfWork.Repository<AiModelConfig>().GetListAsync(
+                predicate: x => x.DeletedTime == null && x.IsDefault && x.Id != excludedId,
+                cancellationToken: cancellationToken
+            );
+
+            foreach (var item in defaults)
+            {
+                item.IsDefault = false;
+                item.LastUpdatedBy = _currentUserService.GetUserId();
+                item.LastUpdatedTime = DateTime.UtcNow;
+                await _unitOfWork.Repository<AiModelConfig>().Update(item);
+            }
         }
 
         private static void Normalize(CreateAiModelConfigDto dto)

@@ -25,6 +25,10 @@ namespace Application.Constants
         public const string NewPasswordRequired = "New password is required";
         #endregion Password
 
+        #region Authorization
+        public const string RoleInvalid = "Role is invalid";
+        #endregion Authorization
+
         #region Verification
         public const string VerificationTokenRequired = "Verification token is required";
         public const string ResetCodeRequired = "Reset code is required";

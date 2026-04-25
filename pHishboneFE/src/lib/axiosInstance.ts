@@ -1,34 +1,72 @@
-import axios from 'axios';
+import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5281';
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5281';
 
 export const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request interceptor – attach access token
-axiosInstance.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
+const refreshClient = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
   },
-  (error) => Promise.reject(error),
-);
+});
 
-// Response interceptor – on 401, clear tokens
+interface RetriableRequestConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+}
+
+let refreshRequest: Promise<void> | null = null;
+
+function shouldSkipRefresh(config?: RetriableRequestConfig): boolean {
+  const url = config?.url ?? '';
+
+  return url.includes('/api/auth/login')
+    || url.includes('/api/auth/register')
+    || url.includes('/api/auth/refresh')
+    || url.includes('/api/auth/logout');
+}
+
+function refreshSession(): Promise<void> {
+  if (!refreshRequest) {
+    refreshRequest = refreshClient
+      .post('/api/auth/refresh', {})
+      .then(() => undefined)
+      .finally(() => {
+        refreshRequest = null;
+      });
+  }
+
+  return refreshRequest;
+}
+
 axiosInstance.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
+  async (error: AxiosError) => {
+    const originalRequest = error.config as RetriableRequestConfig | undefined;
+
+    if (
+      error.response?.status !== 401
+      || !originalRequest
+      || originalRequest._retry
+      || shouldSkipRefresh(originalRequest)
+    ) {
+      return Promise.reject(error);
     }
-    return Promise.reject(error);
+
+    originalRequest._retry = true;
+
+    try {
+      await refreshSession();
+      return axiosInstance(originalRequest);
+    } catch (refreshError) {
+      return Promise.reject(refreshError);
+    }
   },
 );

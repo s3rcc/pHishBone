@@ -7,11 +7,13 @@ export interface ApiResponse<T> {
 }
 
 // ─── Domain Models ───────────────────────────────────────────────────────────
+export type AppRole = 'Admin' | 'KnowledgeManager' | 'Member';
+
 export interface UserDto {
     id: string;
     username: string;
     email: string;
-    role: string;
+    role: AppRole;
     avatarUrl?: string | null;
 }
 

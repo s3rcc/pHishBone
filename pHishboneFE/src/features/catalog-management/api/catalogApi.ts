@@ -1,9 +1,11 @@
 import { axiosInstance } from '../../../lib/axiosInstance';
 import type {
+    AiFishInformationResponseDto,
     ApiResponse,
     CreateSpeciesPayload,
     CreateTagPayload,
     CreateTypePayload,
+    GenerateFishInformationPayload,
     PaginationResponse,
     SpeciesDetailDto,
     SpeciesDto,
@@ -73,6 +75,14 @@ export const speciesApi = {
 
     delete: async (id: string): Promise<void> => {
         await axiosInstance.delete(`/api/catalog/species/${id}`);
+    },
+
+    generateFishInformation: async (payload: GenerateFishInformationPayload): Promise<AiFishInformationResponseDto> => {
+        const { data } = await axiosInstance.post<ApiResponse<AiFishInformationResponseDto>>(
+            '/api/catalog/species/ai/fish-information',
+            payload,
+        );
+        return data.data;
     },
 };
 

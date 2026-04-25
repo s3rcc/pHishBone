@@ -1,4 +1,4 @@
-import type { SwimLevel, SpeciesDetailDto, SpeciesDto } from '../../catalog-management/types';
+import type { SwimLevel, SpeciesDetailDto, SpeciesDto, WaterType } from '../../catalog-management/types';
 
 export interface TankDimensions {
     length: number;
@@ -29,6 +29,70 @@ export interface GuestTankAnalysisRequest {
     height: number;
     depth: number;
     items: GuestTankAnalysisItemRequest[];
+}
+
+export type TankMode = 'guest' | 'user';
+export type TankStatus = 0 | 1 | 2;
+export type TankItemType = 1 | 2;
+
+export interface CreateTankPayload {
+    name: string;
+    width: number;
+    height: number;
+    depth: number;
+    waterVolume: number;
+    waterType: WaterType;
+}
+
+export interface UpdateTankPayload extends CreateTankPayload {
+    status: TankStatus;
+}
+
+export interface TankListItemDto {
+    id: string;
+    name: string;
+    waterVolume: number;
+    waterType: WaterType;
+    status: TankStatus;
+    itemCount: number;
+    createdTime: string;
+}
+
+export interface TankResponseDto {
+    id: string;
+    userId: string;
+    name: string;
+    width: number;
+    height: number;
+    depth: number;
+    waterVolume: number;
+    waterType: WaterType;
+    status: TankStatus;
+    itemCount: number;
+    createdTime: string;
+    lastUpdatedTime?: string | null;
+}
+
+export interface AddTankItemPayload {
+    itemType: TankItemType;
+    referenceId: string;
+    quantity: number;
+    note?: string;
+}
+
+export interface UpdateTankItemPayload {
+    quantity: number;
+    note?: string;
+}
+
+export interface TankItemResponseDto {
+    id: string;
+    tankId: string;
+    itemType: TankItemType;
+    referenceId: string;
+    quantity: number;
+    note?: string | null;
+    createdTime: string;
 }
 
 export type AnalysisSeverity = 0 | 1 | 2 | 'Info' | 'Warning' | 'Danger';
@@ -188,10 +252,23 @@ export function buildTankDraft(species: SpeciesDto, detail: SpeciesDetailDto): T
         speciesId: species.id,
         slug: species.slug,
         commonName: species.commonName,
-        scientificName: species.scientificName,
+        scientificName: species.scientificName ?? '',
         thumbnailUrl: species.thumbnailUrl,
         adultSize: detail.profile?.adultSize ?? 6,
         swimLevel: detail.profile?.swimLevel ?? 3,
         quantity: 1,
+    };
+}
+
+export function buildTankDraftFromDetail(detail: SpeciesDetailDto, quantity = 1): TankSpeciesDraft {
+    return {
+        speciesId: detail.id,
+        slug: detail.slug,
+        commonName: detail.commonName,
+        scientificName: detail.scientificName ?? '',
+        thumbnailUrl: detail.thumbnailUrl,
+        adultSize: detail.profile?.adultSize ?? 6,
+        swimLevel: detail.profile?.swimLevel ?? 3,
+        quantity,
     };
 }

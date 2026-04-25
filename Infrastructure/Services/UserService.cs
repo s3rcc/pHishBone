@@ -37,6 +37,20 @@ namespace Infrastructure.Services
             _logger = logger;
         }
 
+        public async Task<ICollection<UserDto>> GetUsersAsync(CancellationToken cancellationToken = default)
+        {
+            _logger.LogInformation("Retrieving active users for role management");
+
+            var users = await _unitOfWork.Repository<PBUser>()
+                .GetListAsync(
+                    predicate: u => u.DeletedTime == null,
+                    orderBy: query => query.OrderBy(u => u.Username),
+                    tracking: false,
+                    cancellationToken: cancellationToken);
+
+            return _mapper.Map<ICollection<UserDto>>(users);
+        }
+
         /// <summary>
         /// Updates the user's profile (currently username).
         /// userId here is the Supabase UID extracted from the JWT.
@@ -203,6 +217,42 @@ namespace Infrastructure.Services
 
             _logger.LogInformation("Email change requested successfully for user: {UserId}", userId);
             return SuccessMessageConstant.EmailChangeRequested;
+        }
+
+        public async Task<UserDto> UpdateUserRoleAsync(string id, UpdateUserRoleRequestDto dto, CancellationToken cancellationToken = default)
+        {
+            _logger.LogInformation("Updating role for user {UserId} to {Role}", id, dto.Role);
+
+            var user = await _unitOfWork.Repository<PBUser>()
+                .SingleOrDefaultAsync(
+                    predicate: u => u.Id == id,
+                    cancellationToken: cancellationToken);
+
+            if (user == null)
+            {
+                _logger.LogWarning("User not found when updating role. UserId: {UserId}", id);
+                throw new CustomErrorException(
+                    StatusCodes.Status404NotFound,
+                    ErrorCode.NOT_FOUND,
+                    ErrorMessageConstant.UserNotFound);
+            }
+
+            if (user.DeletedTime != null)
+            {
+                _logger.LogWarning("Deleted user role update rejected. UserId: {UserId}", id);
+                throw new CustomErrorException(
+                    StatusCodes.Status400BadRequest,
+                    ErrorCode.BADREQUEST,
+                    ErrorMessageConstant.CannotAssignDeletedUserRole);
+            }
+
+            user.Role = dto.Role;
+
+            await _unitOfWork.Repository<PBUser>().Update(user);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation("Updated role for user {UserId} to {Role}", id, dto.Role);
+            return _mapper.Map<UserDto>(user);
         }
     }
 }

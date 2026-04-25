@@ -8,12 +8,13 @@ namespace Domain.Entities.Catalog
     /// </summary>
     public class Species : BaseEntity
     {
-        public string TypeId { get; set; } = string.Empty;
-        public string ScientificName { get; set; } = string.Empty;
+        public string? TypeId { get; set; } = string.Empty;
+        public string? ScientificName { get; set; } = string.Empty;
         public string CommonName { get; set; } = string.Empty;
         public string? ThumbnailUrl { get; set; }
         public string? ThumbnailPublicId { get; set; }
         public string Slug { get; set; } = string.Empty;
+        public bool? IsActive { get; set; } = false;
 
         // Navigation properties
         public Type Type { get; set; } = null!;

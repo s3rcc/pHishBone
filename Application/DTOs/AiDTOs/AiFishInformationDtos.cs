@@ -5,7 +5,7 @@ namespace Application.DTOs.AiDTOs
     public class GenerateFishInformationRequestDto
     {
         public string FishName { get; set; } = string.Empty;
-        public string ModelConfigId { get; set; } = string.Empty;
+        public string? ModelConfigId { get; set; }
     }
 
     public class AiGenerationIssueDto

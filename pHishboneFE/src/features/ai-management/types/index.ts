@@ -35,6 +35,7 @@ export interface AiModelConfigDto {
     provider: AiProvider;
     providerModelId: string;
     isEnabled: boolean;
+    isDefault: boolean;
     maxOutputTokens: number | null;
     temperature: number | null;
     timeoutSeconds: number;
@@ -58,6 +59,7 @@ export interface CreateAiModelConfigPayload {
     provider: AiProvider;
     providerModelId: string;
     isEnabled: boolean;
+    isDefault: boolean;
     maxOutputTokens?: number | null;
     temperature?: number | null;
     timeoutSeconds: number;
@@ -69,6 +71,7 @@ export interface UpdateAiModelConfigPayload {
     provider: AiProvider;
     providerModelId: string;
     isEnabled: boolean;
+    isDefault: boolean;
     maxOutputTokens?: number | null;
     temperature?: number | null;
     timeoutSeconds: number;

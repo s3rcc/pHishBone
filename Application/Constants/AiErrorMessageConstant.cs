@@ -15,6 +15,9 @@ namespace Application.Constants
         public const string AiModelDisabled = "The selected AI model is disabled.";
         public const string AiModelDuplicateDisplayName = "An AI model with this display name already exists.";
         public const string AiModelDuplicateProviderModel = "An AI model with this provider/model combination already exists.";
+        public const string AiDefaultModelMustBeEnabled = "The default AI model must be enabled.";
+        public const string AiDefaultModelMissing = "No default AI model is configured.";
+        public const string AiEnabledModelMissing = "No enabled AI model is configured.";
         public const string AiPromptNotFound = "AI prompt template not found.";
         public const string AiPromptDuplicateName = "An AI prompt with this name already exists.";
         public const string AiPromptDisabled = "The active AI prompt for this use case is disabled.";

@@ -49,6 +49,11 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
 
+                    b.Property<bool>("IsDefault")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
                     b.Property<bool>("IsEnabled")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
@@ -83,10 +88,16 @@ namespace Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DisplayName")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"DeletedTime\" IS NULL");
+
+                    b.HasIndex("IsDefault")
+                        .IsUnique()
+                        .HasFilter("\"DeletedTime\" IS NULL AND \"IsDefault\" = TRUE");
 
                     b.HasIndex("Provider", "ProviderModelId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"DeletedTime\" IS NULL");
 
                     b.ToTable("AiModelConfigs", "ai");
                 });
@@ -226,6 +237,9 @@ namespace Infrastructure.Migrations
                     b.Property<DateTime?>("DeletedTime")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<bool?>("IsActive")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("LastUpdatedBy")
                         .HasColumnType("text");
 
@@ -251,7 +265,6 @@ namespace Infrastructure.Migrations
                         .HasColumnType("character varying(500)");
 
                     b.Property<string>("TypeId")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
@@ -872,8 +885,7 @@ namespace Infrastructure.Migrations
                     b.HasOne("Domain.Entities.Catalog.Type", "Type")
                         .WithMany("Species")
                         .HasForeignKey("TypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Type");
                 });

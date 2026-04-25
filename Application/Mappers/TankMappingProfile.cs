@@ -18,10 +18,27 @@ namespace Application.Mappers
             CreateMap<UpdateTankDto, Tank>();
 
             CreateMap<Tank, TankResponseDto>()
-                .ForMember(dest => dest.ItemCount, opt => opt.MapFrom(src => src.TankItems.Count));
+                .ForCtorParam(nameof(TankResponseDto.Id), opt => opt.MapFrom(src => src.Id))
+                .ForCtorParam(nameof(TankResponseDto.UserId), opt => opt.MapFrom(src => src.UserId))
+                .ForCtorParam(nameof(TankResponseDto.Name), opt => opt.MapFrom(src => src.Name))
+                .ForCtorParam(nameof(TankResponseDto.Width), opt => opt.MapFrom(src => src.Width))
+                .ForCtorParam(nameof(TankResponseDto.Height), opt => opt.MapFrom(src => src.Height))
+                .ForCtorParam(nameof(TankResponseDto.Depth), opt => opt.MapFrom(src => src.Depth))
+                .ForCtorParam(nameof(TankResponseDto.WaterVolume), opt => opt.MapFrom(src => src.WaterVolume))
+                .ForCtorParam(nameof(TankResponseDto.WaterType), opt => opt.MapFrom(src => src.WaterType))
+                .ForCtorParam(nameof(TankResponseDto.Status), opt => opt.MapFrom(src => src.Status))
+                .ForCtorParam(nameof(TankResponseDto.ItemCount), opt => opt.MapFrom(src => src.TankItems.Count))
+                .ForCtorParam(nameof(TankResponseDto.CreatedTime), opt => opt.MapFrom(src => src.CreatedTime))
+                .ForCtorParam(nameof(TankResponseDto.LastUpdatedTime), opt => opt.MapFrom(src => src.LastUpdatedTime));
 
             CreateMap<Tank, TankListItemDto>()
-                .ForMember(dest => dest.ItemCount, opt => opt.MapFrom(src => src.TankItems.Count));
+                .ForCtorParam(nameof(TankListItemDto.Id), opt => opt.MapFrom(src => src.Id))
+                .ForCtorParam(nameof(TankListItemDto.Name), opt => opt.MapFrom(src => src.Name))
+                .ForCtorParam(nameof(TankListItemDto.WaterVolume), opt => opt.MapFrom(src => src.WaterVolume))
+                .ForCtorParam(nameof(TankListItemDto.WaterType), opt => opt.MapFrom(src => src.WaterType))
+                .ForCtorParam(nameof(TankListItemDto.Status), opt => opt.MapFrom(src => src.Status))
+                .ForCtorParam(nameof(TankListItemDto.ItemCount), opt => opt.MapFrom(src => src.TankItems.Count))
+                .ForCtorParam(nameof(TankListItemDto.CreatedTime), opt => opt.MapFrom(src => src.CreatedTime));
 
             // TankItem mappings
             CreateMap<AddTankItemDto, TankItem>();

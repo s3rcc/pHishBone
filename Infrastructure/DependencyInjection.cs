@@ -6,9 +6,11 @@ using Infrastructure.Persistence;
 using Infrastructure.Persistence.Repositories;
 using Infrastructure.Services;
 using Infrastructure.Settings;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using StackExchange.Redis;
 
 namespace Infrastructure
 {
@@ -68,12 +70,19 @@ namespace Infrastructure
                     options.Configuration = redisSettings.ConnectionString;
                     options.InstanceName = redisSettings.InstanceName;
                 });
+
+                // Register IConnectionMultiplexer for prefix-based cache invalidation
+                services.AddSingleton<IConnectionMultiplexer>(_ =>
+                    ConnectionMultiplexer.Connect(redisSettings.ConnectionString));
             }
             else
             {
                 // Fallback to in-memory cache when Redis is not configured
                 services.AddDistributedMemoryCache();
             }
+
+            // Register cache service as Singleton (per SKILL.md convention)
+            services.AddSingleton<ICacheService, RedisCacheService>();
 
             // Add Unit of Work and Repositories
             services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -95,6 +104,7 @@ namespace Infrastructure
             services.AddScoped<IPhotoService, PhotoService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<ICompatibilityRuleService, CompatibilityRuleService>();
+            services.AddTransient<IClaimsTransformation, UserRoleClaimsTransformation>();
 
             return services;
         }

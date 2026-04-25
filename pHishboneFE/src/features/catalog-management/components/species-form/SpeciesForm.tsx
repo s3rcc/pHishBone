@@ -1,5 +1,6 @@
 import React, { Suspense, useCallback, useMemo, useRef, useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
+import type { UseFormSetValue } from 'react-hook-form';
 import { useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import Alert from '@mui/material/Alert';
@@ -10,13 +11,20 @@ import Paper from '@mui/material/Paper';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { SuspenseLoader } from '../../../../components/layout/SuspenseLoader';
 import { useMuiSnackbar } from '../../../../hooks/useMuiSnackbar';
 import { parseValidationErrors, getValidationSummary } from '../../../../lib/parseValidationErrors';
-import { useCreateSpecies, useUpdateSpecies, useUploadSpeciesImageBatch } from '../../hooks/useCatalog';
-import type { CreateSpeciesPayload, SpeciesDetailDto, SpeciesFormValues, UpdateSpeciesPayload } from '../../types';
+import { useCreateSpecies, useGenerateFishInformation, useUpdateSpecies, useUploadSpeciesImageBatch } from '../../hooks/useCatalog';
+import type {
+    AiGeneratedSpeciesDraftDto,
+    CreateSpeciesPayload,
+    SpeciesDetailDto,
+    SpeciesFormValues,
+    UpdateSpeciesPayload,
+} from '../../types';
 import { TaxonomyTab } from './TaxonomyTab';
 import { EnvironmentTab } from './EnvironmentTab';
 import { ProfileTab } from './ProfileTab';
@@ -34,11 +42,16 @@ interface SpeciesFormProps {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function buildDefaultValues(detail?: SpeciesDetailDto): SpeciesFormValues {
+    const isSchooling = detail?.profile?.isSchooling ?? false;
+    const rawMinGroupSize = detail?.profile?.minGroupSize;
+    const minGroupSize = isSchooling ? (rawMinGroupSize ?? 2) : 1;
+
     return {
         commonName: detail?.commonName ?? '',
         scientificName: detail?.scientificName ?? '',
         typeId: detail?.typeId ?? '',
         thumbnailUrl: detail?.thumbnailUrl ?? '',
+        isActive: detail?.isActive ?? false,
         phMin: detail?.environment?.phMin ?? 6.5,
         phMax: detail?.environment?.phMax ?? 7.5,
         tempMin: detail?.environment?.tempMin ?? 22,
@@ -50,8 +63,8 @@ function buildDefaultValues(detail?: SpeciesDetailDto): SpeciesFormValues {
         swimLevel: detail?.profile?.swimLevel ?? 1,
         dietType: detail?.profile?.dietType ?? 2,
         preferredFood: detail?.profile?.preferredFood ?? '',
-        isSchooling: detail?.profile?.isSchooling ?? false,
-        minGroupSize: detail?.profile?.minGroupSize ?? 0,
+        isSchooling,
+        minGroupSize,
         origin: detail?.profile?.origin ?? '',
         description: detail?.profile?.description ?? '',
         tagIds: detail?.tags?.map((tag) => tag.id) ?? [],
@@ -61,9 +74,10 @@ function buildDefaultValues(detail?: SpeciesDetailDto): SpeciesFormValues {
 function toPayload(values: SpeciesFormValues): CreateSpeciesPayload {
     return {
         commonName: values.commonName,
-        scientificName: values.scientificName,
-        typeId: values.typeId,
+        scientificName: values.scientificName || undefined,
+        typeId: values.typeId || undefined,
         thumbnailUrl: values.thumbnailUrl || undefined,
+        isActive: values.isActive,
         environment: {
             phMin: values.phMin,
             phMax: values.phMax,
@@ -79,12 +93,71 @@ function toPayload(values: SpeciesFormValues): CreateSpeciesPayload {
             dietType: values.dietType,
             preferredFood: values.preferredFood || undefined,
             isSchooling: values.isSchooling,
-            minGroupSize: values.isSchooling ? values.minGroupSize : 0,
+            // Backend validates MinGroupSize >= 1 even when not schooling.
+            // UI enforces >= 2 when schooling, but we still clamp defensively.
+            minGroupSize: values.isSchooling ? Math.max(2, values.minGroupSize) : 1,
             origin: values.origin || undefined,
             description: values.description || undefined,
         },
         tagIds: values.tagIds,
     };
+}
+
+function buildAiFishName(values: SpeciesFormValues): string {
+    const commonName = values.commonName.trim();
+    const scientificName = values.scientificName.trim();
+
+    if (commonName && scientificName) {
+        if (commonName.toLowerCase() === scientificName.toLowerCase()) {
+            return commonName;
+        }
+
+        return `${commonName} (${scientificName})`;
+    }
+
+    return commonName || scientificName;
+}
+
+function applyGeneratedDraftToForm(
+    currentValues: SpeciesFormValues,
+    generatedDraft: AiGeneratedSpeciesDraftDto,
+): SpeciesFormValues {
+    return {
+        commonName: generatedDraft.commonName,
+        scientificName: generatedDraft.scientificName,
+        typeId: generatedDraft.typeId,
+        thumbnailUrl: generatedDraft.thumbnailUrl ?? currentValues.thumbnailUrl,
+        isActive: currentValues.isActive,
+        phMin: generatedDraft.environment.phMin,
+        phMax: generatedDraft.environment.phMax,
+        tempMin: generatedDraft.environment.tempMin,
+        tempMax: generatedDraft.environment.tempMax,
+        minTankVolume: generatedDraft.environment.minTankVolume,
+        waterType: generatedDraft.environment.waterType,
+        adultSize: generatedDraft.profile.adultSize,
+        bioLoadFactor: generatedDraft.profile.bioLoadFactor,
+        swimLevel: generatedDraft.profile.swimLevel,
+        dietType: generatedDraft.profile.dietType,
+        preferredFood: generatedDraft.profile.preferredFood ?? '',
+        isSchooling: generatedDraft.profile.isSchooling,
+        minGroupSize: generatedDraft.profile.isSchooling ? Math.max(2, generatedDraft.profile.minGroupSize) : 1,
+        origin: generatedDraft.profile.origin ?? '',
+        description: generatedDraft.profile.description ?? '',
+        tagIds: generatedDraft.tagIds,
+    };
+}
+
+function setFormValues(
+    setValue: UseFormSetValue<SpeciesFormValues>,
+    nextValues: SpeciesFormValues,
+) {
+    for (const key of Object.keys(nextValues) as (keyof SpeciesFormValues)[]) {
+        setValue(key, nextValues[key], {
+            shouldDirty: true,
+            shouldTouch: false,
+            shouldValidate: false,
+        });
+    }
 }
 
 // ─── Tab panel helper ─────────────────────────────────────────────────────────
@@ -114,7 +187,8 @@ export const SpeciesForm: React.FC<SpeciesFormProps> = ({ mode, speciesId, defau
     const { mutateAsync: createSpecies, isPending: isCreating } = useCreateSpecies();
     const { mutateAsync: updateSpecies, isPending: isUpdating } = useUpdateSpecies();
     const { mutateAsync: uploadBatch, isPending: isUploading } = useUploadSpeciesImageBatch();
-    const isPending = isCreating || isUpdating || isUploading;
+    const { mutateAsync: generateFishInformation, isPending: isGenerating } = useGenerateFishInformation();
+    const isPending = isCreating || isUpdating || isUploading || isGenerating;
 
     const TAB_LABELS = [
         t('Catalog.form.tabTaxonomy'),
@@ -147,6 +221,38 @@ export const SpeciesForm: React.FC<SpeciesFormProps> = ({ mode, speciesId, defau
     const handleStagedFilesChange = useCallback((files: File[]) => {
         stagedFilesRef.current = files;
     }, []);
+
+    const handleGenerate = useCallback(async () => {
+        const fishName = buildAiFishName(methods.getValues());
+        if (!fishName.trim()) {
+            showSnackbar(t('Catalog.AiGeneration.errorMissingName'), 'error');
+            return;
+        }
+
+        try {
+            const result = await generateFishInformation({ fishName: fishName.trim() });
+
+            if (result.generatedDraft) {
+                const nextValues = applyGeneratedDraftToForm(methods.getValues(), result.generatedDraft);
+                setFormValues(methods.setValue, nextValues);
+                setActiveTab(0);
+                showSnackbar(t('Catalog.AiGeneration.success'), 'success');
+                return;
+            }
+
+            if (result.existingSpecies) {
+                const nextValues = buildDefaultValues(result.existingSpecies);
+                setFormValues(methods.setValue, nextValues);
+                setActiveTab(0);
+                showSnackbar(t('Catalog.AiGeneration.success'), 'success');
+                return;
+            }
+
+            showSnackbar(t('Catalog.AiGeneration.errorUnexpected'), 'error');
+        } catch (err: unknown) {
+            showSnackbar(getValidationSummary(err, t('Catalog.AiGeneration.errorUnexpected')), 'error');
+        }
+    }, [generateFishInformation, methods, showSnackbar, t]);
 
     const handleSubmit = methods.handleSubmit(async (values) => {
         setSubmitError(null);
@@ -229,6 +335,19 @@ export const SpeciesForm: React.FC<SpeciesFormProps> = ({ mode, speciesId, defau
                         {mode === 'create' ? t('Catalog.Species.newEntry') : t('Catalog.Species.editEntry')}
                     </Typography>
                     <Box sx={{ flexGrow: 1 }} />
+                    {speciesId && (
+                        <Button
+                            type="button"
+                            variant="outlined"
+                            size="small"
+                            startIcon={<AutoAwesomeIcon />}
+                            onClick={() => void handleGenerate()}
+                            disabled={isPending}
+                            sx={{ borderRadius: '4px' }}
+                        >
+                            {t('Catalog.AiGeneration.button')}
+                        </Button>
+                    )}
                     {(isDirty || stagedFilesRef.current.length > 0) && (
                         <Typography variant="caption" color="warning.main" sx={{ mr: 1 }}>
                             {t('Catalog.Species.unsavedChanges')}
