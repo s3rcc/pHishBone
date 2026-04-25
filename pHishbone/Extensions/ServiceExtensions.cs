@@ -176,6 +176,17 @@ namespace pHishbone.Extensions
                 };
             });
 
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy(AuthorizationConstant.AdminOnlyPolicy, policy =>
+                    policy.RequireRole(AuthorizationConstant.AdminRole));
+
+                options.AddPolicy(AuthorizationConstant.CatalogManagementPolicy, policy =>
+                    policy.RequireRole(
+                        AuthorizationConstant.AdminRole,
+                        AuthorizationConstant.KnowledgeManagerRole));
+            });
+
             return services;
         }
     }

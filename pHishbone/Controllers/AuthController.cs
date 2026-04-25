@@ -82,6 +82,7 @@ namespace pHishbone.Controllers
         /// <summary>
         /// Get current authenticated user's information
         /// </summary>
+        [Authorize]
         [HttpGet(ApiEndpointConstant.Auth.Me)]
         [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
@@ -153,6 +154,7 @@ namespace pHishbone.Controllers
         /// <summary>
         /// Change password for authenticated user
         /// </summary>
+        [Authorize]
         [HttpPost(ApiEndpointConstant.Auth.ChangePassword)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
@@ -262,6 +264,36 @@ namespace pHishbone.Controllers
 
             var message = await _userService.ChangeEmailAsync(request, userId, cancellationToken);
             return Ok(ApiResponse<object>.Success(null, message));
+        }
+
+        /// <summary>
+        /// Get all users for admin role management.
+        /// </summary>
+        [Authorize(Roles = AuthorizationConstant.AdminRole)]
+        [HttpGet(ApiEndpointConstant.Auth.Users)]
+        [ProducesResponseType(typeof(ApiResponse<ICollection<UserDto>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> GetUsers(CancellationToken cancellationToken)
+        {
+            var users = await _userService.GetUsersAsync(cancellationToken);
+            return Ok(ApiResponse<ICollection<UserDto>>.Success(users, SuccessMessageConstant.UsersRetrievedSuccessfully));
+        }
+
+        /// <summary>
+        /// Update a user's role. Admin only.
+        /// </summary>
+        [Authorize(Roles = AuthorizationConstant.AdminRole)]
+        [HttpPut(ApiEndpointConstant.Auth.UserRole)]
+        [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateUserRole(
+            [FromRoute] string id,
+            [FromBody] UpdateUserRoleRequestDto request,
+            CancellationToken cancellationToken)
+        {
+            var user = await _userService.UpdateUserRoleAsync(id, request, cancellationToken);
+            return Ok(ApiResponse<UserDto>.Success(user, SuccessMessageConstant.UserRoleUpdatedSuccessfully));
         }
 
         private string ResolveAccessToken(string? dtoAccessToken = null)

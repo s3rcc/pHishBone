@@ -5,6 +5,7 @@ using Application.DTOs.AiDTOs;
 using Application.DTOs.CatalogDTOs;
 using Application.DTOs.ImageDTOs;
 using Application.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 namespace pHishbone.Controllers
 {
@@ -104,6 +105,7 @@ namespace pHishbone.Controllers
         /// Generate preview-only fish information using the configured AI provider.
         /// Returns an existing species when an exact common or scientific name match already exists.
         /// </summary>
+        [Authorize(Roles = AuthorizationConstant.CatalogManagementRoles)]
         [HttpPost(ApiEndpointConstant.Species.GenerateFishInformation)]
         [ProducesResponseType(typeof(ApiResponse<AiFishInformationResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
@@ -117,6 +119,7 @@ namespace pHishbone.Controllers
         /// <summary>
         /// Create a new species with environment, profile, and tags
         /// </summary>
+        [Authorize(Roles = AuthorizationConstant.CatalogManagementRoles)]
         [HttpPost(ApiEndpointConstant.Species.Create)]
         [ProducesResponseType(typeof(ApiResponse<SpeciesDetailDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
@@ -133,6 +136,7 @@ namespace pHishbone.Controllers
         /// <summary>
         /// Update an existing species
         /// </summary>
+        [Authorize(Roles = AuthorizationConstant.CatalogManagementRoles)]
         [HttpPut(ApiEndpointConstant.Species.Update)]
         [ProducesResponseType(typeof(ApiResponse<SpeciesDetailDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -146,6 +150,7 @@ namespace pHishbone.Controllers
         /// <summary>
         /// Soft delete a species
         /// </summary>
+        [Authorize(Roles = AuthorizationConstant.CatalogManagementRoles)]
         [HttpDelete(ApiEndpointConstant.Species.Delete)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -172,6 +177,7 @@ namespace pHishbone.Controllers
         /// <summary>
         /// Add a single image to a species gallery via file upload
         /// </summary>
+        [Authorize(Roles = AuthorizationConstant.CatalogManagementRoles)]
         [HttpPost(ApiEndpointConstant.SpeciesImage.Add)]
         [ProducesResponseType(typeof(ApiResponse<ImageResponseDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -186,6 +192,7 @@ namespace pHishbone.Controllers
         /// <summary>
         /// Add multiple images to a species gallery concurrently
         /// </summary>
+        [Authorize(Roles = AuthorizationConstant.CatalogManagementRoles)]
         [HttpPost(ApiEndpointConstant.SpeciesImage.AddBatch)]
         [ProducesResponseType(typeof(ApiResponse<List<ImageResponseDto>>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -200,6 +207,7 @@ namespace pHishbone.Controllers
         /// <summary>
         /// Remove an image from a species gallery
         /// </summary>
+        [Authorize(Roles = AuthorizationConstant.CatalogManagementRoles)]
         [HttpDelete(ApiEndpointConstant.SpeciesImage.Delete)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -213,6 +221,7 @@ namespace pHishbone.Controllers
         /// <summary>
         /// Set the main thumbnail image for a species from an existing gallery image
         /// </summary>
+        [Authorize(Roles = AuthorizationConstant.CatalogManagementRoles)]
         [HttpPatch(ApiEndpointConstant.SpeciesImage.SetThumbnail)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]

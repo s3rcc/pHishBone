@@ -79,7 +79,7 @@ namespace Infrastructure.Services
                 Username = request.Username,
                 Email = request.Email,
                 SupabaseUserId = authResponse.User.Id,
-                Role = Domain.Enums.Role.User, // Default role
+                Role = Domain.Enums.Role.Member,
                 CreatedBy = authResponse.User.Id
             };
 

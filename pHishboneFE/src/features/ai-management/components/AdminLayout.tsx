@@ -6,11 +6,11 @@ import { RoleGuard } from '../../catalog-management/components/RoleGuard';
 
 /**
  * AdminLayout – wraps all /admin/* routes with a persistent collapsible sidebar.
- * Access restricted to SuperAdmin role.
+ * Access restricted to Admin role.
  */
 export const AdminLayout: React.FC = () => {
     return (
-        <RoleGuard allowedRoles={['SuperAdmin']}>
+        <RoleGuard allowedRoles={['Admin']}>
             <Box sx={{ display: 'flex', minHeight: 'calc(100vh - 64px)' }}>
                 <AdminSidebar />
                 <Box

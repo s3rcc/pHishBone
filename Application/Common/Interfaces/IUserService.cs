@@ -10,6 +10,11 @@ namespace Application.Common.Interfaces
     public interface IUserService
     {
         /// <summary>
+        /// Gets all active users for admin role management.
+        /// </summary>
+        Task<ICollection<UserDto>> GetUsersAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Updates the authenticated user's profile (e.g. username).
         /// </summary>
         Task<UserDto> UpdateProfileAsync(UpdateProfileRequestDto dto, string userId, CancellationToken cancellationToken = default);
@@ -25,5 +30,10 @@ namespace Application.Common.Interfaces
         /// Supabase sends confirmation emails to both old and new addresses.
         /// </summary>
         Task<string> ChangeEmailAsync(ChangeEmailRequestDto dto, string userId, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Updates a target user's application role.
+        /// </summary>
+        Task<UserDto> UpdateUserRoleAsync(string id, UpdateUserRoleRequestDto dto, CancellationToken cancellationToken = default);
     }
 }

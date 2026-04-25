@@ -18,6 +18,8 @@ namespace Application.Constants
         public const string ProfileUpdatedSuccessfully = "Profile updated successfully";
         public const string AvatarUploadedSuccessfully = "Avatar uploaded successfully";
         public const string EmailChangeRequested = "Please check your inbox to confirm the email change.";
+        public const string UsersRetrievedSuccessfully = "Users retrieved successfully";
+        public const string UserRoleUpdatedSuccessfully = "User role updated successfully";
         #endregion Auth
 
         #region Catalog - Tag

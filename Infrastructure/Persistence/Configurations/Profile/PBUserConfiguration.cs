@@ -1,4 +1,6 @@
+using Application.Constants;
 using Domain.Entities;
+using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -30,7 +32,17 @@ namespace Infrastructure.Persistence.Configurations.Profile
 
             builder.Property(u => u.Role)
                 .IsRequired()
-                .HasConversion<string>()
+                .HasConversion(
+                    role => role == Role.Admin
+                        ? AuthorizationConstant.AdminRole
+                        : role == Role.KnowledgeManager
+                            ? AuthorizationConstant.KnowledgeManagerRole
+                            : AuthorizationConstant.MemberRole,
+                    roleValue => roleValue == AuthorizationConstant.AdminRole
+                        ? Role.Admin
+                        : roleValue == AuthorizationConstant.KnowledgeManagerRole || roleValue == "Moderator"
+                            ? Role.KnowledgeManager
+                            : Role.Member)
                 .HasMaxLength(20);
 
             builder.Property(u => u.AvatarUrl)

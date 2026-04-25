@@ -9,7 +9,7 @@ import { RoleGuard } from './RoleGuard';
  */
 export const WorkspaceLayout: React.FC = () => {
     return (
-        <RoleGuard allowedRoles={['KnowledgeManager', 'SuperAdmin']}>
+        <RoleGuard allowedRoles={['KnowledgeManager', 'Admin']}>
             <Box sx={{ display: 'flex', minHeight: 'calc(100vh - 64px)' }}>
                 <WorkspaceSidebar />
                 <Box

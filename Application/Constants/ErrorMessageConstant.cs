@@ -25,6 +25,7 @@ namespace Application.Constants
         public const string AvatarUploadFailed = "Failed to upload avatar. Please try again.";
         public const string EmailChangeFailed = "Failed to change email. Please try again.";
         public const string UsernameTaken = "Username is already taken.";
+        public const string CannotAssignDeletedUserRole = "Cannot update the role of a deleted user.";
         #endregion Auth
     }
 
