@@ -56,6 +56,9 @@ const AiModelsPage = lazy(() =>
 const AiPromptsPage = lazy(() =>
     import('./features/ai-management').then((m) => ({ default: m.AiPromptsPage })),
 );
+const AdminUsersPage = lazy(() =>
+    import('./features/ai-management').then((m) => ({ default: m.AdminUsersPage })),
+);
 
 // ─── Root Route ───────────────────────────────────────────────────────────────
 const rootRoute = createRootRoute({
@@ -241,6 +244,16 @@ const adminModelsRoute = createRoute({
     ),
 });
 
+const adminUsersRoute = createRoute({
+    getParentRoute: () => adminRoute,
+    path: '/users',
+    component: () => (
+        <Suspense fallback={<SuspenseLoader />}>
+            <AdminUsersPage />
+        </Suspense>
+    ),
+});
+
 const adminPromptsRoute = createRoute({
     getParentRoute: () => adminRoute,
     path: '/ai-prompts',
@@ -281,6 +294,7 @@ const routeTree = rootRoute.addChildren([
         catalogCompatibilityRoute,
     ]),
     adminRoute.addChildren([
+        adminUsersRoute,
         adminModelsRoute,
         adminPromptsRoute,
     ]),

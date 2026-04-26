@@ -524,12 +524,37 @@
         "inactive": "Inactive",
         "errorUnexpected": "An unexpected error occurred.",
         "nav": {
+            "users": "Users & Roles",
             "models": "AI Models",
             "prompts": "AI Prompts"
         },
         "info": {
+            "users": "Manage application access here. New registrations default to Member, Admin can promote users to Knowledge Manager or Admin, and role changes take effect through the backend authorization layer.",
             "models": "AI Model configurations define which language models are available for the system. Each entry specifies a provider (OpenRouter, Groq), the model identifier, and tuning parameters like temperature and timeout.",
             "prompts": "AI Prompt templates define the system prompts used for specific use cases (e.g. Fish Information generation). Only one prompt per use case should be marked as Active at a time."
+        },
+        "Users": {
+            "pageTitle": "Users & Roles",
+            "pageSubtitle": "Review registered accounts and control authorization roles",
+            "searchPlaceholder": "Search by username, email, or role…",
+            "noResults": "No users matched the current search.",
+            "colAvatar": "Avatar",
+            "colUsername": "Username",
+            "colEmail": "Email",
+            "colRole": "Role",
+            "colUserId": "User ID",
+            "colActions": "Actions",
+            "editTooltip": "Manage role",
+            "dialogTitle": "Update User Role",
+            "dialogSubtitle": "Choose the authorization role this account should have in the application.",
+            "fieldRole": "Role",
+            "roleHint": "Member is the default role for new registrations. Knowledge Managers can manage catalog content. Admins can manage every role and all admin tools.",
+            "updateSuccess": "Updated role for {{name}}.",
+            "roles": {
+                "Admin": "Admin",
+                "KnowledgeManager": "Knowledge Manager",
+                "Member": "Member"
+            }
         },
         "Models": {
             "pageTitle": "AI Models",

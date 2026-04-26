@@ -16,6 +16,7 @@ import Typography from '@mui/material/Typography';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import DescriptionIcon from '@mui/icons-material/Description';
 
@@ -30,6 +31,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
+    { labelKey: 'AiManagement.nav.users', path: '/admin/users', icon: <ManageAccountsIcon fontSize="small" /> },
     { labelKey: 'AiManagement.nav.models', path: '/admin/ai-models', icon: <SmartToyIcon fontSize="small" /> },
     { labelKey: 'AiManagement.nav.prompts', path: '/admin/ai-prompts', icon: <DescriptionIcon fontSize="small" /> },
 ];

@@ -1,10 +1,11 @@
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
-import { aiModelApi, aiPromptApi } from '../api/aiManagementApi';
+import { adminUserApi, aiModelApi, aiPromptApi } from '../api/aiManagementApi';
 import type {
     AiModelConfigFilter,
     AiPromptTemplateFilter,
     CreateAiModelConfigPayload,
     CreateAiPromptTemplatePayload,
+    UpdateUserRolePayload,
     UpdateAiModelConfigPayload,
     UpdateAiPromptTemplatePayload,
 } from '../types';
@@ -12,9 +13,26 @@ import type {
 // ─── Query Keys ──────────────────────────────────────────────────────────────
 
 export const AI_MGMT_KEYS = {
+    usersList: ['admin', 'users', 'list'] as const,
     modelsPaginated: (filter: AiModelConfigFilter) => ['admin', 'ai-models', 'paginated', filter] as const,
     promptsPaginated: (filter: AiPromptTemplateFilter) => ['admin', 'ai-prompts', 'paginated', filter] as const,
 } as const;
+
+export function useAdminUsers() {
+    return useSuspenseQuery({
+        queryKey: AI_MGMT_KEYS.usersList,
+        queryFn: adminUserApi.getList,
+    });
+}
+
+export function useUpdateAdminUserRole() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, payload }: { id: string; payload: UpdateUserRolePayload }) =>
+            adminUserApi.updateRole(id, payload),
+        onSuccess: () => { void qc.invalidateQueries({ queryKey: ['admin', 'users'] }); },
+    });
+}
 
 // ─── AI Model Queries ────────────────────────────────────────────────────────
 

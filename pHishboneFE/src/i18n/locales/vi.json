@@ -241,12 +241,14 @@
             "save": "Lưu"
         },
         "nav": {
+            "users": "NgÆ°á»i DÃ¹ng & Vai TrÃ²",
             "species": "Loài",
             "types": "Loại",
             "tags": "Nhãn",
             "rules": "Tương Thích"
         },
         "info": {
+            "users": "Quáº£n lÃ½ quyá»n truy cáº­p á»©ng dá»¥ng táº¡i Ä‘Ã¢y. TÃ i khoáº£n Ä‘Äƒng kÃ½ má»›i máº·c Ä‘á»‹nh lÃ  Member, Admin cÃ³ thá»ƒ nÃ¢ng quyá»n lÃªn Knowledge Manager hoáº·c Admin, vÃ  thay Ä‘á»•i vai trÃ² sáº½ Ä‘Æ°á»£c Ã¡p dá»¥ng qua táº§ng phÃ¢n quyá»n cá»§a backend.",
             "species": "Một bản ghi Loài là một loài cá, sinh vật không xương sống hoặc cây thủy sinh trong danh mục hệ thống. Nó bao gồm phân loại (tên thường gọi & tên khoa học), yêu cầu thông số nước, hồ sơ hành vi và nhãn tìm kiếm. Mỗi Loài phải thuộc một Loại duy nhất.",
             "types": "Loại là các danh mục phân loại cấp cao nhất dành cho các loài — ví dụ: \"Cá Nước Ngọt\", \"Cichlid\", \"Sinh Vật Không Xương Sống\" hoặc \"Cây Thủy Sinh\". Mỗi loài phải thuộc một Loại. Loại có tác dụng trong bộ lọc danh mục loài.",
             "tags": "Nhãn là các từ khóa tự do gắn vào loài — ví dụ: \"thích hợp người mới\", \"hung hăng\", \"sống theo đàn\", \"bể có cây\". Chúng hỗ trợ công cụ tìm kiếm và kiểm tra khả năng tương thích. Hãy sử dụng mã ngắn, có thể tái sử dụng và có ý nghĩa.",
@@ -529,12 +531,37 @@
         "inactive": "Không dùng",
         "errorUnexpected": "Đã xảy ra lỗi không mong muốn.",
         "nav": {
+            "users": "Người Dùng & Vai Trò",
             "models": "Mô Hình AI",
             "prompts": "Mẫu Prompt AI"
         },
         "info": {
+            "users": "Quản lý quyền truy cập ứng dụng tại đây. Tài khoản đăng ký mới mặc định là Member, Admin có thể nâng quyền lên Knowledge Manager hoặc Admin, và thay đổi vai trò sẽ được áp dụng qua tầng phân quyền của backend.",
             "models": "Cấu hình mô hình AI xác định các mô hình ngôn ngữ khả dụng cho hệ thống. Mỗi mục chỉ định nhà cung cấp (OpenRouter, Groq), mã nhận dạng mô hình và các tham số điều chỉnh như nhiệt độ và thời gian chờ.",
             "prompts": "Mẫu prompt AI xác định các prompt hệ thống được sử dụng cho từng trường hợp sử dụng cụ thể (ví dụ: tạo thông tin cá). Chỉ nên đánh dấu một prompt cho mỗi trường hợp sử dụng là Đang dùng tại một thời điểm."
+        },
+        "Users": {
+            "pageTitle": "Người Dùng & Vai Trò",
+            "pageSubtitle": "Xem các tài khoản đã đăng ký và quản lý vai trò phân quyền",
+            "searchPlaceholder": "Tìm theo tên người dùng, email hoặc vai trò…",
+            "noResults": "Không có người dùng nào khớp với bộ lọc hiện tại.",
+            "colAvatar": "Ảnh",
+            "colUsername": "Tên Người Dùng",
+            "colEmail": "Email",
+            "colRole": "Vai Trò",
+            "colUserId": "Mã Người Dùng",
+            "colActions": "Thao Tác",
+            "editTooltip": "Quản lý vai trò",
+            "dialogTitle": "Cập Nhật Vai Trò",
+            "dialogSubtitle": "Chọn vai trò phân quyền mà tài khoản này sẽ sử dụng trong ứng dụng.",
+            "fieldRole": "Vai Trò",
+            "roleHint": "Member là vai trò mặc định cho tài khoản mới. Knowledge Manager có thể quản lý nội dung catalog. Admin có thể quản lý mọi vai trò và toàn bộ công cụ quản trị.",
+            "updateSuccess": "Đã cập nhật vai trò cho {{name}}.",
+            "roles": {
+                "Admin": "Admin",
+                "KnowledgeManager": "Knowledge Manager",
+                "Member": "Member"
+            }
         },
         "Models": {
             "pageTitle": "Mô Hình AI",

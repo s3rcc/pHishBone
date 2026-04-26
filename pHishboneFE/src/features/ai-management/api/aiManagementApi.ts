@@ -1,5 +1,6 @@
 import { axiosInstance } from '../../../lib/axiosInstance';
 import type {
+    AdminUserDto,
     AiModelConfigDto,
     AiModelConfigFilter,
     AiPromptTemplateDto,
@@ -8,9 +9,25 @@ import type {
     CreateAiModelConfigPayload,
     CreateAiPromptTemplatePayload,
     PaginationResponse,
+    UpdateUserRolePayload,
     UpdateAiModelConfigPayload,
     UpdateAiPromptTemplatePayload,
 } from '../types';
+
+export const adminUserApi = {
+    getList: async (): Promise<AdminUserDto[]> => {
+        const { data } = await axiosInstance.get<ApiResponse<AdminUserDto[]>>('/api/auth/users');
+        return data.data;
+    },
+
+    updateRole: async (id: string, payload: UpdateUserRolePayload): Promise<AdminUserDto> => {
+        const { data } = await axiosInstance.put<ApiResponse<AdminUserDto>>(
+            `/api/auth/users/${id}/role`,
+            payload,
+        );
+        return data.data;
+    },
+};
 
 // ─── AI Model Configs ────────────────────────────────────────────────────────
 

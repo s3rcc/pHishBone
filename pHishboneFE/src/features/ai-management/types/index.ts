@@ -1,5 +1,8 @@
 // ─── Enums (mirror Domain.Enums on the backend) ─────────────────────────────
 
+export type { AppRole } from '../../auth/types';
+import type { AppRole } from '../../auth/types';
+
 export type AiProvider = 0 | 1; // OpenRouter = 0, Groq = 1
 export const AiProviderLabels: Record<AiProvider, string> = {
     0: 'OpenRouter',
@@ -25,6 +28,18 @@ export interface PaginationResponse<T> {
     totalPages: number;
     currentPage: number;
     pageSize: number;
+}
+
+export interface AdminUserDto {
+    id: string;
+    username: string;
+    email: string;
+    role: AppRole;
+    avatarUrl?: string | null;
+}
+
+export interface UpdateUserRolePayload {
+    role: AppRole;
 }
 
 // ─── AI Model Config DTOs ────────────────────────────────────────────────────
