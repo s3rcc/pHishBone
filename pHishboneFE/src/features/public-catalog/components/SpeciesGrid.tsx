@@ -1,54 +1,90 @@
-import React from 'react';
-import { Grid, Typography, Box } from '@mui/material';
+import React, { useEffect, useMemo } from 'react';
+import { Box, Grid, Stack, Typography } from '@mui/material';
+import WaterRoundedIcon from '@mui/icons-material/WaterRounded';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { publicCatalogApi } from '../api/publicCatalogApi';
 import { SpeciesCard } from './SpeciesCard';
 import type { PublicCatalogFilter } from '../types';
 
-interface SpeciesGridProps {
-    filter: PublicCatalogFilter;
-    onTotalChange?: (total: number) => void;
+interface SpeciesGridMeta {
+    total: number;
+    totalPages: number;
+    page: number;
+    size: number;
 }
 
-export const SpeciesGrid: React.FC<SpeciesGridProps> = ({ filter, onTotalChange }) => {
+interface SpeciesGridProps {
+    filter: PublicCatalogFilter;
+    onMetaChange?: (meta: SpeciesGridMeta) => void;
+}
+
+export const SpeciesGrid: React.FC<SpeciesGridProps> = ({ filter, onMetaChange }) => {
     const { t } = useTranslation();
 
     const { data } = useSuspenseQuery({
         queryKey: ['public-catalog', 'search', filter],
-        queryFn: async () => {
-            const result = await publicCatalogApi.searchSpecies(filter);
-            onTotalChange?.(result.totalItems ?? result.items.length);
-            return result;
-        },
+        queryFn: () => publicCatalogApi.searchSpecies(filter),
         staleTime: 30_000,
     });
 
     const species = data.items;
 
+    const meta = useMemo<SpeciesGridMeta>(() => ({
+        total: data.total ?? data.totalItems ?? data.items.length,
+        totalPages: data.totalPages || 1,
+        page: data.page ?? data.currentPage ?? filter.page ?? 1,
+        size: data.size ?? data.pageSize ?? filter.size ?? data.items.length,
+    }), [data, filter.page, filter.size]);
+
+    useEffect(() => {
+        onMetaChange?.(meta);
+    }, [meta, onMetaChange]);
+
     if (!species.length) {
         return (
             <Box
                 sx={{
+                    display: 'grid',
+                    placeItems: 'center',
+                    minHeight: 360,
+                    borderRadius: 2,
+                    border: '1px dashed rgba(52, 228, 234, 0.18)',
+                    backgroundColor: 'rgba(255,255,255,0.02)',
                     textAlign: 'center',
-                    py: 10,
+                    px: 3,
                 }}
             >
-                <Typography variant="h5" sx={{ mb: 1 }}>
-                    🐠
-                </Typography>
-                <Typography variant="body1" color="text.secondary">
-                    {t('PublicCatalog.noResults')}
-                </Typography>
+                <Stack spacing={1.5} alignItems="center">
+                    <Box
+                        sx={{
+                            width: 54,
+                            height: 54,
+                            borderRadius: 1.5,
+                            display: 'grid',
+                            placeItems: 'center',
+                            bgcolor: 'rgba(52, 228, 234, 0.08)',
+                            color: 'primary.main',
+                        }}
+                    >
+                        <WaterRoundedIcon />
+                    </Box>
+                    <Typography variant="h6" fontWeight={700}>
+                        {t('PublicCatalog.noResultsTitle')}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 360 }}>
+                        {t('PublicCatalog.noResults')}
+                    </Typography>
+                </Stack>
             </Box>
         );
     }
 
     return (
-        <Grid container spacing={3}>
-            {species.map((s) => (
-                <Grid key={s.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
-                    <SpeciesCard species={s} />
+        <Grid container spacing={2.25}>
+            {species.map((candidate) => (
+                <Grid key={candidate.id} size={{ xs: 12, sm: 6, xl: 4 }}>
+                    <SpeciesCard species={candidate} />
                 </Grid>
             ))}
         </Grid>
@@ -56,4 +92,3 @@ export const SpeciesGrid: React.FC<SpeciesGridProps> = ({ filter, onTotalChange 
 };
 
 export default SpeciesGrid;
-

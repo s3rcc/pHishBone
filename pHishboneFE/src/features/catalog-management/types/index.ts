@@ -40,9 +40,12 @@ export interface ApiResponse<T> {
 export interface PaginationResponse<T> {
     items: T[];
     totalItems: number;
+    total?: number;
     totalPages: number;
     currentPage: number;
+    page?: number;
     pageSize: number;
+    size?: number;
 }
 
 // ─── Tag DTOs ────────────────────────────────────────────────────────────────

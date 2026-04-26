@@ -1,14 +1,19 @@
 import { axiosInstance } from '../../../lib/axiosInstance';
 import type {
     ApiResponse,
+    PaginationResponse,
     SpeciesDto,
     SpeciesDetailDto,
     ImageResponseDto,
-    PaginationResponse,
     SpeciesTypeDto,
     TagDto,
 } from '../../catalog-management/types';
-import type { PublicCatalogFilter } from '../types';
+import type {
+    BookmarkedSpeciesDto,
+    PublicCatalogFilter,
+    RelatedSpeciesDto,
+    SpeciesBookmarkStatusDto,
+} from '../types';
 
 // ─── Public Catalog API (Read-Only) ──────────────────────────────────────────
 
@@ -32,6 +37,25 @@ export const publicCatalogApi = {
     getSpeciesBySlug: async (slug: string): Promise<SpeciesDetailDto> => {
         const { data } = await axiosInstance.get<ApiResponse<SpeciesDetailDto>>(
             `/api/catalog/species/by-slug/${slug}`,
+        );
+        return data.data;
+    },
+
+    /**
+     * Get related species for a detail page.
+     */
+    getRelatedSpecies: async (
+        speciesId: string,
+        params?: {
+            size?: number;
+            excludeIds?: string[];
+            recentlyViewedIds?: string[];
+            seed?: string;
+        },
+    ): Promise<RelatedSpeciesDto[]> => {
+        const { data } = await axiosInstance.get<ApiResponse<RelatedSpeciesDto[]>>(
+            `/api/catalog/species/${speciesId}/related`,
+            { params },
         );
         return data.data;
     },
@@ -64,6 +88,33 @@ export const publicCatalogApi = {
             '/api/catalog/tags',
         );
         return data.data;
+    },
+
+    /**
+     * Get bookmark status for the current user and species.
+     */
+    getBookmarkStatus: async (speciesId: string): Promise<SpeciesBookmarkStatusDto> => {
+        const { data } = await axiosInstance.get<ApiResponse<SpeciesBookmarkStatusDto>>(
+            `/api/auth/me/bookmarks/${speciesId}/status`,
+        );
+        return data.data;
+    },
+
+    /**
+     * Bookmark a species for the current user.
+     */
+    addBookmark: async (speciesId: string): Promise<BookmarkedSpeciesDto> => {
+        const { data } = await axiosInstance.post<ApiResponse<BookmarkedSpeciesDto>>(
+            `/api/auth/me/bookmarks/${speciesId}`,
+        );
+        return data.data;
+    },
+
+    /**
+     * Remove a species bookmark for the current user.
+     */
+    removeBookmark: async (speciesId: string): Promise<void> => {
+        await axiosInstance.delete(`/api/auth/me/bookmarks/${speciesId}`);
     },
 };
 

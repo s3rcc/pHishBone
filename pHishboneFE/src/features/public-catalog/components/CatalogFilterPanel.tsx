@@ -1,32 +1,32 @@
 import React, { useCallback, useMemo } from 'react';
 import {
-    Box,
-    Typography,
-    Divider,
-    TextField,
-    Select,
-    MenuItem,
-    FormControl,
-    InputLabel,
-    Slider,
-    FormControlLabel,
-    Checkbox,
-    Button,
-    Stack,
-    Chip,
     Autocomplete,
+    Box,
+    Button,
+    Checkbox,
+    Chip,
+    FormControl,
+    FormControlLabel,
     InputAdornment,
+    InputLabel,
+    MenuItem,
+    Select,
+    Slider,
+    Stack,
+    TextField,
+    ToggleButton,
+    ToggleButtonGroup,
+    Typography,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import FilterListOffIcon from '@mui/icons-material/FilterListOff';
+import RotateLeftRoundedIcon from '@mui/icons-material/RotateLeftRounded';
+import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
+import SwapVertRoundedIcon from '@mui/icons-material/SwapVertRounded';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { publicCatalogApi } from '../api/publicCatalogApi';
 import type { PublicCatalogFilter } from '../types';
 import type { DietType, SwimLevel, TagDto } from '../../catalog-management/types';
-
-// ─── Props ────────────────────────────────────────────────────────────────────
 
 interface CatalogFilterPanelProps {
     filter: PublicCatalogFilter;
@@ -34,12 +34,17 @@ interface CatalogFilterPanelProps {
     onClear: () => void;
 }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
 const PH_BOUNDS = [6.0, 9.0] as const;
 const TEMP_BOUNDS = [18, 32] as const;
 
-// ─── Component ───────────────────────────────────────────────────────────────
+const sectionTitleSx = {
+    color: 'text.secondary',
+    fontSize: '0.74rem',
+    fontWeight: 700,
+    letterSpacing: '0.12em',
+    textTransform: 'uppercase',
+    mb: 1.15,
+} as const;
 
 export const CatalogFilterPanel: React.FC<CatalogFilterPanelProps> = ({
     filter,
@@ -60,364 +65,373 @@ export const CatalogFilterPanel: React.FC<CatalogFilterPanelProps> = ({
         staleTime: 5 * 60 * 1000,
     });
 
-    // ── Derived ───────────────────────────────────────────────────────────────
-
     const phValue = useMemo<[number, number]>(() => [
         filter.phMin ?? PH_BOUNDS[0],
         filter.phMax ?? PH_BOUNDS[1],
-    ], [filter.phMin, filter.phMax]);
+    ], [filter.phMax, filter.phMin]);
 
     const tempValue = useMemo<[number, number]>(() => [
         filter.tempMin ?? TEMP_BOUNDS[0],
         filter.tempMax ?? TEMP_BOUNDS[1],
-    ], [filter.tempMin, filter.tempMax]);
+    ], [filter.tempMax, filter.tempMin]);
 
     const selectedTags = useMemo<TagDto[]>(() => {
-        if (!filter.tagIds?.length) return [];
-        return tags.filter((t) => filter.tagIds!.includes(t.id));
+        if (!filter.tagIds?.length) {
+            return [];
+        }
+
+        return tags.filter((tag) => filter.tagIds?.includes(tag.id));
     }, [filter.tagIds, tags]);
 
-    // ── Handlers ──────────────────────────────────────────────────────────────
+    const handleSearch = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+        onChange({ searchTerm: event.target.value || undefined });
+    }, [onChange]);
 
-    const handleSearch = useCallback(
-        (e: React.ChangeEvent<HTMLInputElement>) =>
-            onChange({ searchTerm: e.target.value || undefined }),
-        [onChange],
-    );
+    const handleSort = useCallback((event: SelectChangeEvent) => {
+        const value = event.target.value;
+        if (value === 'name-asc') {
+            onChange({ sortBy: 'CommonName', isAscending: true });
+            return;
+        }
 
-    const handleType = useCallback(
-        (e: SelectChangeEvent<any>) =>
-            onChange({ typeId: (e.target.value as string) || undefined }),
-        [onChange],
-    );
+        if (value === 'name-desc') {
+            onChange({ sortBy: 'CommonName', isAscending: false });
+            return;
+        }
 
-    const handleWaterType = useCallback(
-        (e: SelectChangeEvent<any>) => {
-            const v = e.target.value;
-            onChange({ waterType: v === '' ? undefined : (Number(v) as 0 | 1 | 2) });
-        },
-        [onChange],
-    );
+        onChange({ sortBy: 'CreatedTime', isAscending: false });
+    }, [onChange]);
 
-    const handleDiet = useCallback(
-        (e: SelectChangeEvent<any>) => {
-            const v = e.target.value;
-            onChange({ dietType: v === '' ? undefined : (Number(v) as DietType) });
-        },
-        [onChange],
-    );
+    const handleDiet = useCallback((event: SelectChangeEvent) => {
+        const value = event.target.value;
+        onChange({ dietType: value === '' ? undefined : Number(value) as DietType });
+    }, [onChange]);
 
-    const handleSwimLevel = useCallback(
-        (e: SelectChangeEvent<any>) => {
-            const v = e.target.value;
-            onChange({ swimLevel: v === '' ? undefined : (Number(v) as SwimLevel) });
-        },
-        [onChange],
-    );
+    const handleType = useCallback((event: SelectChangeEvent) => {
+        const value = event.target.value;
+        onChange({ typeId: value || undefined });
+    }, [onChange]);
 
-    const handlePh = useCallback(
-        (_: Event, newValue: number | number[]) => {
-            const [min, max] = newValue as [number, number];
-            onChange({ phMin: min, phMax: max });
-        },
-        [onChange],
-    );
+    const handleSwimLevel = useCallback((_: React.MouseEvent<HTMLElement>, value: string | null) => {
+        if (!value) {
+            onChange({ swimLevel: undefined });
+            return;
+        }
 
-    const handleTemp = useCallback(
-        (_: Event, newValue: number | number[]) => {
-            const [min, max] = newValue as [number, number];
-            onChange({ tempMin: min, tempMax: max });
-        },
-        [onChange],
-    );
+        onChange({ swimLevel: Number(value) as SwimLevel });
+    }, [onChange]);
 
-    const handleSchooling = useCallback(
-        (e: React.ChangeEvent<HTMLInputElement>) =>
-            onChange({ isSchooling: e.target.checked ? true : undefined }),
-        [onChange],
-    );
+    const handleWaterType = useCallback((_: React.MouseEvent<HTMLElement>, value: string | null) => {
+        if (!value) {
+            onChange({ waterType: undefined });
+            return;
+        }
 
-    const handleTagChange = useCallback(
-        (_: React.SyntheticEvent, newTags: TagDto[]) =>
-            onChange({ tagIds: newTags.length ? newTags.map((t) => t.id) : undefined }),
-        [onChange],
-    );
+        onChange({ waterType: Number(value) as 0 | 1 | 2 });
+    }, [onChange]);
 
-    const handleSort = useCallback(
-        (e: SelectChangeEvent<any>) => {
-            const v = e.target.value as string;
-            if (v === 'name-asc') onChange({ sortBy: 'CommonName', isAscending: true });
-            else if (v === 'name-desc') onChange({ sortBy: 'CommonName', isAscending: false });
-            else if (v === 'newest') onChange({ sortBy: 'CreatedTime', isAscending: false });
-        },
-        [onChange],
-    );
+    const handlePh = useCallback((_: Event, value: number | number[]) => {
+        const [min, max] = value as [number, number];
+        onChange({ phMin: min, phMax: max });
+    }, [onChange]);
+
+    const handleTemp = useCallback((_: Event, value: number | number[]) => {
+        const [min, max] = value as [number, number];
+        onChange({ tempMin: min, tempMax: max });
+    }, [onChange]);
+
+    const handleSchooling = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+        onChange({ isSchooling: event.target.checked ? true : undefined });
+    }, [onChange]);
+
+    const handleTagChange = useCallback((_: React.SyntheticEvent, value: TagDto[]) => {
+        onChange({ tagIds: value.length ? value.map((tag) => tag.id) : undefined });
+    }, [onChange]);
 
     const sortValue = useMemo(() => {
-        if (filter.sortBy === 'CreatedTime') return 'newest';
-        if (filter.isAscending === false) return 'name-desc';
-        return 'name-asc';
-    }, [filter.sortBy, filter.isAscending]);
+        if (filter.sortBy === 'CreatedTime') {
+            return 'newest';
+        }
 
-    // ── Render ────────────────────────────────────────────────────────────────
+        if (filter.isAscending === false) {
+            return 'name-desc';
+        }
+
+        return 'name-asc';
+    }, [filter.isAscending, filter.sortBy]);
 
     return (
         <Box
             sx={{
-                width: 280,
+                width: { xs: '100%', lg: 320 },
                 flexShrink: 0,
-                position: 'sticky',
-                top: 24,
+                position: { xs: 'static', lg: 'sticky' },
+                top: { lg: 88 },
                 alignSelf: 'flex-start',
-                bgcolor: 'background.paper',
-                borderRadius: 3,
-                border: '1px solid',
-                borderColor: 'divider',
-                p: 3,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 2.5,
+                borderRadius: 2,
+                border: '1px solid rgba(52, 228, 234, 0.1)',
+                background: 'linear-gradient(180deg, rgba(14, 31, 36, 0.96) 0%, rgba(9, 24, 28, 0.99) 100%)',
+                p: { xs: 2, md: 2.4 },
             }}
         >
-            {/* Header */}
-            <Typography
-                variant="overline"
-                fontWeight={700}
-                letterSpacing={2}
-                sx={{ color: 'primary.main' }}
-            >
-                {t('PublicCatalog.filterTitle')}
-            </Typography>
-
-            {/* Search */}
-            <TextField
-                fullWidth
-                size="small"
-                placeholder={t('PublicCatalog.searchPlaceholder')}
-                value={filter.searchTerm ?? ''}
-                onChange={handleSearch}
-                slotProps={{
-                    input: {
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <SearchIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-                            </InputAdornment>
-                        ),
-                    },
-                }}
-                sx={{
-                    '& .MuiOutlinedInput-root': { borderRadius: 2 },
-                }}
-            />
-
-            <Divider />
-
-            {/* Sort By */}
-            <FormControl fullWidth size="small">
-                <InputLabel>{t('PublicCatalog.sortBy')}</InputLabel>
-                <Select
-                    value={sortValue}
-                    label={t('PublicCatalog.sortBy')}
-                    onChange={handleSort}
-                    sx={{ borderRadius: 2 }}
-                >
-                    <MenuItem value="name-asc">{t('PublicCatalog.sortNameAsc')}</MenuItem>
-                    <MenuItem value="name-desc">{t('PublicCatalog.sortNameDesc')}</MenuItem>
-                    <MenuItem value="newest">{t('PublicCatalog.sortNewest')}</MenuItem>
-                </Select>
-            </FormControl>
-
-            <Divider />
-
-            {/* Type */}
-            <FormControl fullWidth size="small">
-                <InputLabel>{t('PublicCatalog.filterType')}</InputLabel>
-                <Select
-                    value={filter.typeId ?? ''}
-                    label={t('PublicCatalog.filterType')}
-                    onChange={handleType}
-                    sx={{ borderRadius: 2 }}
-                >
-                    <MenuItem value="">{t('PublicCatalog.filterAllTypes')}</MenuItem>
-                    {types.map((tp) => (
-                        <MenuItem key={tp.id} value={tp.id}>
-                            {tp.name}
-                        </MenuItem>
-                    ))}
-                </Select>
-            </FormControl>
-
-            {/* Water Type */}
-            <FormControl fullWidth size="small">
-                <InputLabel>{t('PublicCatalog.filterWaterType')}</InputLabel>
-                <Select
-                    value={filter.waterType ?? ''}
-                    label={t('PublicCatalog.filterWaterType')}
-                    onChange={handleWaterType}
-                    sx={{ borderRadius: 2 }}
-                >
-                    <MenuItem value="">{t('PublicCatalog.filterAllWaterTypes')}</MenuItem>
-                    <MenuItem value={0}>{t('Catalog.waterType.0')}</MenuItem>
-                    <MenuItem value={1}>{t('Catalog.waterType.1')}</MenuItem>
-                    <MenuItem value={2}>{t('Catalog.waterType.2')}</MenuItem>
-                </Select>
-            </FormControl>
-
-            {/* Diet Type */}
-            <FormControl fullWidth size="small">
-                <InputLabel>{t('PublicCatalog.filterDietType')}</InputLabel>
-                <Select
-                    value={filter.dietType ?? ''}
-                    label={t('PublicCatalog.filterDietType')}
-                    onChange={handleDiet}
-                    sx={{ borderRadius: 2 }}
-                >
-                    <MenuItem value="">{t('PublicCatalog.filterAllDiets')}</MenuItem>
-                    <MenuItem value={0}>{t('Catalog.dietType.0')}</MenuItem>
-                    <MenuItem value={1}>{t('Catalog.dietType.1')}</MenuItem>
-                    <MenuItem value={2}>{t('Catalog.dietType.2')}</MenuItem>
-                </Select>
-            </FormControl>
-
-            {/* Swim Level */}
-            <FormControl fullWidth size="small">
-                <InputLabel>{t('PublicCatalog.filterSwimLevel')}</InputLabel>
-                <Select
-                    value={filter.swimLevel ?? ''}
-                    label={t('PublicCatalog.filterSwimLevel')}
-                    onChange={handleSwimLevel}
-                    sx={{ borderRadius: 2 }}
-                >
-                    <MenuItem value="">{t('PublicCatalog.filterAllSwimLevels')}</MenuItem>
-                    <MenuItem value={0}>{t('Catalog.swimLevel.0')}</MenuItem>
-                    <MenuItem value={1}>{t('Catalog.swimLevel.1')}</MenuItem>
-                    <MenuItem value={2}>{t('Catalog.swimLevel.2')}</MenuItem>
-                    <MenuItem value={3}>{t('Catalog.swimLevel.3')}</MenuItem>
-                </Select>
-            </FormControl>
-
-            <Divider />
-
-            {/* pH Range */}
-            <Box>
-                <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
-                    <Typography variant="caption" fontWeight={600} color="text.secondary" letterSpacing={1} textTransform="uppercase">
-                        {t('PublicCatalog.filterPhRange')}
+            <Stack spacing={2.4}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Typography variant="h5" fontWeight={800} sx={{ color: 'primary.main', letterSpacing: '-0.03em' }}>
+                        {t('PublicCatalog.filterTitle')}
                     </Typography>
-                    <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 700 }}>
-                        {phValue[0].toFixed(1)} – {phValue[1].toFixed(1)}
-                    </Typography>
+                    <Button
+                        onClick={onClear}
+                        startIcon={<RotateLeftRoundedIcon sx={{ fontSize: 16 }} />}
+                        sx={{
+                            minWidth: 0,
+                            px: 0,
+                            py: 0,
+                            color: 'text.secondary',
+                            fontWeight: 500,
+                            '&:hover': { color: 'text.primary', backgroundColor: 'transparent' },
+                        }}
+                    >
+                        {t('PublicCatalog.clearFilters')}
+                    </Button>
                 </Stack>
-                <Slider
-                    value={phValue}
-                    onChange={handlePh}
-                    min={PH_BOUNDS[0]}
-                    max={PH_BOUNDS[1]}
-                    step={0.1}
-                    valueLabelDisplay="auto"
-                    sx={{
-                        color: 'primary.main',
-                        '& .MuiSlider-thumb': { width: 14, height: 14 },
-                    }}
-                />
-            </Box>
 
-            {/* Temperature Range */}
-            <Box>
-                <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
-                    <Typography variant="caption" fontWeight={600} color="text.secondary" letterSpacing={1} textTransform="uppercase">
-                        {t('PublicCatalog.filterTempRange')}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 700 }}>
-                        {tempValue[0]}° – {tempValue[1]}°C
-                    </Typography>
-                </Stack>
-                <Slider
-                    value={tempValue}
-                    onChange={handleTemp}
-                    min={TEMP_BOUNDS[0]}
-                    max={TEMP_BOUNDS[1]}
-                    step={1}
-                    valueLabelDisplay="auto"
-                    sx={{
-                        color: 'primary.main',
-                        '& .MuiSlider-thumb': { width: 14, height: 14 },
-                    }}
-                />
-            </Box>
-
-            <Divider />
-
-            {/* Tags */}
-            <Autocomplete
-                multiple
-                size="small"
-                options={tags}
-                value={selectedTags}
-                onChange={handleTagChange}
-                getOptionLabel={(opt) => opt.name}
-                isOptionEqualToValue={(opt, val) => opt.id === val.id}
-                renderTags={(value, getTagProps) =>
-                    value.map((opt, index) => (
-                        <Chip
-                            {...getTagProps({ index })}
-                            key={opt.id}
-                            label={opt.name}
-                            size="small"
-                            sx={{
-                                height: 22,
-                                fontSize: '0.7rem',
-                                bgcolor: 'primary.dark',
-                                color: 'primary.contrastText',
-                                borderRadius: 1.5,
-                            }}
-                        />
-                    ))
-                }
-                renderInput={(params) => (
+                <Box>
+                    <Typography sx={sectionTitleSx}>{t('PublicCatalog.searchLabel')}</Typography>
                     <TextField
-                        {...params}
-                        label={t('PublicCatalog.filterTags')}
-                        placeholder={t('PublicCatalog.filterTagsPlaceholder')}
-                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-                    />
-                )}
-            />
-
-            {/* Schooling toggle */}
-            <FormControlLabel
-                control={
-                    <Checkbox
-                        checked={filter.isSchooling === true}
-                        onChange={handleSchooling}
+                        fullWidth
                         size="small"
-                        sx={{ color: 'primary.main' }}
+                        placeholder={t('PublicCatalog.searchPlaceholder')}
+                        value={filter.searchTerm ?? ''}
+                        onChange={handleSearch}
+                        slotProps={{
+                            input: {
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchRoundedIcon sx={{ color: 'text.secondary', fontSize: 18 }} />
+                                    </InputAdornment>
+                                ),
+                            },
+                        }}
+                        sx={{
+                            '& .MuiOutlinedInput-root': {
+                                borderRadius: 1.5,
+                                backgroundColor: 'rgba(255,255,255,0.05)',
+                            },
+                        }}
                     />
-                }
-                label={
-                    <Typography variant="body2" color="text.secondary">
-                        {t('PublicCatalog.filterSchooling')}
-                    </Typography>
-                }
-            />
+                </Box>
 
-            <Divider />
+                <Box>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.15 }}>
+                        <Typography sx={{ ...sectionTitleSx, mb: 0 }}>{t('PublicCatalog.sortBy')}</Typography>
+                        <SwapVertRoundedIcon sx={{ color: 'text.secondary', fontSize: 18 }} />
+                    </Stack>
+                    <FormControl fullWidth size="small">
+                        <Select
+                            value={sortValue}
+                            onChange={handleSort}
+                            sx={{
+                                borderRadius: 1.5,
+                                backgroundColor: 'rgba(255,255,255,0.05)',
+                            }}
+                        >
+                            <MenuItem value="name-asc">{t('PublicCatalog.sortNameAsc')}</MenuItem>
+                            <MenuItem value="name-desc">{t('PublicCatalog.sortNameDesc')}</MenuItem>
+                            <MenuItem value="newest">{t('PublicCatalog.sortNewest')}</MenuItem>
+                        </Select>
+                    </FormControl>
+                </Box>
 
-            {/* Clear */}
-            <Button
-                variant="outlined"
-                size="small"
-                startIcon={<FilterListOffIcon />}
-                onClick={onClear}
-                sx={{
-                    borderRadius: 2,
-                    borderColor: 'divider',
-                    color: 'text.secondary',
-                    '&:hover': { borderColor: 'primary.main', color: 'primary.main' },
-                }}
-            >
-                {t('PublicCatalog.clearFilters')}
-            </Button>
+                <Box>
+                    <Typography sx={sectionTitleSx}>{t('PublicCatalog.filterType')}</Typography>
+                    <FormControl fullWidth size="small">
+                        <InputLabel>{t('PublicCatalog.filterType')}</InputLabel>
+                        <Select
+                            value={filter.typeId ?? ''}
+                            label={t('PublicCatalog.filterType')}
+                            onChange={handleType}
+                            sx={{
+                                borderRadius: 1.5,
+                                backgroundColor: 'rgba(255,255,255,0.05)',
+                            }}
+                        >
+                            <MenuItem value="">{t('PublicCatalog.filterAllTypes')}</MenuItem>
+                            {types.map((type) => (
+                                <MenuItem key={type.id} value={type.id}>
+                                    {type.name}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                </Box>
+
+                <Box>
+                    <Typography sx={sectionTitleSx}>{t('PublicCatalog.filterWaterType')}</Typography>
+                    <ToggleButtonGroup
+                        exclusive
+                        fullWidth
+                        value={filter.waterType?.toString() ?? null}
+                        onChange={handleWaterType}
+                        sx={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(3, 1fr)',
+                            gap: 1,
+                            '& .MuiToggleButtonGroup-grouped': {
+                                m: 0,
+                                border: '1px solid rgba(255,255,255,0.06) !important',
+                                borderRadius: '10px !important',
+                            },
+                        }}
+                    >
+                        <ToggleButton value="0">{t('Catalog.waterType.0')}</ToggleButton>
+                        <ToggleButton value="1">{t('Catalog.waterType.1')}</ToggleButton>
+                        <ToggleButton value="2">{t('Catalog.waterType.2')}</ToggleButton>
+                    </ToggleButtonGroup>
+                </Box>
+
+                <Box>
+                    <Typography sx={sectionTitleSx}>{t('PublicCatalog.parametersTitle')}</Typography>
+                    <Stack spacing={2}>
+                        <Box>
+                            <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.75 }}>
+                                <Typography variant="body2">{t('PublicCatalog.filterPhRange')}</Typography>
+                                <Typography variant="body2" sx={{ color: 'primary.main' }}>
+                                    {phValue[0].toFixed(1)} - {phValue[1].toFixed(1)}
+                                </Typography>
+                            </Stack>
+                            <Slider
+                                value={phValue}
+                                onChange={handlePh}
+                                min={PH_BOUNDS[0]}
+                                max={PH_BOUNDS[1]}
+                                step={0.1}
+                                sx={{
+                                    color: 'primary.main',
+                                    '& .MuiSlider-thumb': { width: 12, height: 12 },
+                                }}
+                            />
+                        </Box>
+
+                        <Box>
+                            <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.75 }}>
+                                <Typography variant="body2">{t('PublicCatalog.filterTempRange')}</Typography>
+                                <Typography variant="body2" sx={{ color: 'primary.main' }}>
+                                    {tempValue[0]} - {tempValue[1]}°C
+                                </Typography>
+                            </Stack>
+                            <Slider
+                                value={tempValue}
+                                onChange={handleTemp}
+                                min={TEMP_BOUNDS[0]}
+                                max={TEMP_BOUNDS[1]}
+                                step={1}
+                                sx={{
+                                    color: 'primary.main',
+                                    '& .MuiSlider-thumb': { width: 12, height: 12 },
+                                }}
+                            />
+                        </Box>
+                    </Stack>
+                </Box>
+
+                <Box>
+                    <Typography sx={sectionTitleSx}>{t('PublicCatalog.profileTitle')}</Typography>
+                    <Stack spacing={1.4}>
+                        <FormControl fullWidth size="small">
+                            <InputLabel>{t('PublicCatalog.filterDietType')}</InputLabel>
+                            <Select
+                                value={filter.dietType?.toString() ?? ''}
+                                label={t('PublicCatalog.filterDietType')}
+                                onChange={handleDiet}
+                                sx={{
+                                    borderRadius: 1.5,
+                                    backgroundColor: 'rgba(255,255,255,0.05)',
+                                }}
+                            >
+                                <MenuItem value="">{t('PublicCatalog.filterAllDiets')}</MenuItem>
+                                <MenuItem value="0">{t('Catalog.dietType.0')}</MenuItem>
+                                <MenuItem value="1">{t('Catalog.dietType.1')}</MenuItem>
+                                <MenuItem value="2">{t('Catalog.dietType.2')}</MenuItem>
+                            </Select>
+                        </FormControl>
+
+                        <Box>
+                            <Typography variant="body2" sx={{ mb: 1.1 }}>{t('PublicCatalog.filterSwimLevel')}</Typography>
+                            <ToggleButtonGroup
+                                exclusive
+                                fullWidth
+                                value={filter.swimLevel?.toString() ?? null}
+                                onChange={handleSwimLevel}
+                                sx={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(2, 1fr)',
+                                    gap: 1,
+                                    '& .MuiToggleButtonGroup-grouped': {
+                                        m: 0,
+                                        border: '1px solid rgba(255,255,255,0.06) !important',
+                                        borderRadius: '10px !important',
+                                    },
+                                }}
+                            >
+                                <ToggleButton value="0">{t('Catalog.swimLevel.0')}</ToggleButton>
+                                <ToggleButton value="1">{t('Catalog.swimLevel.1')}</ToggleButton>
+                                <ToggleButton value="2">{t('Catalog.swimLevel.2')}</ToggleButton>
+                                <ToggleButton value="3">{t('Catalog.swimLevel.3')}</ToggleButton>
+                            </ToggleButtonGroup>
+                        </Box>
+                    </Stack>
+                </Box>
+
+                <Box>
+                    <Typography sx={sectionTitleSx}>{t('PublicCatalog.filterTags')}</Typography>
+                    <Autocomplete
+                        multiple
+                        size="small"
+                        options={tags}
+                        value={selectedTags}
+                        onChange={handleTagChange}
+                        getOptionLabel={(option) => option.name}
+                        isOptionEqualToValue={(option, value) => option.id === value.id}
+                        renderTags={(value, getTagProps) => value.map((option, index) => (
+                            <Chip
+                                {...getTagProps({ index })}
+                                key={option.id}
+                                label={option.name}
+                                size="small"
+                                sx={{
+                                    borderRadius: 1.5,
+                                    bgcolor: 'rgba(52, 228, 234, 0.1)',
+                                    color: 'primary.main',
+                                }}
+                            />
+                        ))}
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                placeholder={t('PublicCatalog.filterTagsPlaceholder')}
+                                sx={{
+                                    '& .MuiOutlinedInput-root': {
+                                        borderRadius: 1.5,
+                                        backgroundColor: 'rgba(255,255,255,0.05)',
+                                    },
+                                }}
+                            />
+                        )}
+                    />
+                </Box>
+
+                <FormControlLabel
+                    control={
+                        <Checkbox
+                            checked={filter.isSchooling === true}
+                            onChange={handleSchooling}
+                            sx={{ color: 'primary.main' }}
+                        />
+                    }
+                    label={t('PublicCatalog.filterSchooling')}
+                    sx={{ m: 0 }}
+                />
+            </Stack>
         </Box>
     );
 };

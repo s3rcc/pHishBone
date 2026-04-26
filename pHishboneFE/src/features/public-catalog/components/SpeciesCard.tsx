@@ -1,13 +1,14 @@
 import React, { useCallback } from 'react';
 import {
+    Box,
     Card,
     CardContent,
     CardMedia,
-    Typography,
     Chip,
-    Box,
     Stack,
+    Typography,
 } from '@mui/material';
+import ArrowOutwardRoundedIcon from '@mui/icons-material/ArrowOutwardRounded';
 import { useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import type { SpeciesDto } from '../../catalog-management/types';
@@ -16,7 +17,7 @@ interface SpeciesCardProps {
     species: SpeciesDto;
 }
 
-const PLACEHOLDER_IMG = 'https://placehold.co/400x280/0A1628/00BCD4?text=No+Image';
+const PLACEHOLDER_IMG = 'https://placehold.co/640x420/08171C/34E4EA?text=Species';
 
 export const SpeciesCard: React.FC<SpeciesCardProps> = ({ species }) => {
     const navigate = useNavigate();
@@ -31,116 +32,118 @@ export const SpeciesCard: React.FC<SpeciesCardProps> = ({ species }) => {
             onClick={handleClick}
             sx={{
                 cursor: 'pointer',
-                borderRadius: 3,
+                borderRadius: 2,
                 overflow: 'hidden',
-                transition: 'transform 0.25s ease, box-shadow 0.25s ease',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: '0 12px 28px rgba(0,188,212,0.18)',
-                },
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
-                position: 'relative',
+                border: '1px solid rgba(52, 228, 234, 0.08)',
+                background: 'linear-gradient(180deg, rgba(14, 31, 36, 0.96) 0%, rgba(10, 23, 27, 0.99) 100%)',
+                transition: 'transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease',
+                boxShadow: '0 8px 22px rgba(0, 0, 0, 0.14)',
+                '&:hover': {
+                    transform: 'translateY(-4px)',
+                    borderColor: 'rgba(52, 228, 234, 0.28)',
+                    boxShadow: '0 18px 30px rgba(0, 0, 0, 0.24)',
+                },
             }}
         >
-            {/* Active indicator dot */}
-            {species.isActive === true && (
-                <Box
+            <Box sx={{ position: 'relative' }}>
+                <CardMedia
+                    component="img"
+                    loading="lazy"
+                    image={species.thumbnailUrl || PLACEHOLDER_IMG}
+                    alt={species.commonName}
                     sx={{
-                        position: 'absolute',
-                        top: 10,
-                        right: 10,
-                        width: 10,
-                        height: 10,
-                        borderRadius: '50%',
-                        bgcolor: '#1DE9B6',
-                        boxShadow: '0 0 6px #1DE9B6',
-                        zIndex: 1,
+                        height: 228,
+                        objectFit: 'cover',
+                        borderBottom: '1px solid rgba(255,255,255,0.04)',
+                        filter: 'saturate(0.9)',
                     }}
                 />
-            )}
 
-            <CardMedia
-                component="img"
-                loading="lazy"
-                height={190}
-                image={species.thumbnailUrl || PLACEHOLDER_IMG}
-                alt={species.commonName}
-                sx={{ objectFit: 'cover' }}
-            />
+                {species.typeName && (
+                    <Chip
+                        label={species.typeName}
+                        size="small"
+                        sx={{
+                            position: 'absolute',
+                            top: 14,
+                            left: 14,
+                            height: 26,
+                            borderRadius: 1.5,
+                            fontSize: '0.72rem',
+                            fontWeight: 800,
+                            letterSpacing: '0.08em',
+                            color: 'primary.main',
+                            backgroundColor: 'rgba(4, 18, 22, 0.84)',
+                            border: '1px solid rgba(52, 228, 234, 0.24)',
+                        }}
+                    />
+                )}
+            </Box>
 
             <CardContent
                 sx={{
                     flexGrow: 1,
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: 0.5,
-                    p: 2,
-                    pb: '12px !important',
+                    gap: 1.25,
+                    p: 2.25,
                 }}
             >
-                {/* Type badge */}
-                {species.typeName && (
-                    <Chip
-                        label={species.typeName}
-                        size="small"
-                        sx={{
-                            alignSelf: 'flex-start',
-                            height: 20,
-                            fontSize: '0.65rem',
-                            fontWeight: 700,
-                            letterSpacing: 0.5,
-                            borderRadius: 1,
-                            bgcolor: 'rgba(0,188,212,0.12)',
-                            color: 'primary.main',
-                            mb: 0.5,
-                        }}
-                    />
-                )}
+                <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
+                    <Box sx={{ minWidth: 0 }}>
+                        <Typography
+                            variant="h6"
+                            sx={{
+                                fontWeight: 760,
+                                lineHeight: 1.1,
+                                letterSpacing: '-0.03em',
+                                mb: 0.4,
+                            }}
+                        >
+                            {species.commonName}
+                        </Typography>
+                        {species.scientificName && (
+                            <Typography
+                                variant="body2"
+                                noWrap
+                                sx={{
+                                    color: 'text.secondary',
+                                    fontStyle: 'italic',
+                                }}
+                            >
+                                {species.scientificName}
+                            </Typography>
+                        )}
+                    </Box>
+                    <ArrowOutwardRoundedIcon sx={{ color: 'primary.main', fontSize: 18, mt: 0.25, flexShrink: 0 }} />
+                </Stack>
 
-                <Typography
-                    variant="subtitle1"
-                    fontWeight={700}
-                    noWrap
-                    sx={{ lineHeight: 1.35 }}
-                >
-                    {species.commonName}
-                </Typography>
-
-                {species.scientificName && (
-                    <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        noWrap
-                        sx={{ fontStyle: 'italic', fontSize: '0.78rem' }}
-                    >
-                        {species.scientificName}
-                    </Typography>
-                )}
-
-                <Stack
-                    direction="row"
-                    spacing={0.5}
-                    alignItems="center"
-                    sx={{ mt: 'auto', pt: 1 }}
+                <Box
+                    sx={{
+                        mt: 'auto',
+                        pt: 1.25,
+                        borderTop: '1px solid rgba(255,255,255,0.05)',
+                    }}
                 >
                     <Typography
                         variant="caption"
-                        color="text.disabled"
-                        sx={{ fontSize: '0.68rem' }}
+                        sx={{
+                            color: species.isActive ? 'primary.main' : 'text.disabled',
+                            letterSpacing: '0.1em',
+                            fontWeight: 700,
+                        }}
                     >
-                        {t('PublicCatalog.type')}:{' '}
-                        <Box component="span" sx={{ color: 'text.secondary', fontWeight: 600 }}>
-                            {species.typeName ?? '—'}
-                        </Box>
+                        {species.isActive
+                            ? t('PublicCatalog.cardActive')
+                            : t('PublicCatalog.cardInactive')}
                     </Typography>
-                </Stack>
+                </Box>
             </CardContent>
         </Card>
     );
 };
 
 export default SpeciesCard;
-

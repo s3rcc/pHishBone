@@ -1,239 +1,247 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
     Box,
-    Typography,
-    Paper,
+    Button,
     Dialog,
     IconButton,
-    ImageList,
-    ImageListItem,
+    Stack,
+    Typography,
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
-import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
-import { publicCatalogApi } from '../../api/publicCatalogApi';
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
+import ZoomOutMapRoundedIcon from '@mui/icons-material/ZoomOutMapRounded';
 import type { ImageResponseDto } from '../../../catalog-management/types';
 
 interface ImageGalleryProps {
-    speciesId: string;
+    commonName: string;
+    primaryImage?: string;
+    images: ImageResponseDto[];
+    title: string;
+    emptyStateLabel: string;
+    expandLabel: string;
+    viewAllLabel: string;
 }
 
-export const ImageGallery: React.FC<ImageGalleryProps> = ({ speciesId }) => {
-    const { t } = useTranslation();
-    const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+const PLACEHOLDER_IMAGE = 'https://placehold.co/960x620/08171C/34E4EA?text=No+Image';
 
-    const { data: images } = useSuspenseQuery<ImageResponseDto[]>({
-        queryKey: ['public-catalog', 'images', speciesId],
-        queryFn: () => publicCatalogApi.getSpeciesImages(speciesId),
-    });
+export const ImageGallery: React.FC<ImageGalleryProps> = ({
+    commonName,
+    primaryImage,
+    images,
+    title,
+    emptyStateLabel,
+    expandLabel,
+    viewAllLabel,
+}) => {
+    const galleryImages = useMemo(() => {
+        const normalized = [...images].sort((left, right) => left.sortOrder - right.sortOrder);
+        if (!normalized.length && primaryImage) {
+            return [{
+                id: 'primary',
+                imageUrl: primaryImage,
+                sortOrder: 0,
+                createdTime: new Date().toISOString(),
+            } satisfies ImageResponseDto];
+        }
 
-    const sortedImages = useMemo(
-        () => [...images].sort((a, b) => a.sortOrder - b.sortOrder),
-        [images],
-    );
+        if (primaryImage && normalized.every((item) => item.imageUrl !== primaryImage)) {
+            return [{
+                id: 'primary',
+                imageUrl: primaryImage,
+                sortOrder: -1,
+                createdTime: new Date().toISOString(),
+            } satisfies ImageResponseDto, ...normalized];
+        }
 
-    const handleOpen = useCallback((index: number) => {
-        setLightboxIndex(index);
+        return normalized;
+    }, [images, primaryImage]);
+
+    const [selectedIndex, setSelectedIndex] = useState(0);
+    const [lightboxOpen, setLightboxOpen] = useState(false);
+
+    const selectedImage = galleryImages[selectedIndex]?.imageUrl || PLACEHOLDER_IMAGE;
+
+    const handleSelect = useCallback((index: number) => {
+        setSelectedIndex(index);
     }, []);
 
-    const handleClose = useCallback(() => {
-        setLightboxIndex(null);
+    const handleOpenLightbox = useCallback(() => {
+        setLightboxOpen(true);
     }, []);
 
-    const handlePrev = useCallback(() => {
-        setLightboxIndex((prev) =>
-            prev !== null ? (prev - 1 + sortedImages.length) % sortedImages.length : null,
-        );
-    }, [sortedImages.length]);
-
-    const handleNext = useCallback(() => {
-        setLightboxIndex((prev) =>
-            prev !== null ? (prev + 1) % sortedImages.length : null,
-        );
-    }, [sortedImages.length]);
-
-    // Handle keyboard navigation in lightbox
-    const handleKeyDown = useCallback(
-        (e: React.KeyboardEvent) => {
-            if (e.key === 'ArrowLeft') handlePrev();
-            else if (e.key === 'ArrowRight') handleNext();
-            else if (e.key === 'Escape') handleClose();
-        },
-        [handlePrev, handleNext, handleClose],
-    );
-
-    if (!sortedImages.length) {
-        return null;
-    }
-
-    const currentImage = lightboxIndex !== null ? sortedImages[lightboxIndex] : null;
+    const handleCloseLightbox = useCallback(() => {
+        setLightboxOpen(false);
+    }, []);
 
     return (
-        <Paper
-            elevation={0}
-            sx={{
-                p: 3,
-                borderRadius: 3,
-                border: '1px solid',
-                borderColor: 'divider',
-            }}
-        >
-            <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>
-                {t('PublicCatalog.Detail.galleryTitle')}
-            </Typography>
-
-            {/* ── Thumbnail Grid ───────────────────────────────────── */}
-            <ImageList
-                cols={4}
-                gap={12}
-                sx={{
-                    m: 0,
-                    '& .MuiImageListItem-root': {
-                        borderRadius: 2,
+        <>
+            <Box>
+                <Box
+                    sx={{
+                        position: 'relative',
                         overflow: 'hidden',
-                    },
-                }}
-            >
-                {sortedImages.map((img, index) => (
-                    <ImageListItem
-                        key={img.id}
-                        onClick={() => handleOpen(index)}
+                        borderRadius: 2,
+                        border: '1px solid rgba(52, 228, 234, 0.1)',
+                        backgroundColor: 'rgba(255,255,255,0.02)',
+                    }}
+                >
+                    <Box
+                        component="img"
+                        src={selectedImage}
+                        alt={commonName}
                         sx={{
-                            cursor: 'pointer',
-                            '&:hover img': {
-                                transform: 'scale(1.05)',
+                            width: '100%',
+                            aspectRatio: '1.7 / 1',
+                            objectFit: 'cover',
+                            display: 'block',
+                            filter: galleryImages.length ? 'saturate(0.92)' : 'grayscale(0.15)',
+                        }}
+                    />
+
+                    <Button
+                        size="small"
+                        startIcon={<ZoomOutMapRoundedIcon />}
+                        onClick={handleOpenLightbox}
+                        sx={{
+                            position: 'absolute',
+                            left: 16,
+                            bottom: 16,
+                            borderRadius: 999,
+                            px: 1.5,
+                            py: 0.5,
+                            backgroundColor: 'rgba(5, 15, 18, 0.72)',
+                            color: 'text.primary',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            fontSize: '0.7rem',
+                            letterSpacing: '0.05em',
+                            '&:hover': {
+                                backgroundColor: 'rgba(5, 15, 18, 0.88)',
                             },
                         }}
                     >
-                        <Box
-                            component="img"
-                            loading="lazy"
-                            src={img.imageUrl}
-                            alt={img.caption || `Image ${index + 1}`}
-                            sx={{
-                                width: '100%',
-                                height: 160,
-                                objectFit: 'cover',
-                                transition: 'transform 0.3s ease',
-                                display: 'block',
-                            }}
-                        />
-                    </ImageListItem>
-                ))}
-            </ImageList>
+                        {expandLabel}
+                    </Button>
+                </Box>
 
-            {/* ── Lightbox Dialog ──────────────────────────────────── */}
+                <Stack direction="row" spacing={1.25} sx={{ mt: 1.5, flexWrap: 'wrap' }}>
+                    {galleryImages.slice(0, 4).map((image, index) => {
+                        const active = index === selectedIndex;
+
+                        return (
+                            <Box
+                                key={image.id}
+                                onClick={() => handleSelect(index)}
+                                sx={{
+                                    width: 86,
+                                    height: 64,
+                                    borderRadius: 1.5,
+                                    overflow: 'hidden',
+                                    border: '1px solid',
+                                    borderColor: active ? 'primary.main' : 'rgba(255,255,255,0.08)',
+                                    boxShadow: active ? '0 0 0 1px rgba(52, 228, 234, 0.16)' : 'none',
+                                    cursor: 'pointer',
+                                    backgroundColor: 'rgba(255,255,255,0.03)',
+                                    transition: 'border-color 0.18s ease, transform 0.18s ease',
+                                    '&:hover': {
+                                        borderColor: 'primary.main',
+                                        transform: 'translateY(-2px)',
+                                    },
+                                }}
+                            >
+                                <Box
+                                    component="img"
+                                    src={image.imageUrl}
+                                    alt={`${commonName} thumbnail ${index + 1}`}
+                                    sx={{
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'cover',
+                                        display: 'block',
+                                    }}
+                                />
+                            </Box>
+                        );
+                    })}
+
+                    {galleryImages.length > 4 && (
+                        <Box
+                            onClick={handleOpenLightbox}
+                            sx={{
+                                width: 86,
+                                height: 64,
+                                borderRadius: 1.5,
+                                display: 'grid',
+                                placeItems: 'center',
+                                border: '1px dashed rgba(255,255,255,0.12)',
+                                color: 'text.secondary',
+                                backgroundColor: 'rgba(255,255,255,0.03)',
+                                cursor: 'pointer',
+                                px: 1,
+                                textAlign: 'center',
+                            }}
+                        >
+                            <Typography variant="caption" sx={{ fontSize: '0.64rem', letterSpacing: '0.06em' }}>
+                                {viewAllLabel}
+                            </Typography>
+                        </Box>
+                    )}
+
+                    {!galleryImages.length && (
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                            {emptyStateLabel}
+                        </Typography>
+                    )}
+                </Stack>
+
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1.25 }}>
+                    {title}
+                </Typography>
+            </Box>
+
             <Dialog
-                open={lightboxIndex !== null}
-                onClose={handleClose}
+                open={lightboxOpen}
+                onClose={handleCloseLightbox}
                 maxWidth={false}
-                onKeyDown={handleKeyDown}
                 slotProps={{
                     paper: {
                         sx: {
-                            backgroundColor: 'rgba(0,0,0,0.95)',
-                            boxShadow: 'none',
-                            maxWidth: '90vw',
-                            maxHeight: '90vh',
+                            width: 'min(92vw, 1120px)',
+                            backgroundColor: 'rgba(4, 13, 16, 0.98)',
                             borderRadius: 2,
                             overflow: 'hidden',
-                            position: 'relative',
                         },
                     },
                 }}
             >
-                {/* Close button */}
-                <IconButton
-                    onClick={handleClose}
-                    sx={{
-                        position: 'absolute',
-                        top: 8,
-                        right: 8,
-                        color: 'white',
-                        zIndex: 10,
-                        backgroundColor: 'rgba(255,255,255,0.1)',
-                        '&:hover': {
-                            backgroundColor: 'rgba(255,255,255,0.2)',
-                        },
-                    }}
-                >
-                    <CloseIcon />
-                </IconButton>
-
-                {/* Navigation arrows */}
-                {sortedImages.length > 1 && (
-                    <>
-                        <IconButton
-                            onClick={handlePrev}
-                            sx={{
-                                position: 'absolute',
-                                left: 8,
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                color: 'white',
-                                zIndex: 10,
-                                backgroundColor: 'rgba(255,255,255,0.1)',
-                                '&:hover': {
-                                    backgroundColor: 'rgba(255,255,255,0.2)',
-                                },
-                            }}
-                        >
-                            <ArrowBackIosNewIcon />
-                        </IconButton>
-                        <IconButton
-                            onClick={handleNext}
-                            sx={{
-                                position: 'absolute',
-                                right: 8,
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                color: 'white',
-                                zIndex: 10,
-                                backgroundColor: 'rgba(255,255,255,0.1)',
-                                '&:hover': {
-                                    backgroundColor: 'rgba(255,255,255,0.2)',
-                                },
-                            }}
-                        >
-                            <ArrowForwardIosIcon />
-                        </IconButton>
-                    </>
-                )}
-
-                {/* Main image */}
-                {currentImage && (
-                    <Box
-                        component="img"
-                        src={currentImage.imageUrl}
-                        alt={currentImage.caption || 'Full size'}
+                <Box sx={{ position: 'relative' }}>
+                    <IconButton
+                        onClick={handleCloseLightbox}
                         sx={{
-                            maxWidth: '85vw',
-                            maxHeight: '85vh',
-                            objectFit: 'contain',
-                            display: 'block',
-                            mx: 'auto',
-                        }}
-                    />
-                )}
-
-                {/* Caption */}
-                {currentImage?.caption && (
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            color: 'rgba(255,255,255,0.7)',
-                            textAlign: 'center',
-                            py: 1.5,
-                            px: 2,
+                            position: 'absolute',
+                            top: 12,
+                            right: 12,
+                            zIndex: 1,
+                            color: 'white',
+                            backgroundColor: 'rgba(0, 0, 0, 0.35)',
+                            '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.5)' },
                         }}
                     >
-                        {currentImage.caption}
-                    </Typography>
-                )}
+                        <CloseRoundedIcon />
+                    </IconButton>
+                    <Box
+                        component="img"
+                        src={selectedImage}
+                        alt={commonName}
+                        sx={{
+                            width: '100%',
+                            maxHeight: '84vh',
+                            objectFit: 'contain',
+                            display: 'block',
+                            backgroundColor: '#061216',
+                        }}
+                    />
+                </Box>
             </Dialog>
-        </Paper>
+        </>
     );
 };
 

@@ -39,3 +39,36 @@ export interface PublicCatalogFilter {
     // Tags (must have ALL selected tags)
     tagIds?: string[];
 }
+
+export interface RelatedSpeciesDto {
+    id: string;
+    typeId?: string | null;
+    typeName?: string | null;
+    scientificName?: string | null;
+    commonName: string;
+    thumbnailUrl?: string;
+    slug: string;
+    isActive?: boolean | null;
+    createdTime: string;
+    score: number;
+    matchReasons: string[];
+}
+
+export interface SpeciesBookmarkStatusDto {
+    speciesId: string;
+    isBookmarked: boolean;
+    bookmarkedTime?: string | null;
+}
+
+export interface BookmarkedSpeciesDto {
+    id: string;
+    typeId?: string | null;
+    typeName?: string | null;
+    scientificName?: string | null;
+    commonName: string;
+    thumbnailUrl?: string;
+    slug: string;
+    isActive?: boolean | null;
+    createdTime: string;
+    bookmarkedTime: string;
+}
