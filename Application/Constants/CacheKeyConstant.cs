@@ -24,6 +24,9 @@ namespace Application.Constants
         public const string SpeciesPaginated = "catalog:species:paginated:";
         public const string SpeciesRelated = "catalog:species:related:";
         public const string SpeciesPrefix = "catalog:species:";
+        public const string SpeciesBookmarksList = "list:";
+        public const string SpeciesBookmarkStatus = "status:";
+        public const string SpeciesBookmarksPrefix = "profile:bookmarks:";
 
         // ─── Cache TTL (minutes) ─────────────────────────────────────
         public const int DefaultExpiryMinutes = 10;

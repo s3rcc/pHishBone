@@ -12,5 +12,6 @@ namespace Domain.Entities
         public Role Role { get; set; } = Role.Member;
         public string? AvatarUrl { get; set; }
         public string? AvatarPublicId { get; set; }
+        public ICollection<SpeciesBookmark> SpeciesBookmarks { get; set; } = new List<SpeciesBookmark>();
     }
 }

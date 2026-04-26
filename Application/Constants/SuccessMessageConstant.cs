@@ -20,6 +20,10 @@ namespace Application.Constants
         public const string EmailChangeRequested = "Please check your inbox to confirm the email change.";
         public const string UsersRetrievedSuccessfully = "Users retrieved successfully";
         public const string UserRoleUpdatedSuccessfully = "User role updated successfully";
+        public const string SpeciesBookmarkedSuccessfully = "Species bookmarked successfully";
+        public const string SpeciesBookmarkRemovedSuccessfully = "Species bookmark removed successfully";
+        public const string SpeciesBookmarksRetrievedSuccessfully = "Species bookmarks retrieved successfully";
+        public const string SpeciesBookmarkStatusRetrievedSuccessfully = "Species bookmark status retrieved successfully";
         #endregion Auth
 
         #region Catalog - Tag

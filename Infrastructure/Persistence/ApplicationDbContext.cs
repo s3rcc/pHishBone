@@ -13,6 +13,7 @@ namespace Infrastructure.Persistence
         }
 
         public DbSet<PBUser> PBUsers { get; set; }
+        public DbSet<SpeciesBookmark> SpeciesBookmarks { get; set; }
 
         // Catalog Module DbSets
         public DbSet<Domain.Entities.Catalog.Type> CatalogTypes { get; set; }

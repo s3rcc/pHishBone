@@ -16,7 +16,8 @@ namespace Application.Mappers
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.SupabaseUserId, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
-                .ForMember(dest => dest.CreatedTime, opt => opt.Ignore());
+                .ForMember(dest => dest.CreatedTime, opt => opt.Ignore())
+                .ForMember(dest => dest.SpeciesBookmarks, opt => opt.Ignore());
 
 
         }

@@ -16,17 +16,20 @@ namespace pHishbone.Controllers
     {
         private readonly IAuthService _authService;
         private readonly IUserService _userService;
+        private readonly ISpeciesBookmarkService _speciesBookmarkService;
         private readonly ICurrentUserService _currentUserService;
         private readonly ILogger<AuthController> _logger;
 
         public AuthController(
             IAuthService authService,
             IUserService userService,
+            ISpeciesBookmarkService speciesBookmarkService,
             ICurrentUserService currentUserService,
             ILogger<AuthController> logger)
         {
             _authService = authService;
             _userService = userService;
+            _speciesBookmarkService = speciesBookmarkService;
             _currentUserService = currentUserService;
             _logger = logger;
         }
@@ -264,6 +267,87 @@ namespace pHishbone.Controllers
 
             var message = await _userService.ChangeEmailAsync(request, userId, cancellationToken);
             return Ok(ApiResponse<object>.Success(null, message));
+        }
+
+        /// <summary>
+        /// Get the current user's bookmarked species.
+        /// </summary>
+        [Authorize]
+        [HttpGet(ApiEndpointConstant.Auth.MeBookmarks)]
+        [ProducesResponseType(typeof(ApiResponse<PaginationResponse<BookmarkedSpeciesDto>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetBookmarks([FromQuery] SpeciesBookmarkFilterDto filter, CancellationToken cancellationToken)
+        {
+            var userId = _currentUserService.GetUserId();
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(ApiResponse<object>.Error("User not authenticated", "User not authenticated"));
+            }
+
+            var bookmarks = await _speciesBookmarkService.GetPaginatedAsync(userId, filter, cancellationToken);
+            return Ok(ApiResponse<PaginationResponse<BookmarkedSpeciesDto>>.Success(bookmarks, SuccessMessageConstant.SpeciesBookmarksRetrievedSuccessfully));
+        }
+
+        /// <summary>
+        /// Bookmark a species for the current user.
+        /// </summary>
+        [Authorize]
+        [HttpPost(ApiEndpointConstant.Auth.MeBookmarkBySpecies)]
+        [ProducesResponseType(typeof(ApiResponse<BookmarkedSpeciesDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> AddBookmark([FromRoute] string speciesId, CancellationToken cancellationToken)
+        {
+            var userId = _currentUserService.GetUserId();
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(ApiResponse<object>.Error("User not authenticated", "User not authenticated"));
+            }
+
+            var bookmark = await _speciesBookmarkService.AddAsync(userId, speciesId, cancellationToken);
+            return Ok(ApiResponse<BookmarkedSpeciesDto>.Success(bookmark, SuccessMessageConstant.SpeciesBookmarkedSuccessfully));
+        }
+
+        /// <summary>
+        /// Remove a bookmarked species for the current user.
+        /// </summary>
+        [Authorize]
+        [HttpDelete(ApiEndpointConstant.Auth.MeBookmarkBySpecies)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> RemoveBookmark([FromRoute] string speciesId, CancellationToken cancellationToken)
+        {
+            var userId = _currentUserService.GetUserId();
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(ApiResponse<object>.Error("User not authenticated", "User not authenticated"));
+            }
+
+            await _speciesBookmarkService.RemoveAsync(userId, speciesId, cancellationToken);
+            return Ok(ApiResponse<object>.Success(null, SuccessMessageConstant.SpeciesBookmarkRemovedSuccessfully));
+        }
+
+        /// <summary>
+        /// Check whether a species is bookmarked by the current user.
+        /// </summary>
+        [Authorize]
+        [HttpGet(ApiEndpointConstant.Auth.MeBookmarkStatus)]
+        [ProducesResponseType(typeof(ApiResponse<SpeciesBookmarkStatusDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetBookmarkStatus([FromRoute] string speciesId, CancellationToken cancellationToken)
+        {
+            var userId = _currentUserService.GetUserId();
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(ApiResponse<object>.Error("User not authenticated", "User not authenticated"));
+            }
+
+            var status = await _speciesBookmarkService.GetStatusAsync(userId, speciesId, cancellationToken);
+            return Ok(ApiResponse<SpeciesBookmarkStatusDto>.Success(status, SuccessMessageConstant.SpeciesBookmarkStatusRetrievedSuccessfully));
         }
 
         /// <summary>

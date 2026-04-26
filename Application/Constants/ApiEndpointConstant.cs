@@ -19,6 +19,9 @@ namespace Application.Constants
             public const string ChangeEmail = "change-email";
             public const string Users = "users";
             public const string UserRole = "users/{id}/role";
+            public const string MeBookmarks = "me/bookmarks";
+            public const string MeBookmarkBySpecies = "me/bookmarks/{speciesId}";
+            public const string MeBookmarkStatus = "me/bookmarks/{speciesId}/status";
         }
 
         public static class Tag

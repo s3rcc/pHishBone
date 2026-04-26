@@ -1,4 +1,5 @@
 using Domain.Common;
+using Domain.Entities;
 
 namespace Domain.Entities.Catalog
 {
@@ -22,6 +23,7 @@ namespace Domain.Entities.Catalog
         public SpeciesProfile? SpeciesProfile { get; set; }
         public ICollection<SpeciesTag> SpeciesTags { get; set; } = new List<SpeciesTag>();
         public ICollection<SpeciesImage> SpeciesImages { get; set; } = new List<SpeciesImage>();
+        public ICollection<SpeciesBookmark> SpeciesBookmarks { get; set; } = new List<SpeciesBookmark>();
     }
 }
 
