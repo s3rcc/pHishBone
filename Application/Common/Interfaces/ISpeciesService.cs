@@ -59,5 +59,10 @@ namespace Application.Common.Interfaces
         /// Returns paginated results ranked by relevance (FTS score weighted 2x over trigram).
         /// </summary>
         Task<PaginationResponse<SpeciesDto>> SearchHybridAsync(SpeciesFilterDto filter, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Returns related species for a detail page using catalog similarity signals and diversification.
+        /// </summary>
+        Task<ICollection<RelatedSpeciesDto>> GetRelatedAsync(string id, RelatedSpeciesFilterDto filter, CancellationToken cancellationToken = default);
     }
 }

@@ -22,6 +22,7 @@ namespace Application.Constants
         public const string SpeciesById = "catalog:species:id:";
         public const string SpeciesBySlug = "catalog:species:slug:";
         public const string SpeciesPaginated = "catalog:species:paginated:";
+        public const string SpeciesRelated = "catalog:species:related:";
         public const string SpeciesPrefix = "catalog:species:";
 
         // ─── Cache TTL (minutes) ─────────────────────────────────────

@@ -495,6 +495,56 @@ namespace Infrastructure.Services
             };
         }
 
+        public async Task<ICollection<RelatedSpeciesDto>> GetRelatedAsync(string id, RelatedSpeciesFilterDto filter, CancellationToken cancellationToken = default)
+        {
+            var requestedSize = filter.Size <= 0
+                ? SpeciesRecommendationConstant.DefaultSize
+                : Math.Min(filter.Size, SpeciesRecommendationConstant.MaxSize);
+            var excludedIds = BuildExcludedSpeciesIds(id, filter);
+            var cacheKey = CacheKeyConstant.SpeciesRelated + id;
+
+            var cachedPool = await _cache.GetAsync<List<RelatedSpeciesDto>>(cacheKey, cancellationToken);
+            if (cachedPool != null)
+            {
+                _logger.LogInformation("Related species for {SpeciesId} served from cache", id);
+                return SelectDiversifiedCandidates(cachedPool, excludedIds, requestedSize, filter.Seed);
+            }
+
+            var sourceSpecies = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
+                predicate: s => s.Id == id,
+                include: q => q
+                    .Include(s => s.Type)
+                    .Include(s => s.SpeciesEnvironment)
+                    .Include(s => s.SpeciesProfile)
+                    .Include(s => s.SpeciesTags),
+                tracking: false,
+                cancellationToken: cancellationToken
+            );
+
+            if (sourceSpecies == null)
+            {
+                throw new CustomErrorException(
+                    StatusCodes.Status404NotFound,
+                    ErrorCode.NOT_FOUND,
+                    CatalogErrorMessageConstant.SpeciesNotFound
+                );
+            }
+
+            _logger.LogInformation(
+                "Generating related species pool for {SpeciesId} with requested size {RequestedSize}",
+                id,
+                requestedSize);
+
+            var relatedPool = await BuildRelatedSpeciesPoolAsync(sourceSpecies, cancellationToken);
+            await _cache.SetAsync(
+                cacheKey,
+                relatedPool,
+                TimeSpan.FromMinutes(CacheKeyConstant.DefaultExpiryMinutes),
+                cancellationToken);
+
+            return SelectDiversifiedCandidates(relatedPool, excludedIds, requestedSize, filter.Seed);
+        }
+
         #region Private Helper Methods
 
         /// <summary>
@@ -645,6 +695,324 @@ namespace Infrastructure.Services
                 cancellationToken: cancellationToken
             );
             return existing != null;
+        }
+
+        private async Task<List<RelatedSpeciesDto>> BuildRelatedSpeciesPoolAsync(Species sourceSpecies, CancellationToken cancellationToken)
+        {
+            var candidates = await _dbContext.Species
+                .Include(s => s.Type)
+                .Include(s => s.SpeciesEnvironment)
+                .Include(s => s.SpeciesProfile)
+                .Include(s => s.SpeciesTags)
+                .Where(s =>
+                    s.Id != sourceSpecies.Id &&
+                    s.DeletedTime == null &&
+                    s.IsActive == true)
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+
+            _logger.LogInformation(
+                "Scoring {CandidateCount} related species candidates for {SpeciesId}",
+                candidates.Count,
+                sourceSpecies.Id);
+
+            return candidates
+                .Select(candidate => BuildRelatedSpeciesDto(sourceSpecies, candidate))
+                .OrderByDescending(candidate => candidate.Score)
+                .ThenBy(candidate => candidate.CommonName)
+                .Take(SpeciesRecommendationConstant.PoolSize)
+                .ToList();
+        }
+
+        private static HashSet<string> BuildExcludedSpeciesIds(string sourceSpeciesId, RelatedSpeciesFilterDto filter)
+        {
+            var excludedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                sourceSpeciesId
+            };
+
+            foreach (var excludedId in ExpandDelimitedIdentifiers(filter.ExcludeIds))
+            {
+                excludedIds.Add(excludedId);
+            }
+
+            foreach (var recentlyViewedId in ExpandDelimitedIdentifiers(filter.RecentlyViewedIds))
+            {
+                excludedIds.Add(recentlyViewedId);
+            }
+
+            return excludedIds;
+        }
+
+        private static IEnumerable<string> ExpandDelimitedIdentifiers(IEnumerable<string>? identifiers)
+        {
+            if (identifiers == null)
+            {
+                yield break;
+            }
+
+            foreach (var identifier in identifiers)
+            {
+                if (string.IsNullOrWhiteSpace(identifier))
+                {
+                    continue;
+                }
+
+                foreach (var value in identifier.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                {
+                    yield return value;
+                }
+            }
+        }
+
+        private static List<RelatedSpeciesDto> SelectDiversifiedCandidates(
+            IEnumerable<RelatedSpeciesDto> candidates,
+            HashSet<string> excludedIds,
+            int requestedSize,
+            string? seed)
+        {
+            var filteredCandidates = candidates
+                .Where(candidate => !excludedIds.Contains(candidate.Id))
+                .OrderByDescending(candidate => candidate.Score + ComputeSeededJitter(seed, candidate.Id))
+                .ThenBy(candidate => candidate.CommonName)
+                .ToList();
+
+            if (filteredCandidates.Count <= requestedSize)
+            {
+                return filteredCandidates;
+            }
+
+            var selected = new List<RelatedSpeciesDto>(requestedSize);
+            var selectedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var typeCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var primaryReasonCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var maxSameType = Math.Max(2, (int)Math.Ceiling(requestedSize / 2d));
+            var maxSamePrimaryReason = Math.Max(2, (int)Math.Ceiling(requestedSize / 2d));
+
+            foreach (var candidate in filteredCandidates)
+            {
+                if (selected.Count >= requestedSize)
+                {
+                    break;
+                }
+
+                var typeKey = candidate.TypeId?.Trim();
+                var primaryReason = candidate.MatchReasons.FirstOrDefault()?.Trim();
+                var exceedsTypeCap =
+                    !string.IsNullOrWhiteSpace(typeKey) &&
+                    typeCounts.TryGetValue(typeKey, out var typeCount) &&
+                    typeCount >= maxSameType;
+                var exceedsReasonCap =
+                    !string.IsNullOrWhiteSpace(primaryReason) &&
+                    primaryReasonCounts.TryGetValue(primaryReason, out var reasonCount) &&
+                    reasonCount >= maxSamePrimaryReason;
+
+                if (exceedsTypeCap || exceedsReasonCap)
+                {
+                    continue;
+                }
+
+                selected.Add(candidate);
+                selectedIds.Add(candidate.Id);
+
+                if (!string.IsNullOrWhiteSpace(typeKey))
+                {
+                    typeCounts[typeKey] = typeCounts.TryGetValue(typeKey, out var count) ? count + 1 : 1;
+                }
+
+                if (!string.IsNullOrWhiteSpace(primaryReason))
+                {
+                    primaryReasonCounts[primaryReason] = primaryReasonCounts.TryGetValue(primaryReason, out var count) ? count + 1 : 1;
+                }
+            }
+
+            if (selected.Count < requestedSize)
+            {
+                foreach (var candidate in filteredCandidates)
+                {
+                    if (selected.Count >= requestedSize)
+                    {
+                        break;
+                    }
+
+                    if (selectedIds.Add(candidate.Id))
+                    {
+                        selected.Add(candidate);
+                    }
+                }
+            }
+
+            return selected;
+        }
+
+        private static decimal ComputeSeededJitter(string? seed, string candidateId)
+        {
+            if (string.IsNullOrWhiteSpace(seed))
+            {
+                return 0m;
+            }
+
+            var hash = (uint)HashCode.Combine(seed.Trim().ToLowerInvariant(), candidateId);
+            return (hash % 1000) / 100000m;
+        }
+
+        private RelatedSpeciesDto BuildRelatedSpeciesDto(Species sourceSpecies, Species candidate)
+        {
+            const decimal sameTypeWeight = 20m;
+            const decimal sharedTagsWeight = 25m;
+            const decimal sameWaterTypeWeight = 10m;
+            const decimal phOverlapWeight = 10m;
+            const decimal tempOverlapWeight = 10m;
+            const decimal swimLevelWeight = 10m;
+            const decimal dietWeight = 5m;
+            const decimal adultSizeWeight = 5m;
+            const decimal schoolingWeight = 5m;
+
+            var sourceTagIds = sourceSpecies.SpeciesTags.Select(st => st.TagId).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var candidateTagIds = candidate.SpeciesTags.Select(st => st.TagId).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var scoreBreakdown = new List<(string Reason, decimal Score)>();
+
+            if (!string.IsNullOrWhiteSpace(sourceSpecies.TypeId) && sourceSpecies.TypeId == candidate.TypeId)
+            {
+                scoreBreakdown.Add((SpeciesRecommendationConstant.SameTypeReason, sameTypeWeight));
+            }
+
+            var tagSimilarity = CalculateJaccardSimilarity(sourceTagIds, candidateTagIds);
+            if (tagSimilarity > 0m)
+            {
+                scoreBreakdown.Add((SpeciesRecommendationConstant.SharedTagsReason, Math.Round(tagSimilarity * sharedTagsWeight, 2)));
+            }
+
+            if (sourceSpecies.SpeciesEnvironment != null && candidate.SpeciesEnvironment != null)
+            {
+                if (sourceSpecies.SpeciesEnvironment.WaterType == candidate.SpeciesEnvironment.WaterType)
+                {
+                    scoreBreakdown.Add((SpeciesRecommendationConstant.SameWaterTypeReason, sameWaterTypeWeight));
+                }
+
+                var phOverlap = CalculateRangeOverlap(
+                    sourceSpecies.SpeciesEnvironment.PhMin,
+                    sourceSpecies.SpeciesEnvironment.PhMax,
+                    candidate.SpeciesEnvironment.PhMin,
+                    candidate.SpeciesEnvironment.PhMax);
+                if (phOverlap > 0m)
+                {
+                    scoreBreakdown.Add((SpeciesRecommendationConstant.SimilarPhRangeReason, Math.Round(phOverlap * phOverlapWeight, 2)));
+                }
+
+                var tempOverlap = CalculateRangeOverlap(
+                    sourceSpecies.SpeciesEnvironment.TempMin,
+                    sourceSpecies.SpeciesEnvironment.TempMax,
+                    candidate.SpeciesEnvironment.TempMin,
+                    candidate.SpeciesEnvironment.TempMax);
+                if (tempOverlap > 0m)
+                {
+                    scoreBreakdown.Add((SpeciesRecommendationConstant.SimilarTemperatureRangeReason, Math.Round(tempOverlap * tempOverlapWeight, 2)));
+                }
+            }
+
+            if (sourceSpecies.SpeciesProfile != null && candidate.SpeciesProfile != null)
+            {
+                if (sourceSpecies.SpeciesProfile.SwimLevel == candidate.SpeciesProfile.SwimLevel)
+                {
+                    scoreBreakdown.Add((SpeciesRecommendationConstant.SameSwimLevelReason, swimLevelWeight));
+                }
+
+                if (sourceSpecies.SpeciesProfile.DietType == candidate.SpeciesProfile.DietType)
+                {
+                    scoreBreakdown.Add((SpeciesRecommendationConstant.SameDietReason, dietWeight));
+                }
+
+                var adultSizeSimilarity = CalculateScalarSimilarity(
+                    sourceSpecies.SpeciesProfile.AdultSize,
+                    candidate.SpeciesProfile.AdultSize);
+                if (adultSizeSimilarity > 0.6m)
+                {
+                    scoreBreakdown.Add((SpeciesRecommendationConstant.SimilarAdultSizeReason, Math.Round(adultSizeSimilarity * adultSizeWeight, 2)));
+                }
+
+                if (sourceSpecies.SpeciesProfile.IsSchooling && candidate.SpeciesProfile.IsSchooling)
+                {
+                    scoreBreakdown.Add((SpeciesRecommendationConstant.SchoolingBehaviorReason, schoolingWeight));
+                }
+            }
+
+            var matchReasons = scoreBreakdown
+                .OrderByDescending(item => item.Score)
+                .Select(item => item.Reason)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(3)
+                .ToList();
+
+            if (matchReasons.Count == 0)
+            {
+                matchReasons.Add(SpeciesRecommendationConstant.FallbackReason);
+            }
+
+            return new RelatedSpeciesDto
+            {
+                Id = candidate.Id,
+                TypeId = candidate.TypeId,
+                TypeName = candidate.Type?.Name,
+                ScientificName = candidate.ScientificName,
+                CommonName = candidate.CommonName,
+                ThumbnailUrl = candidate.ThumbnailUrl,
+                Slug = candidate.Slug,
+                IsActive = candidate.IsActive,
+                CreatedTime = candidate.CreatedTime,
+                Score = Math.Round(scoreBreakdown.Sum(item => item.Score), 2),
+                MatchReasons = matchReasons
+            };
+        }
+
+        private static decimal CalculateJaccardSimilarity(HashSet<string> sourceIds, HashSet<string> candidateIds)
+        {
+            if (sourceIds.Count == 0 || candidateIds.Count == 0)
+            {
+                return 0m;
+            }
+
+            var intersection = sourceIds.Intersect(candidateIds, StringComparer.OrdinalIgnoreCase).Count();
+            if (intersection == 0)
+            {
+                return 0m;
+            }
+
+            var union = sourceIds.Union(candidateIds, StringComparer.OrdinalIgnoreCase).Count();
+            return union == 0 ? 0m : intersection / (decimal)union;
+        }
+
+        private static decimal CalculateRangeOverlap(decimal sourceMin, decimal sourceMax, decimal candidateMin, decimal candidateMax)
+        {
+            var overlapMin = Math.Max(sourceMin, candidateMin);
+            var overlapMax = Math.Min(sourceMax, candidateMax);
+            if (overlapMax <= overlapMin)
+            {
+                return 0m;
+            }
+
+            var sourceRange = sourceMax - sourceMin;
+            var candidateRange = candidateMax - candidateMin;
+            var largestRange = Math.Max(sourceRange, candidateRange);
+
+            if (largestRange <= 0m)
+            {
+                return 0m;
+            }
+
+            return (overlapMax - overlapMin) / largestRange;
+        }
+
+        private static decimal CalculateScalarSimilarity(decimal sourceValue, decimal candidateValue)
+        {
+            var largestValue = Math.Max(sourceValue, candidateValue);
+            if (largestValue <= 0m)
+            {
+                return 0m;
+            }
+
+            var delta = Math.Abs(sourceValue - candidateValue);
+            return 1m - Math.Min(delta / largestValue, 1m);
         }
 
         /// <summary>

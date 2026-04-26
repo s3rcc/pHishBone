@@ -55,6 +55,18 @@ namespace pHishbone.Controllers
         }
 
         /// <summary>
+        /// Get related species for a species detail page with optional diversification context.
+        /// </summary>
+        [HttpGet(ApiEndpointConstant.Species.GetRelated)]
+        [ProducesResponseType(typeof(ApiResponse<ICollection<RelatedSpeciesDto>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetRelated([FromRoute] string id, [FromQuery] RelatedSpeciesFilterDto filter, CancellationToken cancellationToken)
+        {
+            var species = await _speciesService.GetRelatedAsync(id, filter, cancellationToken);
+            return Ok(ApiResponse<ICollection<RelatedSpeciesDto>>.Success(species, SuccessMessageConstant.RelatedSpeciesRetrievedSuccessfully));
+        }
+
+        /// <summary>
         /// Get all species
         /// </summary>
         [HttpGet(ApiEndpointConstant.Species.GetList)]

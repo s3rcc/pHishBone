@@ -50,6 +50,7 @@ namespace Application.Constants
             public const string Base = "api/catalog/species";
             public const string GetById = "{id}";
             public const string GetDetailById = "{id}/detail";
+            public const string GetRelated = "{id}/related";
             public const string GetList = "";
             public const string GetPaginated = "paginated";
             public const string Search = "search";

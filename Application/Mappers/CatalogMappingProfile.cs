@@ -111,6 +111,11 @@ namespace Application.Mappers
                 .ForMember(dest => dest.Profile, opt => opt.MapFrom(s => s.SpeciesProfile))
                 .ForMember(dest => dest.Tags, opt => opt.MapFrom(s => s.SpeciesTags.Select(st => st.Tag)));
 
+            CreateMap<Species, RelatedSpeciesDto>()
+                .ForMember(dest => dest.TypeName, opt => opt.MapFrom(s => s.Type.Name))
+                .ForMember(dest => dest.Score, opt => opt.Ignore())
+                .ForMember(dest => dest.MatchReasons, opt => opt.Ignore());
+
             CreateMap<CreateSpeciesDto, Species>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.Slug, opt => opt.Ignore()) // Set manually in service
