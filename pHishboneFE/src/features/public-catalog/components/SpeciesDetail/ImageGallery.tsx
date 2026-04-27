@@ -80,8 +80,9 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                         position: 'relative',
                         overflow: 'hidden',
                         borderRadius: 2,
-                        border: '1px solid rgba(52, 228, 234, 0.1)',
-                        backgroundColor: 'rgba(255,255,255,0.02)',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        backgroundColor: 'background.paper',
                     }}
                 >
                     <Box
@@ -90,7 +91,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                         alt={commonName}
                         sx={{
                             width: '100%',
-                            aspectRatio: '1.7 / 1',
+                            aspectRatio: '1.85 / 1',
                             objectFit: 'cover',
                             display: 'block',
                             filter: galleryImages.length ? 'saturate(0.92)' : 'grayscale(0.15)',
@@ -103,18 +104,18 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                         onClick={handleOpenLightbox}
                         sx={{
                             position: 'absolute',
-                            left: 16,
-                            bottom: 16,
-                            borderRadius: 999,
-                            px: 1.5,
-                            py: 0.5,
-                            backgroundColor: 'rgba(5, 15, 18, 0.72)',
+                            left: 12,
+                            bottom: 12,
+                            borderRadius: 1,
+                            px: 1.25,
+                            py: 0.4,
+                            backgroundColor: 'rgba(10, 22, 40, 0.72)',
                             color: 'text.primary',
-                            border: '1px solid rgba(255,255,255,0.08)',
-                            fontSize: '0.7rem',
-                            letterSpacing: '0.05em',
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            fontSize: '0.68rem',
                             '&:hover': {
-                                backgroundColor: 'rgba(5, 15, 18, 0.88)',
+                                backgroundColor: 'rgba(10, 22, 40, 0.88)',
                             },
                         }}
                     >
@@ -122,7 +123,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                     </Button>
                 </Box>
 
-                <Stack direction="row" spacing={1.25} sx={{ mt: 1.5, flexWrap: 'wrap' }}>
+                <Stack direction="row" spacing={1} sx={{ mt: 1.25, flexWrap: 'wrap' }}>
                     {galleryImages.slice(0, 4).map((image, index) => {
                         const active = index === selectedIndex;
 
@@ -131,15 +132,15 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                                 key={image.id}
                                 onClick={() => handleSelect(index)}
                                 sx={{
-                                    width: 86,
-                                    height: 64,
-                                    borderRadius: 1.5,
+                                    width: 72,
+                                    height: 54,
+                                    borderRadius: 1,
                                     overflow: 'hidden',
                                     border: '1px solid',
-                                    borderColor: active ? 'primary.main' : 'rgba(255,255,255,0.08)',
-                                    boxShadow: active ? '0 0 0 1px rgba(52, 228, 234, 0.16)' : 'none',
+                                    borderColor: active ? 'primary.main' : 'divider',
+                                    boxShadow: active ? '0 0 0 1px rgba(0, 188, 212, 0.16)' : 'none',
                                     cursor: 'pointer',
-                                    backgroundColor: 'rgba(255,255,255,0.03)',
+                                    backgroundColor: 'background.paper',
                                     transition: 'border-color 0.18s ease, transform 0.18s ease',
                                     '&:hover': {
                                         borderColor: 'primary.main',
@@ -166,20 +167,21 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                         <Box
                             onClick={handleOpenLightbox}
                             sx={{
-                                width: 86,
-                                height: 64,
-                                borderRadius: 1.5,
+                                width: 72,
+                                height: 54,
+                                borderRadius: 1,
                                 display: 'grid',
                                 placeItems: 'center',
-                                border: '1px dashed rgba(255,255,255,0.12)',
+                                border: '1px dashed',
+                                borderColor: 'divider',
                                 color: 'text.secondary',
-                                backgroundColor: 'rgba(255,255,255,0.03)',
+                                backgroundColor: 'background.paper',
                                 cursor: 'pointer',
                                 px: 1,
                                 textAlign: 'center',
                             }}
                         >
-                            <Typography variant="caption" sx={{ fontSize: '0.64rem', letterSpacing: '0.06em' }}>
+                            <Typography variant="caption" sx={{ fontSize: '0.62rem' }}>
                                 {viewAllLabel}
                             </Typography>
                         </Box>
@@ -205,7 +207,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                     paper: {
                         sx: {
                             width: 'min(92vw, 1120px)',
-                            backgroundColor: 'rgba(4, 13, 16, 0.98)',
+                            backgroundColor: 'background.paper',
                             borderRadius: 2,
                             overflow: 'hidden',
                         },
@@ -221,8 +223,8 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                             right: 12,
                             zIndex: 1,
                             color: 'white',
-                            backgroundColor: 'rgba(0, 0, 0, 0.35)',
-                            '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.5)' },
+                            backgroundColor: 'rgba(10, 22, 40, 0.35)',
+                            '&:hover': { backgroundColor: 'rgba(10, 22, 40, 0.5)' },
                         }}
                     >
                         <CloseRoundedIcon />
@@ -236,7 +238,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                             maxHeight: '84vh',
                             objectFit: 'contain',
                             display: 'block',
-                            backgroundColor: '#061216',
+                            backgroundColor: '#0A1628',
                         }}
                     />
                 </Box>

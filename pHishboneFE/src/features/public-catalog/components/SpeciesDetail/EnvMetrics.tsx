@@ -62,7 +62,7 @@ const MetricBar: React.FC<MetricBarProps> = ({
                         width: `${width}%`,
                         borderRadius: 999,
                         background: gradient,
-                        boxShadow: '0 0 18px rgba(52, 228, 234, 0.18)',
+                        boxShadow: '0 0 14px rgba(0, 188, 212, 0.16)',
                     }}
                 />
             </Box>
@@ -81,20 +81,21 @@ export const EnvMetrics: React.FC<EnvMetricsProps> = ({
         <Paper
             elevation={0}
             sx={{
-                p: 2.25,
+                p: 2,
                 borderRadius: 2,
-                border: '1px solid rgba(52, 228, 234, 0.12)',
-                background: 'linear-gradient(180deg, rgba(14, 32, 37, 0.95) 0%, rgba(10, 24, 28, 0.98) 100%)',
+                border: '1px solid',
+                borderColor: 'divider',
+                backgroundColor: 'background.paper',
             }}
         >
-            <Stack direction="row" spacing={1.1} alignItems="center" sx={{ mb: 2.4 }}>
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
                 <OpacityRoundedIcon sx={{ color: 'primary.main', fontSize: 18 }} />
-                <Typography variant="subtitle1" fontWeight={750}>
+                <Typography variant="subtitle2" fontWeight={700}>
                     {title}
                 </Typography>
             </Stack>
 
-            <Stack spacing={2.2}>
+            <Stack spacing={1.8}>
                 <MetricBar
                     label={phLabel}
                     value={`${environment.phMin.toFixed(1)} - ${environment.phMax.toFixed(1)}`}
@@ -102,7 +103,7 @@ export const EnvMetrics: React.FC<EnvMetricsProps> = ({
                     end={environment.phMax}
                     scaleMin={0}
                     scaleMax={14}
-                    gradient="linear-gradient(90deg, #34E4EA 0%, #79FFF4 100%)"
+                    gradient="linear-gradient(90deg, #00BCD4 0%, #64FFDA 100%)"
                 />
                 <MetricBar
                     label={tempLabel}
@@ -111,30 +112,31 @@ export const EnvMetrics: React.FC<EnvMetricsProps> = ({
                     end={environment.tempMax}
                     scaleMin={0}
                     scaleMax={40}
-                    gradient="linear-gradient(90deg, #34E4EA 0%, #FFD0B0 100%)"
+                    gradient="linear-gradient(90deg, #00BCD4 0%, #FFB59E 100%)"
                 />
 
                 <Paper
                     elevation={0}
                     sx={{
                         mt: 0.5,
-                        p: 1.5,
+                        p: 1.25,
                         borderRadius: 1.5,
                         display: 'flex',
                         alignItems: 'center',
                         gap: 1.25,
-                        backgroundColor: 'rgba(255,255,255,0.05)',
-                        border: '1px solid rgba(255,255,255,0.05)',
+                        backgroundColor: 'action.hover',
+                        border: '1px solid',
+                        borderColor: 'divider',
                     }}
                 >
                     <Box
                         sx={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: 1.5,
+                            width: 34,
+                            height: 34,
+                            borderRadius: 1,
                             display: 'grid',
                             placeItems: 'center',
-                            bgcolor: 'rgba(52, 228, 234, 0.12)',
+                            bgcolor: 'rgba(0, 188, 212, 0.12)',
                             color: 'primary.main',
                             flexShrink: 0,
                         }}
@@ -142,11 +144,11 @@ export const EnvMetrics: React.FC<EnvMetricsProps> = ({
                         <WaterRoundedIcon sx={{ fontSize: 20 }} />
                     </Box>
                     <Box sx={{ flex: 1 }}>
-                        <Typography variant="caption" color="text.secondary" sx={{ letterSpacing: '0.08em' }}>
+                        <Typography variant="caption" color="text.secondary">
                             {tankVolumeLabel}
                         </Typography>
                         <Stack direction="row" spacing={0.75} alignItems="baseline">
-                            <Typography variant="h6" fontWeight={800}>
+                            <Typography variant="subtitle1" fontWeight={700}>
                                 {environment.minTankVolume}L
                             </Typography>
                             <WavesRoundedIcon sx={{ color: 'primary.main', fontSize: 17 }} />

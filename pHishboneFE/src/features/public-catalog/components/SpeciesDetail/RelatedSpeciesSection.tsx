@@ -32,16 +32,16 @@ export const RelatedSpeciesSection: React.FC<RelatedSpeciesSectionProps> = ({ sp
     }
 
     return (
-        <Box sx={{ mt: { xs: 6, md: 8 } }}>
+        <Box sx={{ mt: { xs: 4.5, md: 5.5 } }}>
             <Stack
                 direction={{ xs: 'column', sm: 'row' }}
                 justifyContent="space-between"
                 alignItems={{ xs: 'flex-start', sm: 'center' }}
                 spacing={1.5}
-                sx={{ mb: 2.5 }}
+                sx={{ mb: 2 }}
             >
                 <Box>
-                    <Typography variant="h5" fontWeight={800} sx={{ letterSpacing: '-0.04em' }}>
+                    <Typography variant="h6" fontWeight={700} sx={{ letterSpacing: '-0.03em' }}>
                         {t('PublicCatalog.Detail.relatedTitle')}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
@@ -68,22 +68,25 @@ export const RelatedSpeciesSection: React.FC<RelatedSpeciesSectionProps> = ({ sp
                                     overflow: 'hidden',
                                     borderRadius: 2,
                                     border: '1px solid',
-                                    borderColor: 'rgba(52, 228, 234, 0.12)',
-                                    background: 'linear-gradient(180deg, rgba(13, 30, 35, 0.96) 0%, rgba(9, 23, 27, 0.98) 100%)',
+                                    borderColor: 'divider',
+                                    backgroundColor: 'background.paper',
                                     transition: 'transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease',
                                     '&:hover': {
                                         transform: 'translateY(-3px)',
-                                        borderColor: 'rgba(52, 228, 234, 0.35)',
-                                        boxShadow: '0 18px 34px rgba(0, 0, 0, 0.26)',
+                                        borderColor: 'rgba(0, 188, 212, 0.35)',
+                                        boxShadow: (theme) => theme.palette.mode === 'dark'
+                                            ? '0 14px 28px rgba(0, 0, 0, 0.18)'
+                                            : '0 12px 22px rgba(10, 22, 40, 0.10)',
                                     },
                                 }}
                             >
                                 <Box
                                     sx={{
                                         position: 'relative',
-                                        aspectRatio: '1.35 / 1',
+                                        aspectRatio: '1.5 / 1',
                                         overflow: 'hidden',
-                                        borderBottom: '1px solid rgba(52, 228, 234, 0.08)',
+                                        borderBottom: '1px solid',
+                                        borderColor: 'divider',
                                     }}
                                 >
                                     <Box
@@ -107,22 +110,21 @@ export const RelatedSpeciesSection: React.FC<RelatedSpeciesSectionProps> = ({ sp
                                                 top: 12,
                                                 left: 12,
                                                 height: 24,
-                                                borderRadius: 1.5,
+                                                borderRadius: 1,
                                                 fontSize: '0.68rem',
                                                 fontWeight: 700,
-                                                letterSpacing: '0.08em',
-                                                color: '#69F6FC',
-                                                backgroundColor: 'rgba(3, 18, 22, 0.84)',
-                                                border: '1px solid rgba(52, 228, 234, 0.24)',
+                                                color: 'primary.main',
+                                                backgroundColor: 'rgba(0, 188, 212, 0.10)',
+                                                border: '1px solid rgba(0, 188, 212, 0.18)',
                                             }}
                                         />
                                     )}
                                 </Box>
 
-                                <Stack spacing={1.5} sx={{ p: 2 }}>
+                                <Stack spacing={1.2} sx={{ p: 1.5 }}>
                                     <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
                                         <Box sx={{ minWidth: 0 }}>
-                                            <Typography variant="subtitle1" fontWeight={750} noWrap>
+                                            <Typography variant="subtitle2" fontWeight={700} noWrap>
                                                 {candidate.commonName}
                                             </Typography>
                                             {candidate.scientificName && (
@@ -130,7 +132,7 @@ export const RelatedSpeciesSection: React.FC<RelatedSpeciesSectionProps> = ({ sp
                                                     variant="body2"
                                                     color="text.secondary"
                                                     noWrap
-                                                    sx={{ fontStyle: 'italic' }}
+                                                    sx={{ fontStyle: 'italic', fontSize: '0.78rem' }}
                                                 >
                                                     {candidate.scientificName}
                                                 </Typography>
@@ -146,12 +148,13 @@ export const RelatedSpeciesSection: React.FC<RelatedSpeciesSectionProps> = ({ sp
                                                 label={reason}
                                                 size="small"
                                                 sx={{
-                                                    height: 24,
-                                                    borderRadius: 1.5,
-                                                    fontSize: '0.68rem',
+                                                    height: 22,
+                                                    borderRadius: 1,
+                                                    fontSize: '0.66rem',
                                                     color: 'text.secondary',
-                                                    backgroundColor: 'rgba(255,255,255,0.035)',
-                                                    border: '1px solid rgba(255,255,255,0.06)',
+                                                    backgroundColor: 'action.hover',
+                                                    border: '1px solid',
+                                                    borderColor: 'divider',
                                                 }}
                                             />
                                         ))}

@@ -163,20 +163,24 @@ export const CatalogFilterPanel: React.FC<CatalogFilterPanelProps> = ({
     return (
         <Box
             sx={{
-                width: { xs: '100%', lg: 320 },
+                width: { xs: '100%', lg: 288 },
                 flexShrink: 0,
                 position: { xs: 'static', lg: 'sticky' },
                 top: { lg: 88 },
                 alignSelf: 'flex-start',
                 borderRadius: 2,
-                border: '1px solid rgba(52, 228, 234, 0.1)',
-                background: 'linear-gradient(180deg, rgba(14, 31, 36, 0.96) 0%, rgba(9, 24, 28, 0.99) 100%)',
-                p: { xs: 2, md: 2.4 },
+                border: '1px solid',
+                borderColor: 'divider',
+                backgroundColor: 'background.paper',
+                boxShadow: (theme) => theme.palette.mode === 'dark'
+                    ? '0 10px 28px rgba(0, 0, 0, 0.16)'
+                    : '0 10px 24px rgba(10, 22, 40, 0.08)',
+                p: { xs: 1.75, md: 2 },
             }}
         >
-            <Stack spacing={2.4}>
+            <Stack spacing={2}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Typography variant="h5" fontWeight={800} sx={{ color: 'primary.main', letterSpacing: '-0.03em' }}>
+                    <Typography variant="h6" fontWeight={700}>
                         {t('PublicCatalog.filterTitle')}
                     </Typography>
                     <Button
@@ -187,7 +191,8 @@ export const CatalogFilterPanel: React.FC<CatalogFilterPanelProps> = ({
                             px: 0,
                             py: 0,
                             color: 'text.secondary',
-                            fontWeight: 500,
+                            fontWeight: 600,
+                            fontSize: '0.82rem',
                             '&:hover': { color: 'text.primary', backgroundColor: 'transparent' },
                         }}
                     >
@@ -215,7 +220,7 @@ export const CatalogFilterPanel: React.FC<CatalogFilterPanelProps> = ({
                         sx={{
                             '& .MuiOutlinedInput-root': {
                                 borderRadius: 1.5,
-                                backgroundColor: 'rgba(255,255,255,0.05)',
+                                backgroundColor: 'action.hover',
                             },
                         }}
                     />
@@ -232,7 +237,7 @@ export const CatalogFilterPanel: React.FC<CatalogFilterPanelProps> = ({
                             onChange={handleSort}
                             sx={{
                                 borderRadius: 1.5,
-                                backgroundColor: 'rgba(255,255,255,0.05)',
+                                backgroundColor: 'action.hover',
                             }}
                         >
                             <MenuItem value="name-asc">{t('PublicCatalog.sortNameAsc')}</MenuItem>
@@ -252,7 +257,7 @@ export const CatalogFilterPanel: React.FC<CatalogFilterPanelProps> = ({
                             onChange={handleType}
                             sx={{
                                 borderRadius: 1.5,
-                                backgroundColor: 'rgba(255,255,255,0.05)',
+                                backgroundColor: 'action.hover',
                             }}
                         >
                             <MenuItem value="">{t('PublicCatalog.filterAllTypes')}</MenuItem>
@@ -278,8 +283,11 @@ export const CatalogFilterPanel: React.FC<CatalogFilterPanelProps> = ({
                             gap: 1,
                             '& .MuiToggleButtonGroup-grouped': {
                                 m: 0,
-                                border: '1px solid rgba(255,255,255,0.06) !important',
-                                borderRadius: '10px !important',
+                                minHeight: 36,
+                                border: '1px solid',
+                                borderColor: (theme) => `${theme.palette.divider} !important`,
+                                borderRadius: '8px !important',
+                                fontSize: '0.82rem',
                             },
                         }}
                     >
@@ -345,7 +353,7 @@ export const CatalogFilterPanel: React.FC<CatalogFilterPanelProps> = ({
                                 onChange={handleDiet}
                                 sx={{
                                     borderRadius: 1.5,
-                                    backgroundColor: 'rgba(255,255,255,0.05)',
+                                    backgroundColor: 'action.hover',
                                 }}
                             >
                                 <MenuItem value="">{t('PublicCatalog.filterAllDiets')}</MenuItem>
@@ -368,8 +376,11 @@ export const CatalogFilterPanel: React.FC<CatalogFilterPanelProps> = ({
                                     gap: 1,
                                     '& .MuiToggleButtonGroup-grouped': {
                                         m: 0,
-                                        border: '1px solid rgba(255,255,255,0.06) !important',
-                                        borderRadius: '10px !important',
+                                        minHeight: 36,
+                                        border: '1px solid',
+                                        borderColor: (theme) => `${theme.palette.divider} !important`,
+                                        borderRadius: '8px !important',
+                                        fontSize: '0.82rem',
                                     },
                                 }}
                             >
@@ -400,7 +411,7 @@ export const CatalogFilterPanel: React.FC<CatalogFilterPanelProps> = ({
                                 size="small"
                                 sx={{
                                     borderRadius: 1.5,
-                                    bgcolor: 'rgba(52, 228, 234, 0.1)',
+                                    bgcolor: 'rgba(0, 188, 212, 0.10)',
                                     color: 'primary.main',
                                 }}
                             />
@@ -412,7 +423,7 @@ export const CatalogFilterPanel: React.FC<CatalogFilterPanelProps> = ({
                                 sx={{
                                     '& .MuiOutlinedInput-root': {
                                         borderRadius: 1.5,
-                                        backgroundColor: 'rgba(255,255,255,0.05)',
+                                        backgroundColor: 'action.hover',
                                     },
                                 }}
                             />
@@ -425,11 +436,12 @@ export const CatalogFilterPanel: React.FC<CatalogFilterPanelProps> = ({
                         <Checkbox
                             checked={filter.isSchooling === true}
                             onChange={handleSchooling}
+                            size="small"
                             sx={{ color: 'primary.main' }}
                         />
                     }
                     label={t('PublicCatalog.filterSchooling')}
-                    sx={{ m: 0 }}
+                    sx={{ m: 0, '& .MuiFormControlLabel-label': { fontSize: '0.92rem' } }}
                 />
             </Stack>
         </Box>

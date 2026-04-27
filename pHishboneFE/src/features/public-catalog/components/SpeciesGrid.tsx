@@ -47,10 +47,11 @@ export const SpeciesGrid: React.FC<SpeciesGridProps> = ({ filter, onMetaChange }
                 sx={{
                     display: 'grid',
                     placeItems: 'center',
-                    minHeight: 360,
+                    minHeight: 280,
                     borderRadius: 2,
-                    border: '1px dashed rgba(52, 228, 234, 0.18)',
-                    backgroundColor: 'rgba(255,255,255,0.02)',
+                    border: '1px dashed',
+                    borderColor: 'divider',
+                    backgroundColor: 'background.paper',
                     textAlign: 'center',
                     px: 3,
                 }}
@@ -58,12 +59,12 @@ export const SpeciesGrid: React.FC<SpeciesGridProps> = ({ filter, onMetaChange }
                 <Stack spacing={1.5} alignItems="center">
                     <Box
                         sx={{
-                            width: 54,
-                            height: 54,
+                            width: 48,
+                            height: 48,
                             borderRadius: 1.5,
                             display: 'grid',
                             placeItems: 'center',
-                            bgcolor: 'rgba(52, 228, 234, 0.08)',
+                            bgcolor: 'rgba(0, 188, 212, 0.10)',
                             color: 'primary.main',
                         }}
                     >
@@ -81,9 +82,9 @@ export const SpeciesGrid: React.FC<SpeciesGridProps> = ({ filter, onMetaChange }
     }
 
     return (
-        <Grid container spacing={2.25}>
+        <Grid container spacing={2}>
             {species.map((candidate) => (
-                <Grid key={candidate.id} size={{ xs: 12, sm: 6, xl: 4 }}>
+                <Grid key={candidate.id} size={{ xs: 12, sm: 6, md: 4, xl: 3 }}>
                     <SpeciesCard species={candidate} />
                 </Grid>
             ))}

@@ -82,15 +82,17 @@ export const CatalogPage: React.FC = () => {
         <Box
             sx={{
                 minHeight: '100%',
-                background: 'radial-gradient(circle at top center, rgba(52, 228, 234, 0.07) 0%, rgba(6, 18, 22, 0) 36%), linear-gradient(180deg, #07161A 0%, #051014 100%)',
+                background: (theme) => theme.palette.mode === 'dark'
+                    ? 'radial-gradient(circle at top, rgba(0, 188, 212, 0.10) 0%, rgba(10, 22, 40, 0) 32%), linear-gradient(180deg, #0A1628 0%, #0C1B30 100%)'
+                    : 'radial-gradient(circle at top, rgba(0, 188, 212, 0.08) 0%, rgba(240, 250, 252, 0) 32%), linear-gradient(180deg, #F0FAFC 0%, #E8F7FB 100%)',
             }}
         >
-            <Container maxWidth={false} sx={{ px: { xs: 2, md: 4, xl: 6 }, py: { xs: 3, md: 5 } }}>
+            <Container maxWidth="xl" sx={{ px: { xs: 2, md: 3 }, py: { xs: 2.5, md: 4 } }}>
                 <Box
                     sx={{
                         display: 'grid',
-                        gridTemplateColumns: { xs: '1fr', lg: '320px minmax(0, 1fr)' },
-                        gap: { xs: 3, lg: 4 },
+                        gridTemplateColumns: { xs: '1fr', lg: '288px minmax(0, 1fr)' },
+                        gap: { xs: 2.5, lg: 3 },
                         alignItems: 'start',
                     }}
                 >
@@ -103,20 +105,20 @@ export const CatalogPage: React.FC = () => {
                     </Suspense>
 
                     <Box sx={{ minWidth: 0 }}>
-                        <Box sx={{ mb: 3.5 }}>
+                        <Box sx={{ mb: 2.5 }}>
                             <Typography
-                                variant="h2"
+                                variant="h3"
                                 sx={{
-                                    fontSize: { xs: '2.5rem', md: '4rem' },
-                                    lineHeight: 0.95,
-                                    letterSpacing: '-0.06em',
+                                    fontSize: { xs: '2rem', md: '2.7rem' },
+                                    lineHeight: 1,
+                                    letterSpacing: '-0.04em',
                                     fontWeight: 800,
-                                    mb: 1,
+                                    mb: 0.75,
                                 }}
                             >
                                 {t('PublicCatalog.resultsTitle')}
                             </Typography>
-                            <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 400 }}>
+                            <Typography variant="body1" color="text.secondary">
                                 {rangeLabel}
                             </Typography>
                         </Box>
@@ -129,7 +131,7 @@ export const CatalogPage: React.FC = () => {
                         </Suspense>
 
                         {meta.totalPages > 1 && (
-                            <Stack direction="row" justifyContent="flex-end" sx={{ mt: 4 }}>
+                            <Stack direction="row" justifyContent="flex-end" sx={{ mt: 3 }}>
                                 <Pagination
                                     page={filter.page ?? 1}
                                     count={meta.totalPages}
@@ -139,17 +141,18 @@ export const CatalogPage: React.FC = () => {
                                     boundaryCount={1}
                                     sx={{
                                         '& .MuiPaginationItem-root': {
-                                            minWidth: 40,
-                                            height: 40,
-                                            borderRadius: 1.5,
+                                            minWidth: 36,
+                                            height: 36,
+                                            borderRadius: 1,
                                             color: 'text.secondary',
-                                            border: '1px solid rgba(255,255,255,0.08)',
-                                            backgroundColor: 'rgba(255,255,255,0.03)',
+                                            border: '1px solid',
+                                            borderColor: 'divider',
+                                            backgroundColor: 'background.paper',
                                         },
                                         '& .Mui-selected': {
                                             color: 'primary.main',
-                                            borderColor: 'rgba(52, 228, 234, 0.4)',
-                                            backgroundColor: 'rgba(52, 228, 234, 0.1)',
+                                            borderColor: 'primary.main',
+                                            backgroundColor: 'rgba(0, 188, 212, 0.10)',
                                         },
                                     }}
                                 />

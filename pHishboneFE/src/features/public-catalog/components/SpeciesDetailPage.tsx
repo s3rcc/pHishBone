@@ -197,18 +197,21 @@ export const SpeciesDetailPage: React.FC<SpeciesDetailPageProps> = ({ slug }) =>
         <Box
             sx={{
                 minHeight: '100%',
-                background: 'radial-gradient(circle at top center, rgba(52, 228, 234, 0.07) 0%, rgba(6, 18, 22, 0) 36%), linear-gradient(180deg, #07161A 0%, #051014 100%)',
+                background: (theme) => theme.palette.mode === 'dark'
+                    ? 'radial-gradient(circle at top, rgba(0, 188, 212, 0.10) 0%, rgba(10, 22, 40, 0) 34%), linear-gradient(180deg, #0A1628 0%, #0C1B30 100%)'
+                    : 'radial-gradient(circle at top, rgba(0, 188, 212, 0.07) 0%, rgba(240, 250, 252, 0) 34%), linear-gradient(180deg, #F0FAFC 0%, #E8F7FB 100%)',
             }}
         >
-            <Container maxWidth={false} sx={{ px: { xs: 2, md: 4, xl: 6 }, py: { xs: 3, md: 5 } }}>
+            <Container maxWidth="xl" sx={{ px: { xs: 2, md: 3 }, py: { xs: 2.5, md: 4 } }}>
                 <Button
                     startIcon={<ArrowBackRoundedIcon />}
                     onClick={handleBack}
                     sx={{
-                        mb: 3,
+                        mb: 2.5,
                         px: 0,
                         color: 'text.secondary',
                         fontWeight: 600,
+                        fontSize: '0.85rem',
                         '&:hover': {
                             color: 'text.primary',
                             backgroundColor: 'transparent',
@@ -226,9 +229,9 @@ export const SpeciesDetailPage: React.FC<SpeciesDetailPageProps> = ({ slug }) =>
                     onAddToTank={handleAddToTank}
                 />
 
-                <Grid container spacing={3}>
+                <Grid container spacing={2.5}>
                     <Grid size={{ xs: 12, lg: 8 }}>
-                        <Stack spacing={3}>
+                        <Stack spacing={2.5}>
                             <ImageGallery
                                 commonName={species.commonName}
                                 primaryImage={species.thumbnailUrl}
@@ -242,30 +245,31 @@ export const SpeciesDetailPage: React.FC<SpeciesDetailPageProps> = ({ slug }) =>
                             <Paper
                                 elevation={0}
                                 sx={{
-                                    p: { xs: 2.25, md: 2.75 },
+                                    p: { xs: 2, md: 2.25 },
                                     borderRadius: 2,
-                                    border: '1px solid rgba(52, 228, 234, 0.1)',
-                                    background: 'linear-gradient(180deg, rgba(14, 31, 36, 0.96) 0%, rgba(9, 24, 28, 0.99) 100%)',
+                                    border: '1px solid',
+                                    borderColor: 'divider',
+                                    backgroundColor: 'background.paper',
                                 }}
                             >
-                                <Typography variant="h4" sx={{ color: 'primary.main', fontWeight: 800, letterSpacing: '-0.04em', mb: 1.75 }}>
+                                <Typography variant="h5" sx={{ color: 'primary.main', fontWeight: 700, letterSpacing: '-0.03em', mb: 1.25 }}>
                                     {t('PublicCatalog.Detail.overviewTitle')}
                                 </Typography>
-                                <Box sx={{ width: '100%', height: 1, bgcolor: 'rgba(52, 228, 234, 0.22)', mb: 2.25 }} />
+                                <Box sx={{ width: '100%', height: 1, bgcolor: 'divider', mb: 1.75 }} />
 
-                                <Stack spacing={3}>
-                                    <Typography variant="body1" sx={{ lineHeight: 1.8, color: 'text.primary' }}>
+                                <Stack spacing={2.25}>
+                                    <Typography variant="body2" sx={{ lineHeight: 1.75, color: 'text.primary' }}>
                                         {overviewText}
                                     </Typography>
 
                                     <Box>
                                         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                                             <PublicRoundedIcon sx={{ color: 'primary.main', fontSize: 18 }} />
-                                            <Typography variant="h6" fontWeight={750}>
+                                            <Typography variant="subtitle1" fontWeight={700}>
                                                 {t('PublicCatalog.Detail.habitatTitle')}
                                             </Typography>
                                         </Stack>
-                                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.9 }}>
+                                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.75 }}>
                                             {species.profile?.origin
                                                 ? t('PublicCatalog.Detail.habitatSummary', {
                                                     origin: species.profile.origin,
@@ -282,11 +286,11 @@ export const SpeciesDetailPage: React.FC<SpeciesDetailPageProps> = ({ slug }) =>
                                     <Box>
                                         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                                             <RestaurantRoundedIcon sx={{ color: 'primary.main', fontSize: 18 }} />
-                                            <Typography variant="h6" fontWeight={750}>
+                                            <Typography variant="subtitle1" fontWeight={700}>
                                                 {t('PublicCatalog.Detail.dietSectionTitle')}
                                             </Typography>
                                         </Stack>
-                                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.9 }}>
+                                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.75 }}>
                                             {species.profile?.preferredFood
                                                 ? t('PublicCatalog.Detail.dietSummary', {
                                                     diet: dietLabel,
@@ -301,11 +305,11 @@ export const SpeciesDetailPage: React.FC<SpeciesDetailPageProps> = ({ slug }) =>
                                     <Box>
                                         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                                             <Diversity3RoundedIcon sx={{ color: 'primary.main', fontSize: 18 }} />
-                                            <Typography variant="h6" fontWeight={750}>
+                                            <Typography variant="subtitle1" fontWeight={700}>
                                                 {t('PublicCatalog.Detail.compatibilityTitle')}
                                             </Typography>
                                         </Stack>
-                                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.9 }}>
+                                        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.75 }}>
                                             {behaviorTraits.length
                                                 ? t('PublicCatalog.Detail.compatibilitySummary', {
                                                     traits: behaviorTraits.slice(0, 3).join(', '),
@@ -319,7 +323,7 @@ export const SpeciesDetailPage: React.FC<SpeciesDetailPageProps> = ({ slug }) =>
                     </Grid>
 
                     <Grid size={{ xs: 12, lg: 4 }}>
-                        <Stack spacing={2.5}>
+                        <Stack spacing={2}>
                             {species.environment && (
                                 <EnvMetrics
                                     environment={species.environment}
@@ -334,24 +338,25 @@ export const SpeciesDetailPage: React.FC<SpeciesDetailPageProps> = ({ slug }) =>
                                 <Paper
                                     elevation={0}
                                     sx={{
-                                        p: 2.25,
+                                        p: 2,
                                         borderRadius: 2,
-                                        border: '1px solid rgba(52, 228, 234, 0.1)',
-                                        background: 'linear-gradient(180deg, rgba(14, 31, 36, 0.96) 0%, rgba(9, 24, 28, 0.99) 100%)',
+                                        border: '1px solid',
+                                        borderColor: 'divider',
+                                        backgroundColor: 'background.paper',
                                     }}
                                 >
-                                    <Typography variant="subtitle1" fontWeight={750} sx={{ mb: 2 }}>
+                                    <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1.5 }}>
                                         {t('PublicCatalog.Detail.profileTitle')}
                                     </Typography>
 
-                                    <Grid container spacing={2.2}>
+                                    <Grid container spacing={1.75}>
                                         <Grid size={{ xs: 6 }}>
                                             <Stack spacing={0.45}>
                                                 <StraightenRoundedIcon sx={{ color: 'primary.main', fontSize: 18 }} />
                                                 <Typography variant="caption" color="text.secondary">
                                                     {t('PublicCatalog.Detail.maxSize')}
                                                 </Typography>
-                                                <Typography variant="body1" fontWeight={700}>
+                                                <Typography variant="body2" fontWeight={700}>
                                                     {species.profile.adultSize} cm
                                                 </Typography>
                                             </Stack>
@@ -362,7 +367,7 @@ export const SpeciesDetailPage: React.FC<SpeciesDetailPageProps> = ({ slug }) =>
                                                 <Typography variant="caption" color="text.secondary">
                                                     {t('PublicCatalog.Detail.bioLoad')}
                                                 </Typography>
-                                                <Typography variant="body1" fontWeight={700}>
+                                                <Typography variant="body2" fontWeight={700}>
                                                     {species.profile.bioLoadFactor.toFixed(2)}
                                                 </Typography>
                                             </Stack>
@@ -372,7 +377,7 @@ export const SpeciesDetailPage: React.FC<SpeciesDetailPageProps> = ({ slug }) =>
                                                 <Typography variant="caption" color="text.secondary">
                                                     {t('PublicCatalog.Detail.swimLevel')}
                                                 </Typography>
-                                                <Typography variant="body1" fontWeight={700}>
+                                                <Typography variant="body2" fontWeight={700}>
                                                     {swimLabel}
                                                 </Typography>
                                             </Stack>
@@ -382,7 +387,7 @@ export const SpeciesDetailPage: React.FC<SpeciesDetailPageProps> = ({ slug }) =>
                                                 <Typography variant="caption" color="text.secondary">
                                                     {t('PublicCatalog.Detail.diet')}
                                                 </Typography>
-                                                <Typography variant="body1" fontWeight={700}>
+                                                <Typography variant="body2" fontWeight={700}>
                                                     {dietLabel}
                                                 </Typography>
                                             </Stack>
@@ -394,26 +399,28 @@ export const SpeciesDetailPage: React.FC<SpeciesDetailPageProps> = ({ slug }) =>
                             <Paper
                                 elevation={0}
                                 sx={{
-                                    p: 2.25,
+                                    p: 2,
                                     borderRadius: 2,
-                                    border: '1px solid rgba(52, 228, 234, 0.1)',
-                                    background: 'linear-gradient(180deg, rgba(14, 31, 36, 0.96) 0%, rgba(9, 24, 28, 0.99) 100%)',
+                                    border: '1px solid',
+                                    borderColor: 'divider',
+                                    backgroundColor: 'background.paper',
                                 }}
                             >
-                                <Typography variant="subtitle1" fontWeight={750} sx={{ mb: 1.5 }}>
+                                <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1.25 }}>
                                     {t('PublicCatalog.Detail.traitsTitle')}
                                 </Typography>
-                                <Stack direction="row" flexWrap="wrap" useFlexGap gap={1}>
+                                <Stack direction="row" flexWrap="wrap" useFlexGap gap={0.75}>
                                     {behaviorTraits.map((trait) => (
                                         <Chip
                                             key={trait}
                                             label={trait}
                                             size="small"
                                             sx={{
-                                                borderRadius: 1.5,
+                                                borderRadius: 1,
                                                 color: 'text.secondary',
-                                                backgroundColor: 'rgba(255,255,255,0.05)',
-                                                border: '1px solid rgba(255,255,255,0.06)',
+                                                backgroundColor: 'action.hover',
+                                                border: '1px solid',
+                                                borderColor: 'divider',
                                             }}
                                         />
                                     ))}

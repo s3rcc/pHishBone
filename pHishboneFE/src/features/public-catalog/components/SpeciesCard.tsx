@@ -37,14 +37,19 @@ export const SpeciesCard: React.FC<SpeciesCardProps> = ({ species }) => {
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
-                border: '1px solid rgba(52, 228, 234, 0.08)',
-                background: 'linear-gradient(180deg, rgba(14, 31, 36, 0.96) 0%, rgba(10, 23, 27, 0.99) 100%)',
+                border: '1px solid',
+                borderColor: 'divider',
+                backgroundColor: 'background.paper',
                 transition: 'transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease',
-                boxShadow: '0 8px 22px rgba(0, 0, 0, 0.14)',
+                boxShadow: (theme) => theme.palette.mode === 'dark'
+                    ? '0 8px 24px rgba(0, 0, 0, 0.14)'
+                    : '0 8px 20px rgba(10, 22, 40, 0.08)',
                 '&:hover': {
-                    transform: 'translateY(-4px)',
-                    borderColor: 'rgba(52, 228, 234, 0.28)',
-                    boxShadow: '0 18px 30px rgba(0, 0, 0, 0.24)',
+                    transform: 'translateY(-3px)',
+                    borderColor: 'rgba(0, 188, 212, 0.35)',
+                    boxShadow: (theme) => theme.palette.mode === 'dark'
+                        ? '0 14px 28px rgba(0, 0, 0, 0.2)'
+                        : '0 12px 24px rgba(10, 22, 40, 0.12)',
                 },
             }}
         >
@@ -55,10 +60,11 @@ export const SpeciesCard: React.FC<SpeciesCardProps> = ({ species }) => {
                     image={species.thumbnailUrl || PLACEHOLDER_IMG}
                     alt={species.commonName}
                     sx={{
-                        height: 228,
+                        height: 176,
                         objectFit: 'cover',
-                        borderBottom: '1px solid rgba(255,255,255,0.04)',
-                        filter: 'saturate(0.9)',
+                        borderBottom: '1px solid',
+                        borderColor: 'divider',
+                        filter: 'saturate(0.94)',
                     }}
                 />
 
@@ -70,14 +76,13 @@ export const SpeciesCard: React.FC<SpeciesCardProps> = ({ species }) => {
                             position: 'absolute',
                             top: 14,
                             left: 14,
-                            height: 26,
-                            borderRadius: 1.5,
-                            fontSize: '0.72rem',
-                            fontWeight: 800,
-                            letterSpacing: '0.08em',
+                            height: 24,
+                            borderRadius: 1,
+                            fontSize: '0.68rem',
+                            fontWeight: 700,
                             color: 'primary.main',
-                            backgroundColor: 'rgba(4, 18, 22, 0.84)',
-                            border: '1px solid rgba(52, 228, 234, 0.24)',
+                            backgroundColor: 'rgba(0, 188, 212, 0.10)',
+                            border: '1px solid rgba(0, 188, 212, 0.18)',
                         }}
                     />
                 )}
@@ -88,51 +93,53 @@ export const SpeciesCard: React.FC<SpeciesCardProps> = ({ species }) => {
                     flexGrow: 1,
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: 1.25,
-                    p: 2.25,
+                    gap: 1,
+                    p: 1.75,
                 }}
             >
                 <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
                     <Box sx={{ minWidth: 0 }}>
                         <Typography
-                            variant="h6"
+                            variant="subtitle1"
                             sx={{
-                                fontWeight: 760,
-                                lineHeight: 1.1,
-                                letterSpacing: '-0.03em',
-                                mb: 0.4,
+                                fontWeight: 700,
+                                lineHeight: 1.2,
+                                letterSpacing: '-0.02em',
+                                mb: 0.25,
                             }}
                         >
                             {species.commonName}
                         </Typography>
                         {species.scientificName && (
                             <Typography
-                                variant="body2"
+                                variant="caption"
                                 noWrap
                                 sx={{
                                     color: 'text.secondary',
                                     fontStyle: 'italic',
+                                    fontSize: '0.78rem',
                                 }}
                             >
                                 {species.scientificName}
                             </Typography>
                         )}
                     </Box>
-                    <ArrowOutwardRoundedIcon sx={{ color: 'primary.main', fontSize: 18, mt: 0.25, flexShrink: 0 }} />
+                    <ArrowOutwardRoundedIcon sx={{ color: 'primary.main', fontSize: 17, mt: 0.25, flexShrink: 0 }} />
                 </Stack>
 
                 <Box
                     sx={{
                         mt: 'auto',
-                        pt: 1.25,
-                        borderTop: '1px solid rgba(255,255,255,0.05)',
+                        pt: 1,
+                        borderTop: '1px solid',
+                        borderColor: 'divider',
                     }}
                 >
                     <Typography
                         variant="caption"
                         sx={{
                             color: species.isActive ? 'primary.main' : 'text.disabled',
-                            letterSpacing: '0.1em',
+                            letterSpacing: '0.08em',
                             fontWeight: 700,
                         }}
                     >

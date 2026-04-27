@@ -28,25 +28,24 @@ export const SpeciesHero: React.FC<SpeciesHeroProps> = ({
             direction={{ xs: 'column', lg: 'row' }}
             justifyContent="space-between"
             alignItems={{ xs: 'flex-start', lg: 'flex-end' }}
-            spacing={3}
-            sx={{ mb: { xs: 3, md: 4 } }}
+            spacing={2}
+            sx={{ mb: { xs: 2.5, md: 3 } }}
         >
             <Box sx={{ minWidth: 0 }}>
-                <Stack direction="row" flexWrap="wrap" useFlexGap gap={1} sx={{ mb: 2 }}>
+                <Stack direction="row" flexWrap="wrap" useFlexGap gap={0.75} sx={{ mb: 1.5 }}>
                     {species.tags.slice(0, 2).map((tag) => (
                         <Chip
                             key={tag.id}
                             label={tag.name}
                             size="small"
                             sx={{
-                                height: 26,
-                                borderRadius: 1.5,
-                                fontSize: '0.7rem',
+                                height: 24,
+                                borderRadius: 1,
+                                fontSize: '0.68rem',
                                 fontWeight: 700,
-                                letterSpacing: '0.08em',
                                 color: 'primary.main',
-                                backgroundColor: 'rgba(52, 228, 234, 0.08)',
-                                border: '1px solid rgba(52, 228, 234, 0.18)',
+                                backgroundColor: 'rgba(0, 188, 212, 0.10)',
+                                border: '1px solid rgba(0, 188, 212, 0.18)',
                             }}
                         />
                     ))}
@@ -55,25 +54,26 @@ export const SpeciesHero: React.FC<SpeciesHeroProps> = ({
                             label={t(`Catalog.dietType.${species.profile.dietType}`)}
                             size="small"
                             sx={{
-                                height: 26,
-                                borderRadius: 1.5,
-                                fontSize: '0.7rem',
+                                height: 24,
+                                borderRadius: 1,
+                                fontSize: '0.68rem',
                                 color: 'text.secondary',
-                                backgroundColor: 'rgba(255,255,255,0.04)',
-                                border: '1px solid rgba(255,255,255,0.06)',
+                                backgroundColor: 'action.hover',
+                                border: '1px solid',
+                                borderColor: 'divider',
                             }}
                         />
                     )}
                 </Stack>
 
                 <Typography
-                    variant="h2"
+                    variant="h3"
                     sx={{
-                        fontSize: { xs: '2.5rem', md: '4rem' },
-                        lineHeight: 0.95,
-                        letterSpacing: '-0.06em',
+                        fontSize: { xs: '2.15rem', md: '3rem' },
+                        lineHeight: 1,
+                        letterSpacing: '-0.04em',
                         fontWeight: 800,
-                        mb: 1,
+                        mb: 0.5,
                     }}
                 >
                     {species.commonName}
@@ -81,11 +81,12 @@ export const SpeciesHero: React.FC<SpeciesHeroProps> = ({
 
                 {species.scientificName && (
                     <Typography
-                        variant="h6"
+                        variant="body1"
                         sx={{
-                            color: 'primary.main',
+                            color: 'text.secondary',
                             fontWeight: 500,
                             letterSpacing: '-0.02em',
+                            fontStyle: 'italic',
                         }}
                     >
                         {species.scientificName}
@@ -99,18 +100,12 @@ export const SpeciesHero: React.FC<SpeciesHeroProps> = ({
                     startIcon={<WaterRoundedIcon />}
                     onClick={onAddToTank}
                     sx={{
-                        minWidth: 150,
-                        borderRadius: 1.5,
-                        px: 2.75,
-                        py: 1.35,
-                        bgcolor: 'primary.main',
-                        color: '#041216',
-                        letterSpacing: '0.08em',
-                        fontSize: '0.74rem',
-                        fontWeight: 800,
-                        '&:hover': {
-                            bgcolor: 'primary.light',
-                        },
+                        minWidth: 136,
+                        borderRadius: 1,
+                        px: 2,
+                        py: 1,
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
                     }}
                 >
                     {t('PublicCatalog.Detail.addToTank')}
@@ -121,19 +116,18 @@ export const SpeciesHero: React.FC<SpeciesHeroProps> = ({
                     onClick={onToggleBookmark}
                     disabled={isBookmarkPending}
                     sx={{
-                        minWidth: 132,
-                        borderRadius: 1.5,
-                        px: 2.25,
-                        py: 1.35,
-                        borderColor: isBookmarked ? 'rgba(52, 228, 234, 0.4)' : 'rgba(255,255,255,0.14)',
+                        minWidth: 120,
+                        borderRadius: 1,
+                        px: 1.75,
+                        py: 1,
+                        borderColor: isBookmarked ? 'primary.main' : 'divider',
                         color: isBookmarked ? 'primary.main' : 'text.primary',
-                        backgroundColor: isBookmarked ? 'rgba(52, 228, 234, 0.08)' : 'rgba(255,255,255,0.035)',
-                        letterSpacing: '0.08em',
-                        fontSize: '0.74rem',
-                        fontWeight: 800,
+                        backgroundColor: isBookmarked ? 'rgba(0, 188, 212, 0.08)' : 'background.paper',
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
                         '&:hover': {
                             borderColor: 'primary.main',
-                            backgroundColor: 'rgba(52, 228, 234, 0.12)',
+                            backgroundColor: 'rgba(0, 188, 212, 0.12)',
                         },
                     }}
                 >
