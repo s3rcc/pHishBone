@@ -1,4 +1,10 @@
-import type { DietType, SwimLevel, WaterType } from '../../catalog-management/types';
+import type {
+    DietType,
+    ImageResponseDto,
+    SpeciesDetailDto,
+    SwimLevel,
+    WaterType,
+} from '../../catalog-management/types';
 
 // ─── Public Catalog Filter ────────────────────────────────────────────────────
 
@@ -71,4 +77,11 @@ export interface BookmarkedSpeciesDto {
     isActive?: boolean | null;
     createdTime: string;
     bookmarkedTime: string;
+}
+
+export interface SpeciesDetailPageDto {
+    species: SpeciesDetailDto;
+    images: ImageResponseDto[];
+    relatedSpecies: RelatedSpeciesDto[];
+    bookmarkStatus?: SpeciesBookmarkStatusDto | null;
 }

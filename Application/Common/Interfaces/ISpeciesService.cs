@@ -25,6 +25,11 @@ namespace Application.Common.Interfaces
         Task<SpeciesDetailDto> GetDetailBySlugAsync(string slug, CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Get the full public species detail page payload in one call.
+        /// </summary>
+        Task<SpeciesDetailPageDto> GetDetailPageBySlugAsync(string slug, RelatedSpeciesFilterDto filter, CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Get all species as a basic list.
         /// </summary>
         Task<ICollection<SpeciesDto>> GetListAsync(CancellationToken cancellationToken = default);

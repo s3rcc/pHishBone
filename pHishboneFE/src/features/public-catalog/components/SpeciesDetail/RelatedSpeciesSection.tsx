@@ -5,6 +5,7 @@ import {
     Chip,
     Grid,
     Paper,
+    Skeleton,
     Stack,
     Typography,
 } from '@mui/material';
@@ -15,11 +16,12 @@ import type { RelatedSpeciesDto } from '../../types';
 
 interface RelatedSpeciesSectionProps {
     species: RelatedSpeciesDto[];
+    isLoading?: boolean;
 }
 
 const PLACEHOLDER_IMAGE = 'https://placehold.co/640x420/08171C/34E4EA?text=Species';
 
-export const RelatedSpeciesSection: React.FC<RelatedSpeciesSectionProps> = ({ species }) => {
+export const RelatedSpeciesSection: React.FC<RelatedSpeciesSectionProps> = ({ species, isLoading = false }) => {
     const navigate = useNavigate();
     const { t } = useTranslation();
 
@@ -27,7 +29,7 @@ export const RelatedSpeciesSection: React.FC<RelatedSpeciesSectionProps> = ({ sp
         void navigate({ to: '/explore/$slug', params: { slug } });
     }, [navigate]);
 
-    if (!species.length) {
+    if (!species.length && !isLoading) {
         return null;
     }
 
@@ -51,6 +53,30 @@ export const RelatedSpeciesSection: React.FC<RelatedSpeciesSectionProps> = ({ sp
             </Stack>
 
             <Grid container spacing={2}>
+                {isLoading && !species.length && Array.from({ length: 4 }).map((_, index) => (
+                    <Grid key={`related-skeleton-${index}`} size={{ xs: 12, sm: 6, lg: 3 }}>
+                        <Paper
+                            elevation={0}
+                            sx={{
+                                overflow: 'hidden',
+                                borderRadius: 2,
+                                border: '1px solid',
+                                borderColor: 'divider',
+                                backgroundColor: 'background.paper',
+                            }}
+                        >
+                            <Skeleton variant="rectangular" sx={{ aspectRatio: '1.5 / 1' }} />
+                            <Stack spacing={1.2} sx={{ p: 1.5 }}>
+                                <Skeleton variant="text" height={28} width="72%" />
+                                <Skeleton variant="text" height={20} width="56%" />
+                                <Stack direction="row" spacing={0.75}>
+                                    <Skeleton variant="rounded" width={74} height={22} />
+                                    <Skeleton variant="rounded" width={92} height={22} />
+                                </Stack>
+                            </Stack>
+                        </Paper>
+                    </Grid>
+                ))}
                 {species.map((candidate) => (
                     <Grid key={candidate.id} size={{ xs: 12, sm: 6, lg: 3 }}>
                         <ButtonBase

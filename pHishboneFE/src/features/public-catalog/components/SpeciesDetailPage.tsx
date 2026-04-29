@@ -18,15 +18,13 @@ import Diversity3RoundedIcon from '@mui/icons-material/Diversity3Rounded';
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { AUTH_ME_KEY, authApi } from '../../auth';
 import { useMuiSnackbar } from '../../../hooks/useMuiSnackbar';
 import { publicCatalogApi } from '../api/publicCatalogApi';
 import { EnvMetrics } from './SpeciesDetail/EnvMetrics';
 import { ImageGallery } from './SpeciesDetail/ImageGallery';
 import { RelatedSpeciesSection } from './SpeciesDetail/RelatedSpeciesSection';
 import { SpeciesHero } from './SpeciesDetail/SpeciesHero';
-import type { SpeciesDetailDto } from '../../catalog-management/types';
-import type { RelatedSpeciesDto } from '../types';
+import type { SpeciesDetailPageDto } from '../types';
 
 interface SpeciesDetailPageProps {
     slug: string;
@@ -53,58 +51,56 @@ const WATER_TYPE_MAP: Record<number, string> = {
     2: 'Salt',
 };
 
+function getStoredRecentlyViewedIds(): string[] {
+    if (typeof window === 'undefined') {
+        return [];
+    }
+
+    const rawValue = window.sessionStorage.getItem(RECENT_VIEWED_STORAGE_KEY);
+    if (!rawValue) {
+        return [];
+    }
+
+    try {
+        const parsed = JSON.parse(rawValue) as string[];
+        return parsed.filter((value): value is string => typeof value === 'string').slice(0, 6);
+    } catch {
+        return [];
+    }
+}
+
 export const SpeciesDetailPage: React.FC<SpeciesDetailPageProps> = ({ slug }) => {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { showSnackbar } = useMuiSnackbar();
-    const [recentlyViewedIds, setRecentlyViewedIds] = useState<string[]>([]);
+    const [recentlyViewedIds] = useState<string[]>(() => getStoredRecentlyViewedIds());
+    const detailPageQueryKey = ['public-catalog', 'species-page', slug] as const;
 
-    const { data: species } = useSuspenseQuery<SpeciesDetailDto>({
-        queryKey: ['public-catalog', 'species', slug],
-        queryFn: () => publicCatalogApi.getSpeciesBySlug(slug),
+    const { data: pageData } = useSuspenseQuery<SpeciesDetailPageDto>({
+        queryKey: detailPageQueryKey,
+        queryFn: () => publicCatalogApi.getSpeciesDetailPageBySlug(slug),
     });
+    const { species, images, bookmarkStatus = null } = pageData;
+    const isAuthenticated = bookmarkStatus !== null;
 
-    const { data: images = [] } = useSuspenseQuery({
-        queryKey: ['public-catalog', 'images', species.id],
-        queryFn: () => publicCatalogApi.getSpeciesImages(species.id),
-    });
-
-    const { data: relatedSpecies = [] } = useSuspenseQuery<RelatedSpeciesDto[]>({
+    const { data: relatedSpecies = [], isLoading: isRelatedSpeciesLoading } = useQuery({
         queryKey: ['public-catalog', 'related', species.id, recentlyViewedIds],
         queryFn: () => publicCatalogApi.getRelatedSpecies(species.id, {
             size: 4,
             recentlyViewedIds,
             seed: 'detail-session',
         }),
-    });
-
-    const { data: currentUser } = useQuery({
-        queryKey: AUTH_ME_KEY,
-        queryFn: authApi.getMe,
-        retry: false,
-        staleTime: 60_000,
-    });
-
-    const { data: bookmarkStatus } = useQuery({
-        queryKey: ['public-catalog', 'bookmark-status', species.id],
-        queryFn: () => publicCatalogApi.getBookmarkStatus(species.id),
-        enabled: Boolean(currentUser),
-        retry: false,
-        staleTime: 30_000,
+        enabled: Boolean(species.id),
+        staleTime: 5 * 60_000,
     });
 
     useEffect(() => {
-        const rawValue = window.sessionStorage.getItem(RECENT_VIEWED_STORAGE_KEY);
-        const parsed = rawValue ? JSON.parse(rawValue) as string[] : [];
-        const filtered = parsed.filter((id) => id !== species.id);
-
-        setRecentlyViewedIds(filtered.slice(0, 6));
         window.sessionStorage.setItem(
             RECENT_VIEWED_STORAGE_KEY,
-            JSON.stringify([species.id, ...filtered].slice(0, 8)),
+            JSON.stringify([species.id, ...recentlyViewedIds.filter((id) => id !== species.id)].slice(0, 8)),
         );
-    }, [species.id]);
+    }, [recentlyViewedIds, species.id]);
 
     const bookmarkMutation = useMutation({
         mutationFn: useCallback(async () => {
@@ -117,7 +113,20 @@ export const SpeciesDetailPage: React.FC<SpeciesDetailPageProps> = ({ slug }) =>
             return true;
         }, [bookmarkStatus?.isBookmarked, species.id]),
         onSuccess: (isNowBookmarked) => {
-            queryClient.invalidateQueries({ queryKey: ['public-catalog', 'bookmark-status', species.id] });
+            queryClient.setQueryData<SpeciesDetailPageDto>(detailPageQueryKey, (current) => {
+                if (!current) {
+                    return current;
+                }
+
+                return {
+                    ...current,
+                    bookmarkStatus: {
+                        speciesId: species.id,
+                        isBookmarked: isNowBookmarked,
+                        bookmarkedTime: isNowBookmarked ? new Date().toISOString() : null,
+                    },
+                };
+            });
             showSnackbar(
                 isNowBookmarked
                     ? t('PublicCatalog.Detail.saveSuccess')
@@ -184,14 +193,14 @@ export const SpeciesDetailPage: React.FC<SpeciesDetailPageProps> = ({ slug }) =>
     }, [navigate]);
 
     const handleToggleBookmark = useCallback(() => {
-        if (!currentUser) {
+        if (!isAuthenticated) {
             showSnackbar(t('PublicCatalog.Detail.bookmarkLoginRequired'), 'info');
             void navigate({ to: '/login' });
             return;
         }
 
         bookmarkMutation.mutate();
-    }, [bookmarkMutation, currentUser, navigate, showSnackbar, t]);
+    }, [bookmarkMutation, isAuthenticated, navigate, showSnackbar, t]);
 
     return (
         <Box
@@ -430,7 +439,7 @@ export const SpeciesDetailPage: React.FC<SpeciesDetailPageProps> = ({ slug }) =>
                     </Grid>
                 </Grid>
 
-                <RelatedSpeciesSection species={relatedSpecies} />
+                <RelatedSpeciesSection species={relatedSpecies} isLoading={isRelatedSpeciesLoading} />
             </Container>
         </Box>
     );

@@ -12,6 +12,7 @@ import type {
     BookmarkedSpeciesDto,
     PublicCatalogFilter,
     RelatedSpeciesDto,
+    SpeciesDetailPageDto,
     SpeciesBookmarkStatusDto,
 } from '../types';
 
@@ -37,6 +38,25 @@ export const publicCatalogApi = {
     getSpeciesBySlug: async (slug: string): Promise<SpeciesDetailDto> => {
         const { data } = await axiosInstance.get<ApiResponse<SpeciesDetailDto>>(
             `/api/catalog/species/by-slug/${slug}`,
+        );
+        return data.data;
+    },
+
+    /**
+     * Get the full species detail page payload in a single request.
+     */
+    getSpeciesDetailPageBySlug: async (
+        slug: string,
+        params?: {
+            size?: number;
+            excludeIds?: string[];
+            recentlyViewedIds?: string[];
+            seed?: string;
+        },
+    ): Promise<SpeciesDetailPageDto> => {
+        const { data } = await axiosInstance.get<ApiResponse<SpeciesDetailPageDto>>(
+            `/api/catalog/species/by-slug/${slug}/page`,
+            { params },
         );
         return data.data;
     },

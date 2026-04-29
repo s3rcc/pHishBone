@@ -5,6 +5,7 @@ namespace Application.DTOs.CatalogDTOs
     /// </summary>
     public class RelatedSpeciesFilterDto
     {
+        public bool IncludeRelated { get; set; } = false;
         public int Size { get; set; } = 8;
         public List<string> ExcludeIds { get; set; } = new();
         public List<string> RecentlyViewedIds { get; set; } = new();

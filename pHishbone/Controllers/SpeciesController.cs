@@ -101,6 +101,18 @@ namespace pHishbone.Controllers
         }
 
         /// <summary>
+        /// Get the full public species detail page payload in a single request.
+        /// </summary>
+        [HttpGet(ApiEndpointConstant.Species.GetPageBySlug)]
+        [ProducesResponseType(typeof(ApiResponse<SpeciesDetailPageDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetPageBySlug([FromRoute] string slug, [FromQuery] RelatedSpeciesFilterDto filter, CancellationToken cancellationToken)
+        {
+            var speciesPage = await _speciesService.GetDetailPageBySlugAsync(slug, filter, cancellationToken);
+            return Ok(ApiResponse<SpeciesDetailPageDto>.Success(speciesPage, SuccessMessageConstant.SpeciesDetailsRetrievedSuccessfully));
+        }
+
+        /// <summary>
         /// Bilingual hybrid search (FTS + Trigram). Handles Vietnamese, English, scientific names, and typos.
         /// Returns paginated results ranked by relevance.
         /// </summary>

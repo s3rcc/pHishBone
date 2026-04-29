@@ -2,6 +2,8 @@
 using Application.Common.Interfaces;
 using Application.Constants;
 using Application.DTOs.CatalogDTOs;
+using Application.DTOs.ImageDTOs;
+using Application.DTOs.PBUserDTOs;
 using Application.Services;
 using AutoMapper;
 using Domain.Entities.Catalog;
@@ -77,16 +79,8 @@ namespace Infrastructure.Services
 
         public async Task<SpeciesDetailDto> GetDetailByIdAsync(string id, CancellationToken cancellationToken = default)
         {
-            var species = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
-                predicate: s => s.Id == id,
-                include: q => q
-                    .Include(s => s.Type)
-                    .Include(s => s.SpeciesEnvironment)
-                    .Include(s => s.SpeciesProfile)
-                    .Include(s => s.SpeciesTags)
-                        .ThenInclude(st => st.Tag),
-                cancellationToken: cancellationToken
-            );
+            var species = await BuildSpeciesDetailQuery()
+                .SingleOrDefaultAsync(s => s.Id == id, cancellationToken);
 
             if (species == null)
             {
@@ -111,16 +105,8 @@ namespace Infrastructure.Services
                 return cached;
             }
 
-            var species = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
-                predicate: s => s.Slug == slug,
-                include: q => q
-                    .Include(s => s.Type)
-                    .Include(s => s.SpeciesEnvironment)
-                    .Include(s => s.SpeciesProfile)
-                    .Include(s => s.SpeciesTags)
-                        .ThenInclude(st => st.Tag),
-                cancellationToken: cancellationToken
-            );
+            var species = await BuildSpeciesDetailQuery()
+                .SingleOrDefaultAsync(s => s.Slug == slug, cancellationToken);
 
             if (species == null)
             {
@@ -134,6 +120,40 @@ namespace Infrastructure.Services
             var dto = _mapper.Map<SpeciesDetailDto>(species);
             await _cache.SetAsync(cacheKey, dto, TimeSpan.FromMinutes(CacheKeyConstant.DefaultExpiryMinutes), cancellationToken);
             return dto;
+        }
+
+        public async Task<SpeciesDetailPageDto> GetDetailPageBySlugAsync(string slug, RelatedSpeciesFilterDto filter, CancellationToken cancellationToken = default)
+        {
+            var species = await BuildSpeciesDetailQuery(includeImages: true)
+                .SingleOrDefaultAsync(s => s.Slug == slug, cancellationToken);
+
+            if (species == null)
+            {
+                throw new CustomErrorException(
+                    StatusCodes.Status404NotFound,
+                    ErrorCode.NOT_FOUND,
+                    CatalogErrorMessageConstant.SpeciesNotFound
+                );
+            }
+
+            var images = species.SpeciesImages
+                .Where(image => image.DeletedTime == null)
+                .OrderBy(image => image.SortOrder)
+                .ThenByDescending(image => image.CreatedTime)
+                .ToList();
+
+            var bookmarkStatus = await TryGetBookmarkStatusAsync(species.Id, cancellationToken);
+            var relatedSpecies = filter.IncludeRelated
+                ? await GetRelatedAsync(species, filter, cancellationToken)
+                : new List<RelatedSpeciesDto>();
+
+            return new SpeciesDetailPageDto
+            {
+                Species = _mapper.Map<SpeciesDetailDto>(species),
+                Images = _mapper.Map<List<ImageResponseDto>>(images),
+                RelatedSpecies = relatedSpecies,
+                BookmarkStatus = bookmarkStatus
+            };
         }
 
         public async Task<ICollection<SpeciesDto>> GetListAsync(CancellationToken cancellationToken = default)
@@ -497,29 +517,8 @@ namespace Infrastructure.Services
 
         public async Task<ICollection<RelatedSpeciesDto>> GetRelatedAsync(string id, RelatedSpeciesFilterDto filter, CancellationToken cancellationToken = default)
         {
-            var requestedSize = filter.Size <= 0
-                ? SpeciesRecommendationConstant.DefaultSize
-                : Math.Min(filter.Size, SpeciesRecommendationConstant.MaxSize);
-            var excludedIds = BuildExcludedSpeciesIds(id, filter);
-            var cacheKey = CacheKeyConstant.SpeciesRelated + id;
-
-            var cachedPool = await _cache.GetAsync<List<RelatedSpeciesDto>>(cacheKey, cancellationToken);
-            if (cachedPool != null)
-            {
-                _logger.LogInformation("Related species for {SpeciesId} served from cache", id);
-                return SelectDiversifiedCandidates(cachedPool, excludedIds, requestedSize, filter.Seed);
-            }
-
-            var sourceSpecies = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
-                predicate: s => s.Id == id,
-                include: q => q
-                    .Include(s => s.Type)
-                    .Include(s => s.SpeciesEnvironment)
-                    .Include(s => s.SpeciesProfile)
-                    .Include(s => s.SpeciesTags),
-                tracking: false,
-                cancellationToken: cancellationToken
-            );
+            var sourceSpecies = await BuildSpeciesDetailQuery()
+                .SingleOrDefaultAsync(s => s.Id == id, cancellationToken);
 
             if (sourceSpecies == null)
             {
@@ -530,9 +529,38 @@ namespace Infrastructure.Services
                 );
             }
 
+            return await GetRelatedAsync(sourceSpecies, filter, cancellationToken);
+        }
+
+        #region Private Helper Methods
+
+        private async Task<List<RelatedSpeciesDto>> GetRelatedAsync(Species sourceSpecies, RelatedSpeciesFilterDto filter, CancellationToken cancellationToken)
+        {
+            var requestedSize = filter.Size <= 0
+                ? SpeciesRecommendationConstant.DefaultSize
+                : Math.Min(filter.Size, SpeciesRecommendationConstant.MaxSize);
+            var excludedIds = BuildExcludedSpeciesIds(sourceSpecies.Id, filter);
+            var relatedPool = await GetOrBuildRelatedSpeciesPoolAsync(sourceSpecies, requestedSize, cancellationToken);
+
+            return SelectDiversifiedCandidates(relatedPool, excludedIds, requestedSize, filter.Seed);
+        }
+
+        private async Task<List<RelatedSpeciesDto>> GetOrBuildRelatedSpeciesPoolAsync(
+            Species sourceSpecies,
+            int requestedSize,
+            CancellationToken cancellationToken)
+        {
+            var cacheKey = CacheKeyConstant.SpeciesRelated + sourceSpecies.Id;
+            var cachedPool = await _cache.GetAsync<List<RelatedSpeciesDto>>(cacheKey, cancellationToken);
+            if (cachedPool != null)
+            {
+                _logger.LogInformation("Related species for {SpeciesId} served from cache", sourceSpecies.Id);
+                return cachedPool;
+            }
+
             _logger.LogInformation(
                 "Generating related species pool for {SpeciesId} with requested size {RequestedSize}",
-                id,
+                sourceSpecies.Id,
                 requestedSize);
 
             var relatedPool = await BuildRelatedSpeciesPoolAsync(sourceSpecies, cancellationToken);
@@ -542,10 +570,8 @@ namespace Infrastructure.Services
                 TimeSpan.FromMinutes(CacheKeyConstant.DefaultExpiryMinutes),
                 cancellationToken);
 
-            return SelectDiversifiedCandidates(relatedPool, excludedIds, requestedSize, filter.Seed);
+            return relatedPool;
         }
-
-        #region Private Helper Methods
 
         /// <summary>
         /// Builds the base EF Core query with all cross-table filters applied.
@@ -699,16 +725,11 @@ namespace Infrastructure.Services
 
         private async Task<List<RelatedSpeciesDto>> BuildRelatedSpeciesPoolAsync(Species sourceSpecies, CancellationToken cancellationToken)
         {
-            var candidates = await _dbContext.Species
-                .Include(s => s.Type)
-                .Include(s => s.SpeciesEnvironment)
-                .Include(s => s.SpeciesProfile)
-                .Include(s => s.SpeciesTags)
+            var candidates = await BuildSpeciesDetailQuery()
                 .Where(s =>
                     s.Id != sourceSpecies.Id &&
                     s.DeletedTime == null &&
                     s.IsActive == true)
-                .AsNoTracking()
                 .ToListAsync(cancellationToken);
 
             _logger.LogInformation(
@@ -722,6 +743,25 @@ namespace Infrastructure.Services
                 .ThenBy(candidate => candidate.CommonName)
                 .Take(SpeciesRecommendationConstant.PoolSize)
                 .ToList();
+        }
+
+        private IQueryable<Species> BuildSpeciesDetailQuery(bool includeImages = false)
+        {
+            IQueryable<Species> query = _dbContext.Species
+                .AsNoTracking()
+                .AsSplitQuery()
+                .Include(s => s.Type)
+                .Include(s => s.SpeciesEnvironment)
+                .Include(s => s.SpeciesProfile)
+                .Include(s => s.SpeciesTags)
+                    .ThenInclude(st => st.Tag);
+
+            if (includeImages)
+            {
+                query = query.Include(s => s.SpeciesImages);
+            }
+
+            return query;
         }
 
         private static HashSet<string> BuildExcludedSpeciesIds(string sourceSpeciesId, RelatedSpeciesFilterDto filter)
@@ -1013,6 +1053,65 @@ namespace Infrastructure.Services
 
             var delta = Math.Abs(sourceValue - candidateValue);
             return 1m - Math.Min(delta / largestValue, 1m);
+        }
+
+        private async Task<SpeciesBookmarkStatusDto?> TryGetBookmarkStatusAsync(string speciesId, CancellationToken cancellationToken)
+        {
+            if (!_currentUserService.IsAuthenticated())
+            {
+                return null;
+            }
+
+            var userSupabaseId = _currentUserService.GetUserId();
+            if (string.IsNullOrWhiteSpace(userSupabaseId))
+            {
+                return null;
+            }
+
+            var cacheKey = $"{CacheKeyConstant.SpeciesBookmarksPrefix}{userSupabaseId}:{CacheKeyConstant.SpeciesBookmarkStatus}{speciesId}";
+            var cached = await _cache.GetAsync<SpeciesBookmarkStatusDto>(cacheKey, cancellationToken);
+            if (cached != null)
+            {
+                _logger.LogInformation("Species bookmark status served from cache. UserSupabaseId: {UserSupabaseId}, SpeciesId: {SpeciesId}", userSupabaseId, speciesId);
+                return cached;
+            }
+
+            var userId = await _dbContext.PBUsers
+                .AsNoTracking()
+                .Where(user => user.SupabaseUserId == userSupabaseId && user.DeletedTime == null)
+                .Select(user => user.Id)
+                .SingleOrDefaultAsync(cancellationToken);
+
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return null;
+            }
+
+            var bookmarkedTime = await _dbContext.SpeciesBookmarks
+                .AsNoTracking()
+                .Where(bookmark =>
+                    bookmark.UserId == userId &&
+                    bookmark.SpeciesId == speciesId &&
+                    bookmark.DeletedTime == null &&
+                    bookmark.Species.DeletedTime == null &&
+                    bookmark.Species.IsActive == true)
+                .Select(bookmark => (DateTime?)bookmark.CreatedTime)
+                .SingleOrDefaultAsync(cancellationToken);
+
+            var status = new SpeciesBookmarkStatusDto
+            {
+                SpeciesId = speciesId,
+                IsBookmarked = bookmarkedTime.HasValue,
+                BookmarkedTime = bookmarkedTime
+            };
+
+            await _cache.SetAsync(
+                cacheKey,
+                status,
+                TimeSpan.FromMinutes(CacheKeyConstant.DefaultExpiryMinutes),
+                cancellationToken);
+
+            return status;
         }
 
         /// <summary>
