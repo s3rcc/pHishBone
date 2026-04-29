@@ -20,6 +20,17 @@ namespace Infrastructure.Persistence.Repositories
             _dbSet = context.Set<T>();
         }
 
+        public IQueryable<T> GetQueryable(bool tracking = false)
+        {
+            return tracking ? _dbSet : _dbSet.AsNoTracking();
+        }
+
+        public IQueryable<T> FromSqlInterpolated(FormattableString sql, bool tracking = false)
+        {
+            var query = _dbSet.FromSqlInterpolated(sql);
+            return tracking ? query : query.AsNoTracking();
+        }
+
         public void Delete(T entity)
         {
             _dbSet.Remove(entity);

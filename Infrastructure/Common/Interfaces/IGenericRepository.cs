@@ -1,6 +1,7 @@
 using Domain.Common;
 using Infrastructure.Common.Filters;
 using Infrastructure.Paginate;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using System.Linq.Expressions;
 
@@ -8,6 +9,9 @@ namespace Infrastructure.Common.Interfaces
 {
     public interface IGenericRepository<T> where T : BaseEntity
     {
+        IQueryable<T> GetQueryable(bool tracking = false);
+        IQueryable<T> FromSqlInterpolated(FormattableString sql, bool tracking = false);
+
         // Reads
         Task<T?> SingleOrDefaultAsync(
         Expression<Func<T, bool>>? predicate = null,

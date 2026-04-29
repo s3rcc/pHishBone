@@ -6,11 +6,11 @@ using Application.DTOs.ImageDTOs;
 using Application.DTOs.PBUserDTOs;
 using Application.Services;
 using AutoMapper;
+using Domain.Entities;
 using Domain.Entities.Catalog;
 using Domain.Exceptions;
 using Infrastructure.Common.Interfaces;
 using Infrastructure.Paginate;
-using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -24,7 +24,6 @@ namespace Infrastructure.Services
         private readonly IMapper _mapper;
         private readonly ICurrentUserService _currentUserService;
         private readonly IPhotoService _photoService;
-        private readonly ApplicationDbContext _dbContext;
         private readonly ILogger<SpeciesService> _logger;
         private readonly ICacheService _cache;
 
@@ -33,7 +32,6 @@ namespace Infrastructure.Services
             IMapper mapper,
             ICurrentUserService currentUserService,
             IPhotoService photoService,
-            ApplicationDbContext dbContext,
             ILogger<SpeciesService> logger,
             ICacheService cache)
         {
@@ -41,7 +39,6 @@ namespace Infrastructure.Services
             _mapper = mapper;
             _currentUserService = currentUserService;
             _photoService = photoService;
-            _dbContext = dbContext;
             _logger = logger;
             _cache = cache;
         }
@@ -106,7 +103,9 @@ namespace Infrastructure.Services
             }
 
             var species = await BuildSpeciesDetailDtoQuery()
-                .SingleOrDefaultAsync(s => s.Slug == slug, cancellationToken);
+                .SingleOrDefaultAsync(
+                    s => s.Slug == slug && s.IsActive == true,
+                    cancellationToken);
 
             if (species == null)
             {
@@ -461,8 +460,7 @@ namespace Infrastructure.Services
             //   - 'simple' dict avoids mangling Vietnamese tokens (unlike 'english' dict).
             //   - Trigram threshold 0.1 catches short typos ("cá ho" → "cá hề").
             //   - Ranking weights FTS match 3x over common-name trigram, scientific 1x.
-            var ftsQuery = _dbContext.Species
-                .FromSqlInterpolated($@"
+            var ftsQuery = _unitOfWork.Repository<Species>().FromSqlInterpolated($@"
                     SELECT * FROM catalog.""Species""
                     WHERE
                         ""FtsVector"" @@ websearch_to_tsquery('simple', {searchTerm})
@@ -562,7 +560,8 @@ namespace Infrastructure.Services
         /// </summary>
         private IQueryable<Species> BuildFilteredQuery(SpeciesFilterDto filter)
         {
-            IQueryable<Species> query = _dbContext.Species
+            IQueryable<Species> query = _unitOfWork.Repository<Species>()
+                .GetQueryable()
                 .Include(s => s.Type)
                 .Include(s => s.SpeciesEnvironment)
                 .Include(s => s.SpeciesProfile)
@@ -730,8 +729,9 @@ namespace Infrastructure.Services
 
         private IQueryable<SpeciesDetailDto> BuildSpeciesDetailDtoQuery()
         {
-            return _dbContext.Species
-                .AsNoTracking()
+            return _unitOfWork.Repository<Species>()
+                .GetQueryable()
+                .Where(species => species.DeletedTime == null)
                 .Select(species => new SpeciesDetailDto
                 {
                     Id = species.Id,
@@ -792,8 +792,8 @@ namespace Infrastructure.Services
                 return cached;
             }
 
-            var images = await _dbContext.Set<SpeciesImage>()
-                .AsNoTracking()
+            var images = await _unitOfWork.Repository<SpeciesImage>()
+                .GetQueryable()
                 .Where(image => image.SpeciesId == speciesId && image.DeletedTime == null)
                 .OrderBy(image => image.SortOrder)
                 .ThenByDescending(image => image.CreatedTime)
@@ -812,8 +812,8 @@ namespace Infrastructure.Services
 
         private IQueryable<Species> BuildSpeciesDetailQuery(bool includeImages = false)
         {
-            IQueryable<Species> query = _dbContext.Species
-                .AsNoTracking()
+            IQueryable<Species> query = _unitOfWork.Repository<Species>()
+                .GetQueryable()
                 .AsSplitQuery()
                 .Include(s => s.Type)
                 .Include(s => s.SpeciesEnvironment)
@@ -1141,8 +1141,8 @@ namespace Infrastructure.Services
                 return cached;
             }
 
-            var bookmarkSnapshot = await _dbContext.PBUsers
-                .AsNoTracking()
+            var bookmarkSnapshot = await _unitOfWork.Repository<PBUser>()
+                .GetQueryable()
                 .Where(user => user.SupabaseUserId == userSupabaseId && user.DeletedTime == null)
                 .Select(user => new
                 {
