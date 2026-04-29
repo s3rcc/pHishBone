@@ -79,7 +79,7 @@ namespace Infrastructure.Services
 
         public async Task<SpeciesDetailDto> GetDetailByIdAsync(string id, CancellationToken cancellationToken = default)
         {
-            var species = await BuildSpeciesDetailQuery()
+            var species = await BuildSpeciesDetailDtoQuery()
                 .SingleOrDefaultAsync(s => s.Id == id, cancellationToken);
 
             if (species == null)
@@ -91,7 +91,7 @@ namespace Infrastructure.Services
                 );
             }
 
-            return _mapper.Map<SpeciesDetailDto>(species);
+            return species;
         }
 
         public async Task<SpeciesDetailDto> GetDetailBySlugAsync(string slug, CancellationToken cancellationToken = default)
@@ -105,7 +105,7 @@ namespace Infrastructure.Services
                 return cached;
             }
 
-            var species = await BuildSpeciesDetailQuery()
+            var species = await BuildSpeciesDetailDtoQuery()
                 .SingleOrDefaultAsync(s => s.Slug == slug, cancellationToken);
 
             if (species == null)
@@ -117,40 +117,23 @@ namespace Infrastructure.Services
                 );
             }
 
-            var dto = _mapper.Map<SpeciesDetailDto>(species);
-            await _cache.SetAsync(cacheKey, dto, TimeSpan.FromMinutes(CacheKeyConstant.DefaultExpiryMinutes), cancellationToken);
-            return dto;
+            await _cache.SetAsync(cacheKey, species, TimeSpan.FromMinutes(CacheKeyConstant.DefaultExpiryMinutes), cancellationToken);
+            return species;
         }
 
         public async Task<SpeciesDetailPageDto> GetDetailPageBySlugAsync(string slug, RelatedSpeciesFilterDto filter, CancellationToken cancellationToken = default)
         {
-            var species = await BuildSpeciesDetailQuery(includeImages: true)
-                .SingleOrDefaultAsync(s => s.Slug == slug, cancellationToken);
-
-            if (species == null)
-            {
-                throw new CustomErrorException(
-                    StatusCodes.Status404NotFound,
-                    ErrorCode.NOT_FOUND,
-                    CatalogErrorMessageConstant.SpeciesNotFound
-                );
-            }
-
-            var images = species.SpeciesImages
-                .Where(image => image.DeletedTime == null)
-                .OrderBy(image => image.SortOrder)
-                .ThenByDescending(image => image.CreatedTime)
-                .ToList();
-
+            var species = await GetDetailBySlugAsync(slug, cancellationToken);
+            var images = await GetSpeciesImagesForDetailAsync(species.Id, cancellationToken);
             var bookmarkStatus = await TryGetBookmarkStatusAsync(species.Id, cancellationToken);
             var relatedSpecies = filter.IncludeRelated
-                ? await GetRelatedAsync(species, filter, cancellationToken)
+                ? await GetRelatedAsync(species.Id, filter, cancellationToken)
                 : new List<RelatedSpeciesDto>();
 
             return new SpeciesDetailPageDto
             {
-                Species = _mapper.Map<SpeciesDetailDto>(species),
-                Images = _mapper.Map<List<ImageResponseDto>>(images),
+                Species = species,
+                Images = images,
                 RelatedSpecies = relatedSpecies,
                 BookmarkStatus = bookmarkStatus
             };
@@ -745,6 +728,88 @@ namespace Infrastructure.Services
                 .ToList();
         }
 
+        private IQueryable<SpeciesDetailDto> BuildSpeciesDetailDtoQuery()
+        {
+            return _dbContext.Species
+                .AsNoTracking()
+                .Select(species => new SpeciesDetailDto
+                {
+                    Id = species.Id,
+                    TypeId = species.TypeId,
+                    TypeName = species.Type != null ? species.Type.Name : null,
+                    ScientificName = species.ScientificName,
+                    CommonName = species.CommonName,
+                    ThumbnailUrl = species.ThumbnailUrl,
+                    Slug = species.Slug,
+                    IsActive = species.IsActive,
+                    CreatedTime = species.CreatedTime,
+                    LastUpdatedTime = species.LastUpdatedTime,
+                    Environment = species.SpeciesEnvironment == null
+                        ? null
+                        : new SpeciesEnvironmentDto
+                        {
+                            PhMin = species.SpeciesEnvironment.PhMin,
+                            PhMax = species.SpeciesEnvironment.PhMax,
+                            TempMin = species.SpeciesEnvironment.TempMin,
+                            TempMax = species.SpeciesEnvironment.TempMax,
+                            MinTankVolume = species.SpeciesEnvironment.MinTankVolume,
+                            WaterType = species.SpeciesEnvironment.WaterType
+                        },
+                    Profile = species.SpeciesProfile == null
+                        ? null
+                        : new SpeciesProfileDto
+                        {
+                            AdultSize = species.SpeciesProfile.AdultSize,
+                            BioLoadFactor = species.SpeciesProfile.BioLoadFactor,
+                            SwimLevel = species.SpeciesProfile.SwimLevel,
+                            DietType = species.SpeciesProfile.DietType,
+                            PreferredFood = species.SpeciesProfile.PreferredFood,
+                            IsSchooling = species.SpeciesProfile.IsSchooling,
+                            MinGroupSize = species.SpeciesProfile.MinGroupSize,
+                            Origin = species.SpeciesProfile.Origin,
+                            Description = species.SpeciesProfile.Description
+                        },
+                    Tags = species.SpeciesTags
+                        .Select(speciesTag => new TagDto
+                        {
+                            Id = speciesTag.Tag.Id,
+                            Code = speciesTag.Tag.Code,
+                            Name = speciesTag.Tag.Name,
+                            Description = speciesTag.Tag.Description,
+                            CreatedTime = speciesTag.Tag.CreatedTime
+                        })
+                        .ToList()
+                });
+        }
+
+        private async Task<List<ImageResponseDto>> GetSpeciesImagesForDetailAsync(string speciesId, CancellationToken cancellationToken)
+        {
+            var cacheKey = CacheKeyConstant.SpeciesImages + speciesId;
+            var cached = await _cache.GetAsync<List<ImageResponseDto>>(cacheKey, cancellationToken);
+            if (cached != null)
+            {
+                _logger.LogInformation("Species images for {SpeciesId} served from cache", speciesId);
+                return cached;
+            }
+
+            var images = await _dbContext.Set<SpeciesImage>()
+                .AsNoTracking()
+                .Where(image => image.SpeciesId == speciesId && image.DeletedTime == null)
+                .OrderBy(image => image.SortOrder)
+                .ThenByDescending(image => image.CreatedTime)
+                .Select(image => new ImageResponseDto(
+                    image.Id,
+                    image.ImageUrl,
+                    image.PublicId,
+                    image.Caption,
+                    image.SortOrder,
+                    image.CreatedTime))
+                .ToListAsync(cancellationToken);
+
+            await _cache.SetAsync(cacheKey, images, TimeSpan.FromMinutes(CacheKeyConstant.DefaultExpiryMinutes), cancellationToken);
+            return images;
+        }
+
         private IQueryable<Species> BuildSpeciesDetailQuery(bool includeImages = false)
         {
             IQueryable<Species> query = _dbContext.Species
@@ -1076,33 +1141,32 @@ namespace Infrastructure.Services
                 return cached;
             }
 
-            var userId = await _dbContext.PBUsers
+            var bookmarkSnapshot = await _dbContext.PBUsers
                 .AsNoTracking()
                 .Where(user => user.SupabaseUserId == userSupabaseId && user.DeletedTime == null)
-                .Select(user => user.Id)
+                .Select(user => new
+                {
+                    BookmarkedTime = user.SpeciesBookmarks
+                        .Where(bookmark =>
+                            bookmark.SpeciesId == speciesId &&
+                            bookmark.DeletedTime == null &&
+                            bookmark.Species.DeletedTime == null &&
+                            bookmark.Species.IsActive == true)
+                        .Select(bookmark => (DateTime?)bookmark.CreatedTime)
+                        .SingleOrDefault()
+                })
                 .SingleOrDefaultAsync(cancellationToken);
 
-            if (string.IsNullOrWhiteSpace(userId))
+            if (bookmarkSnapshot == null)
             {
                 return null;
             }
 
-            var bookmarkedTime = await _dbContext.SpeciesBookmarks
-                .AsNoTracking()
-                .Where(bookmark =>
-                    bookmark.UserId == userId &&
-                    bookmark.SpeciesId == speciesId &&
-                    bookmark.DeletedTime == null &&
-                    bookmark.Species.DeletedTime == null &&
-                    bookmark.Species.IsActive == true)
-                .Select(bookmark => (DateTime?)bookmark.CreatedTime)
-                .SingleOrDefaultAsync(cancellationToken);
-
             var status = new SpeciesBookmarkStatusDto
             {
                 SpeciesId = speciesId,
-                IsBookmarked = bookmarkedTime.HasValue,
-                BookmarkedTime = bookmarkedTime
+                IsBookmarked = bookmarkSnapshot.BookmarkedTime.HasValue,
+                BookmarkedTime = bookmarkSnapshot.BookmarkedTime
             };
 
             await _cache.SetAsync(

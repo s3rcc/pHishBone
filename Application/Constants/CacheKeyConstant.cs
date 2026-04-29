@@ -21,6 +21,7 @@ namespace Application.Constants
         // ─── Species ─────────────────────────────────────────────────
         public const string SpeciesById = "catalog:species:id:";
         public const string SpeciesBySlug = "catalog:species:slug:";
+        public const string SpeciesImages = "catalog:species:images:";
         public const string SpeciesPaginated = "catalog:species:paginated:";
         public const string SpeciesRelated = "catalog:species:related:";
         public const string SpeciesPrefix = "catalog:species:";

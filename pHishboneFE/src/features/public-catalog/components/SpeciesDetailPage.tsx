@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     Box,
     Button,
@@ -74,7 +74,9 @@ export const SpeciesDetailPage: React.FC<SpeciesDetailPageProps> = ({ slug }) =>
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { showSnackbar } = useMuiSnackbar();
-    const [recentlyViewedIds] = useState<string[]>(() => getStoredRecentlyViewedIds());
+    const relatedSectionRef = useRef<HTMLDivElement | null>(null);
+    const recentlyViewedIds = useMemo(() => getStoredRecentlyViewedIds(), [slug]);
+    const [shouldLoadRelatedSpecies, setShouldLoadRelatedSpecies] = useState(false);
     const detailPageQueryKey = ['public-catalog', 'species-page', slug] as const;
 
     const { data: pageData } = useSuspenseQuery<SpeciesDetailPageDto>({
@@ -91,9 +93,51 @@ export const SpeciesDetailPage: React.FC<SpeciesDetailPageProps> = ({ slug }) =>
             recentlyViewedIds,
             seed: 'detail-session',
         }),
-        enabled: Boolean(species.id),
+        enabled: shouldLoadRelatedSpecies && Boolean(species.id),
         staleTime: 5 * 60_000,
     });
+
+    useEffect(() => {
+        setShouldLoadRelatedSpecies(false);
+    }, [slug]);
+
+    useEffect(() => {
+        if (shouldLoadRelatedSpecies) {
+            return;
+        }
+
+        const sectionElement = relatedSectionRef.current;
+        if (!sectionElement) {
+            return;
+        }
+
+        if (typeof IntersectionObserver === 'undefined') {
+            setShouldLoadRelatedSpecies(true);
+            return;
+        }
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const hasIntersectingEntry = entries.some((entry) => entry.isIntersecting);
+
+                if (!hasIntersectingEntry) {
+                    return;
+                }
+
+                setShouldLoadRelatedSpecies(true);
+                observer.disconnect();
+            },
+            {
+                rootMargin: '200px 0px',
+            },
+        );
+
+        observer.observe(sectionElement);
+
+        return () => {
+            observer.disconnect();
+        };
+    }, [shouldLoadRelatedSpecies]);
 
     useEffect(() => {
         window.sessionStorage.setItem(
@@ -438,8 +482,10 @@ export const SpeciesDetailPage: React.FC<SpeciesDetailPageProps> = ({ slug }) =>
                         </Stack>
                     </Grid>
                 </Grid>
-
-                <RelatedSpeciesSection species={relatedSpecies} isLoading={isRelatedSpeciesLoading} />
+                <Box ref={relatedSectionRef} sx={{ minHeight: 1 }} />
+                {(shouldLoadRelatedSpecies || relatedSpecies.length > 0) && (
+                    <RelatedSpeciesSection species={relatedSpecies} isLoading={isRelatedSpeciesLoading} />
+                )}
             </Container>
         </Box>
     );
