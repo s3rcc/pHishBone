@@ -85,6 +85,7 @@ export const SpeciesDetailPage: React.FC<SpeciesDetailPageProps> = ({ slug }) =>
     });
     const { species, images, bookmarkStatus = null } = pageData;
     const isAuthenticated = bookmarkStatus !== null;
+    const canBookmark = species.isActive === true;
 
     const { data: relatedSpecies = [], isLoading: isRelatedSpeciesLoading } = useQuery({
         queryKey: ['public-catalog', 'related', species.id, recentlyViewedIds],
@@ -237,6 +238,11 @@ export const SpeciesDetailPage: React.FC<SpeciesDetailPageProps> = ({ slug }) =>
     }, [navigate]);
 
     const handleToggleBookmark = useCallback(() => {
+        if (!canBookmark) {
+            showSnackbar(t('PublicCatalog.Detail.bookmarkUnavailable'), 'info');
+            return;
+        }
+
         if (!isAuthenticated) {
             showSnackbar(t('PublicCatalog.Detail.bookmarkLoginRequired'), 'info');
             void navigate({ to: '/login' });
@@ -244,7 +250,7 @@ export const SpeciesDetailPage: React.FC<SpeciesDetailPageProps> = ({ slug }) =>
         }
 
         bookmarkMutation.mutate();
-    }, [bookmarkMutation, isAuthenticated, navigate, showSnackbar, t]);
+    }, [bookmarkMutation, canBookmark, isAuthenticated, navigate, showSnackbar, t]);
 
     return (
         <Box
@@ -276,6 +282,7 @@ export const SpeciesDetailPage: React.FC<SpeciesDetailPageProps> = ({ slug }) =>
 
                 <SpeciesHero
                     species={species}
+                    canBookmark={canBookmark}
                     isBookmarked={bookmarkStatus?.isBookmarked === true}
                     isBookmarkPending={bookmarkMutation.isPending}
                     onToggleBookmark={handleToggleBookmark}

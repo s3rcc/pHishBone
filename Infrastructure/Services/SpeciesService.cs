@@ -103,9 +103,7 @@ namespace Infrastructure.Services
             }
 
             var species = await BuildSpeciesDetailDtoQuery()
-                .SingleOrDefaultAsync(
-                    s => s.Slug == slug && s.IsActive == true,
-                    cancellationToken);
+                .SingleOrDefaultAsync(s => s.Slug == slug, cancellationToken);
 
             if (species == null)
             {

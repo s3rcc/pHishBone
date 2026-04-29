@@ -8,6 +8,7 @@ import type { SpeciesDetailDto } from '../../../catalog-management/types';
 
 interface SpeciesHeroProps {
     species: SpeciesDetailDto;
+    canBookmark: boolean;
     isBookmarked: boolean;
     isBookmarkPending: boolean;
     onToggleBookmark: () => void;
@@ -16,6 +17,7 @@ interface SpeciesHeroProps {
 
 export const SpeciesHero: React.FC<SpeciesHeroProps> = ({
     species,
+    canBookmark,
     isBookmarked,
     isBookmarkPending,
     onToggleBookmark,
@@ -61,6 +63,21 @@ export const SpeciesHero: React.FC<SpeciesHeroProps> = ({
                                 backgroundColor: 'action.hover',
                                 border: '1px solid',
                                 borderColor: 'divider',
+                            }}
+                        />
+                    )}
+                    {species.isActive === false && (
+                        <Chip
+                            label={t('Catalog.inactive')}
+                            size="small"
+                            sx={{
+                                height: 24,
+                                borderRadius: 1,
+                                fontSize: '0.68rem',
+                                fontWeight: 700,
+                                color: 'warning.dark',
+                                backgroundColor: 'rgba(255, 152, 0, 0.12)',
+                                border: '1px solid rgba(255, 152, 0, 0.22)',
                             }}
                         />
                     )}
@@ -114,7 +131,7 @@ export const SpeciesHero: React.FC<SpeciesHeroProps> = ({
                     variant="outlined"
                     startIcon={isBookmarked ? <FavoriteRoundedIcon /> : <FavoriteBorderRoundedIcon />}
                     onClick={onToggleBookmark}
-                    disabled={isBookmarkPending}
+                    disabled={isBookmarkPending || !canBookmark}
                     sx={{
                         minWidth: 120,
                         borderRadius: 1,
@@ -131,7 +148,11 @@ export const SpeciesHero: React.FC<SpeciesHeroProps> = ({
                         },
                     }}
                 >
-                    {isBookmarked ? t('PublicCatalog.Detail.saved') : t('PublicCatalog.Detail.saveAction')}
+                    {!canBookmark
+                        ? t('PublicCatalog.Detail.saveUnavailable')
+                        : isBookmarked
+                            ? t('PublicCatalog.Detail.saved')
+                            : t('PublicCatalog.Detail.saveAction')}
                 </Button>
             </Stack>
         </Stack>
