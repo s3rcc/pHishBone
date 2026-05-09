@@ -20,6 +20,7 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
+import FavoriteRoundedIcon from '@mui/icons-material/FavoriteRounded';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import LanguageIcon from '@mui/icons-material/Language';
 import LightModeIcon from '@mui/icons-material/LightMode';
@@ -64,6 +65,11 @@ function NavAuthSection() {
     const handleNavigateProfile = useCallback(() => {
         handleMenuClose();
         navigate({ to: '/profile' });
+    }, [navigate, handleMenuClose]);
+
+    const handleNavigateBookmarks = useCallback(() => {
+        handleMenuClose();
+        navigate({ to: '/profile/bookmarks' });
     }, [navigate, handleMenuClose]);
 
     const handleLanguageChange = useCallback(
@@ -200,6 +206,13 @@ function NavAuthSection() {
                             <SettingsIcon fontSize="small" />
                         </ListItemIcon>
                         <ListItemText primary={t('Navigation.settings')} />
+                    </MenuItem>
+
+                    <MenuItem onClick={handleNavigateBookmarks} sx={{ py: 1.25 }}>
+                        <ListItemIcon>
+                            <FavoriteRoundedIcon fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText primary={t('Navigation.bookmarks')} />
                     </MenuItem>
 
                     {/* Appearance — theme toggle */}

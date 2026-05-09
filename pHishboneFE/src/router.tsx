@@ -7,6 +7,7 @@ import { LoginForm, RegisterForm } from './features/auth';
 // Lazy-load pages for code splitting
 const HomePage = lazy(() => import('./routes/index'));
 const ProfilePage = lazy(() => import('./features/profile/components/ProfilePage'));
+const ProfileBookmarksPage = lazy(() => import('./features/profile/components/ProfileBookmarksPage'));
 
 // ─── Error Pages (lazy) ───────────────────────────────────────────────────────
 const NotFoundPage = lazy(() => import('./routes/errors/404'));
@@ -108,6 +109,16 @@ const profileRoute = createRoute({
     component: () => (
         <Suspense fallback={<SuspenseLoader />}>
             <ProfilePage />
+        </Suspense>
+    ),
+});
+
+const profileBookmarksRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/profile/bookmarks',
+    component: () => (
+        <Suspense fallback={<SuspenseLoader />}>
+            <ProfileBookmarksPage />
         </Suspense>
     ),
 });
@@ -281,6 +292,7 @@ const routeTree = rootRoute.addChildren([
     loginRoute,
     registerRoute,
     profileRoute,
+    profileBookmarksRoute,
     unauthorizedRoute,
     exploreRoute,
     exploreDetailRoute,

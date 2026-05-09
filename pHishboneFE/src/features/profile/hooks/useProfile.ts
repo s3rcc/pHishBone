@@ -1,7 +1,10 @@
 import { useCallback } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { profileApi } from '../api/profileApi';
 import { AUTH_ME_KEY } from '../../auth';
+import type { SpeciesBookmarkFilterDto } from '../types';
+
+export const PROFILE_BOOKMARKS_QUERY_KEY = ['profile', 'bookmarks'] as const;
 
 /**
  * Mutation to update the user's username.
@@ -53,6 +56,31 @@ export function useChangePasswordMutation() {
                 profileApi.changePassword(currentPassword, newPassword),
             [],
         ),
+    });
+}
+
+/**
+ * Suspense query for the authenticated user's bookmark library.
+ */
+export function useProfileBookmarksQuery(filter: SpeciesBookmarkFilterDto) {
+    return useSuspenseQuery({
+        queryKey: [...PROFILE_BOOKMARKS_QUERY_KEY, filter],
+        queryFn: () => profileApi.getBookmarks(filter),
+    });
+}
+
+/**
+ * Removes a bookmarked species and refreshes dependent bookmark-aware views.
+ */
+export function useRemoveBookmarkMutation() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: useCallback((speciesId: string) => profileApi.removeBookmark(speciesId), []),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: PROFILE_BOOKMARKS_QUERY_KEY });
+            queryClient.invalidateQueries({ queryKey: ['public-catalog', 'species-page'] });
+        },
     });
 }
 

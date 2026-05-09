@@ -9,6 +9,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useDebounce } from '../hooks/useDebounce';
 import { CatalogFilterPanel } from './CatalogFilterPanel';
+import { CatalogFilterPanelSkeleton } from './CatalogFilterPanelSkeleton';
 import { SpeciesGrid } from './SpeciesGrid';
 import { SpeciesGridSkeleton } from './SpeciesGridSkeleton';
 import type { PublicCatalogFilter } from '../types';
@@ -96,7 +97,7 @@ export const CatalogPage: React.FC = () => {
                         alignItems: 'start',
                     }}
                 >
-                    <Suspense fallback={null}>
+                    <Suspense fallback={<CatalogFilterPanelSkeleton />}>
                         <CatalogFilterPanel
                             filter={filter}
                             onChange={handleFilterChange}

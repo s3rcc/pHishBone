@@ -1,5 +1,11 @@
 import { axiosInstance } from '../../../lib/axiosInstance';
-import type { ApiResponse, UserDto } from '../types';
+import type {
+    ApiResponse,
+    BookmarkedSpeciesDto,
+    PaginationResponse,
+    SpeciesBookmarkFilterDto,
+    UserDto,
+} from '../types';
 
 export const profileApi = {
     /**
@@ -39,5 +45,28 @@ export const profileApi = {
             newPassword,
         });
         return data;
+    },
+
+    /**
+     * GET /api/auth/me/bookmarks - get the current user's bookmarked species.
+     */
+    getBookmarks: async (
+        filter: SpeciesBookmarkFilterDto,
+    ): Promise<PaginationResponse<BookmarkedSpeciesDto>> => {
+        const { data } = await axiosInstance.get<ApiResponse<PaginationResponse<BookmarkedSpeciesDto>>>(
+            '/api/auth/me/bookmarks',
+            { params: filter },
+        );
+        if (!data.data) {
+            throw new Error('Bookmark response did not include data.');
+        }
+        return data.data;
+    },
+
+    /**
+     * DELETE /api/auth/me/bookmarks/{speciesId} - remove a bookmarked species.
+     */
+    removeBookmark: async (speciesId: string): Promise<void> => {
+        await axiosInstance.delete(`/api/auth/me/bookmarks/${speciesId}`);
     },
 };
