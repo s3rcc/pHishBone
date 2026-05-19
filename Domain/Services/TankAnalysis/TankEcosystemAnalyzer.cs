@@ -132,6 +132,7 @@ namespace Domain.Services.TankAnalysis
             }
 
             AppendCompatibilityAlerts(compatibilityRules, speciesInputs, alerts);
+            var rankedAlerts = RankAlerts(alerts);
 
             return new TankAnalysisReport
             {
@@ -143,7 +144,7 @@ namespace Domain.Services.TankAnalysis
                 PhRange = phRange,
                 TempRange = tempRange,
                 BioLoadItems = bioLoadItems,
-                Alerts = alerts
+                Alerts = rankedAlerts
             };
         }
 
@@ -162,61 +163,153 @@ namespace Domain.Services.TankAnalysis
                 return;
             }
 
-            var tagToSpecies = new Dictionary<string, List<SpeciesAnalysisInput>>();
-            foreach (var species in speciesInputs)
-            {
-                foreach (var tagId in species.TagIds.Distinct())
-                {
-                    if (!tagToSpecies.TryGetValue(tagId, out var list))
-                    {
-                        list = new List<SpeciesAnalysisInput>();
-                        tagToSpecies[tagId] = list;
-                    }
+            var speciesById = speciesInputs.ToDictionary(s => s.SpeciesId);
+            var pairEvidenceMap = new Dictionary<string, PairCompatibilityEvidence>();
 
-                    list.Add(species);
+            for (var i = 0; i < speciesInputs.Count; i++)
+            {
+                for (var j = i + 1; j < speciesInputs.Count; j++)
+                {
+                    var left = speciesInputs[i];
+                    var right = speciesInputs[j];
+
+                    var leftTags = left.TagIds.Distinct().ToHashSet();
+                    var rightTags = right.TagIds.Distinct().ToHashSet();
+
+                    foreach (var rule in compatibilityRules)
+                    {
+                        var leftToRightMatch = leftTags.Contains(rule.SubjectTagId) &&
+                                               rightTags.Contains(rule.ObjectTagId);
+                        var rightToLeftMatch = leftTags.Contains(rule.ObjectTagId) &&
+                                               rightTags.Contains(rule.SubjectTagId);
+
+                        if (!leftToRightMatch && !rightToLeftMatch)
+                        {
+                            continue;
+                        }
+
+                        var pairKey = GetUnorderedPairKey(left.SpeciesId, right.SpeciesId);
+                        if (!pairEvidenceMap.TryGetValue(pairKey, out var evidence))
+                        {
+                            evidence = new PairCompatibilityEvidence(left.SpeciesId, right.SpeciesId);
+                            pairEvidenceMap[pairKey] = evidence;
+                        }
+
+                        var reason = string.IsNullOrWhiteSpace(rule.Message)
+                            ? "Compatibility concern detected from matching behavior tags."
+                            : rule.Message.Trim();
+
+                        evidence.Severity = MaxSeverity(evidence.Severity, rule.Severity);
+                        evidence.Reasons.Add(reason);
+                        evidence.TagIds.Add(rule.SubjectTagId);
+                        evidence.TagIds.Add(rule.ObjectTagId);
+                    }
                 }
             }
 
-            var emitted = new HashSet<string>();
-
-            foreach (var rule in compatibilityRules)
+            foreach (var evidence in pairEvidenceMap.Values)
             {
-                if (!tagToSpecies.TryGetValue(rule.SubjectTagId, out var subjects) ||
-                    !tagToSpecies.TryGetValue(rule.ObjectTagId, out var objects))
+                if (!speciesById.TryGetValue(evidence.LeftSpeciesId, out var leftSpecies) ||
+                    !speciesById.TryGetValue(evidence.RightSpeciesId, out var rightSpecies))
                 {
                     continue;
                 }
 
-                foreach (var subject in subjects)
-                {
-                    foreach (var obj in objects)
-                    {
-                        if (subject.SpeciesId == obj.SpeciesId)
-                        {
-                            continue;
-                        }
+                var message = BuildPairConflictMessage(
+                    leftSpecies.SpeciesName,
+                    rightSpecies.SpeciesName,
+                    evidence.Reasons);
 
-                        var key = $"{rule.SubjectTagId}:{rule.ObjectTagId}:{subject.SpeciesId}:{obj.SpeciesId}";
-                        if (!emitted.Add(key))
-                        {
-                            continue;
-                        }
-
-                        var baseMessage = $"{subject.SpeciesName} is incompatible with {obj.SpeciesName}.";
-                        var message = string.IsNullOrWhiteSpace(rule.Message)
-                            ? baseMessage
-                            : $"{baseMessage} {rule.Message}";
-
-                        alerts.Add(new TankAlert(
-                            TankAnalysisAlertCodeConstant.TagIncompatibility,
-                            rule.Severity,
-                            message,
-                            new[] { subject.SpeciesId, obj.SpeciesId },
-                            new[] { subject.SpeciesName, obj.SpeciesName },
-                            new[] { rule.SubjectTagId, rule.ObjectTagId }));
-                    }
-                }
+                alerts.Add(new TankAlert(
+                    TankAnalysisAlertCodeConstant.TagIncompatibility,
+                    evidence.Severity,
+                    message,
+                    new[] { leftSpecies.SpeciesId, rightSpecies.SpeciesId },
+                    new[] { leftSpecies.SpeciesName, rightSpecies.SpeciesName },
+                    evidence.TagIds.OrderBy(tagId => tagId).ToArray()));
             }
+        }
+
+        private static string GetUnorderedPairKey(string speciesIdA, string speciesIdB)
+        {
+            return string.CompareOrdinal(speciesIdA, speciesIdB) <= 0
+                ? $"{speciesIdA}:{speciesIdB}"
+                : $"{speciesIdB}:{speciesIdA}";
+        }
+
+        private static Severity MaxSeverity(Severity current, Severity candidate)
+        {
+            return candidate > current ? candidate : current;
+        }
+
+        private static string BuildPairConflictMessage(
+            string leftSpeciesName,
+            string rightSpeciesName,
+            IEnumerable<string> reasons)
+        {
+            var distinctReasons = reasons
+                .Where(reason => !string.IsNullOrWhiteSpace(reason))
+                .Select(NormalizeReason)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (distinctReasons.Count == 0)
+            {
+                return $"{leftSpeciesName} vs {rightSpeciesName}: compatibility concerns detected.";
+            }
+
+            return $"{leftSpeciesName} vs {rightSpeciesName}: {string.Join(", ", distinctReasons)}.";
+        }
+
+        private static string NormalizeReason(string reason)
+        {
+            var trimmed = reason.Trim().TrimEnd('.');
+            if (string.IsNullOrWhiteSpace(trimmed))
+            {
+                return string.Empty;
+            }
+
+            return char.ToLowerInvariant(trimmed[0]) + trimmed[1..];
+        }
+
+        private static IReadOnlyList<TankAlert> RankAlerts(IEnumerable<TankAlert> alerts)
+        {
+            return alerts
+                .OrderBy(GetAlertPriority)
+                .ThenByDescending(alert => alert.Severity)
+                .ThenBy(alert => alert.Message, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private static int GetAlertPriority(TankAlert alert)
+        {
+            return alert.Code switch
+            {
+                TankAnalysisAlertCodeConstant.TankTooSmall => 0,
+                TankAnalysisAlertCodeConstant.EnvConflictPh => 1,
+                TankAnalysisAlertCodeConstant.EnvConflictTemp => 2,
+                TankAnalysisAlertCodeConstant.Overstocked => 3,
+                TankAnalysisAlertCodeConstant.TagIncompatibility when alert.Severity == Severity.Danger => 4,
+                TankAnalysisAlertCodeConstant.FullyStocked => 5,
+                TankAnalysisAlertCodeConstant.SchoolingInsufficient => 6,
+                TankAnalysisAlertCodeConstant.TagIncompatibility => 7,
+                _ => 8
+            };
+        }
+
+        private sealed class PairCompatibilityEvidence
+        {
+            public PairCompatibilityEvidence(string leftSpeciesId, string rightSpeciesId)
+            {
+                LeftSpeciesId = leftSpeciesId;
+                RightSpeciesId = rightSpeciesId;
+            }
+
+            public string LeftSpeciesId { get; }
+            public string RightSpeciesId { get; }
+            public Severity Severity { get; set; } = Severity.Info;
+            public HashSet<string> Reasons { get; } = new(StringComparer.OrdinalIgnoreCase);
+            public HashSet<string> TagIds { get; } = new(StringComparer.OrdinalIgnoreCase);
         }
     }
 }
