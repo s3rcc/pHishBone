@@ -687,6 +687,345 @@ Implement as `enum` in C# and store as `smallint` or string consistently.
 - `5 = InternalTankSnapshot`
 - `6 = ExternalLink`
 
+## Proposed API Surface
+
+Follow the current project style:
+
+- base route under `api/...`
+- REST-style verbs
+- slug-based public browsing where useful
+- authenticated `me/...` routes for current-user views
+- separate moderator and admin surfaces for privileged actions
+
+### 1. Community Discovery and Feed
+
+Public or authenticated read endpoints.
+
+- `GET /api/community/categories`
+  - list all top-level forum categories
+- `GET /api/community/categories/{slug}`
+  - get one category with summary counts
+- `GET /api/community/communities`
+  - browse communities with filters like category, topic, official, search, page, size
+- `GET /api/community/communities/{slug}`
+  - get community detail page payload
+- `GET /api/community/communities/{slug}/about`
+  - get community metadata, counts, description, moderators
+- `GET /api/community/communities/{slug}/rules`
+  - get community rules
+- `GET /api/community/communities/{slug}/feed`
+  - community feed with `sort=hot|new|top`, optional flair, tag, post type, time window
+- `GET /api/community/feed`
+  - global community feed across all communities
+- `GET /api/community/trending`
+  - trending communities, posts, tags
+
+### 2. Membership and Current User Community Views
+
+Authenticated endpoints.
+
+- `GET /api/community/me/communities`
+  - communities joined by current user
+- `GET /api/community/me/feed`
+  - personalized feed from joined communities
+- `GET /api/community/communities/{communityId}/membership`
+  - current user's membership state for one community
+- `POST /api/community/communities/{communityId}/join`
+  - join or subscribe to a community
+- `DELETE /api/community/communities/{communityId}/join`
+  - leave or unsubscribe from a community
+- `PATCH /api/community/communities/{communityId}/membership`
+  - update notification level or favorite state
+
+### 3. Community Management
+
+Moderator or admin endpoints depending on ownership rules.
+
+- `POST /api/community/communities`
+  - create a new community
+- `PUT /api/community/communities/{communityId}`
+  - update community profile, description, topic, branding
+- `PATCH /api/community/communities/{communityId}/rules`
+  - update rules markdown only
+- `PATCH /api/community/communities/{communityId}/settings`
+  - update visibility, posting policy, moderation settings
+- `DELETE /api/community/communities/{communityId}`
+  - archive or soft-delete a community
+- `GET /api/community/communities/{communityId}/members`
+  - list members or moderators
+- `PATCH /api/community/communities/{communityId}/members/{userId}/role`
+  - promote or demote moderator/owner role
+- `DELETE /api/community/communities/{communityId}/members/{userId}`
+  - remove a member from the community
+
+### 4. Flairs and Topic Tags
+
+Mix of public read and privileged write endpoints.
+
+- `GET /api/community/communities/{communityId}/flairs`
+  - list flairs for a community
+- `POST /api/community/communities/{communityId}/flairs`
+  - create a flair
+- `PUT /api/community/communities/{communityId}/flairs/{flairId}`
+  - update a flair
+- `DELETE /api/community/communities/{communityId}/flairs/{flairId}`
+  - delete a flair
+- `GET /api/community/tags`
+  - browse global topic tags
+- `GET /api/community/tags/search`
+  - search tags for composer/filter UI
+- `POST /api/community/tags`
+  - create a global topic tag
+- `PUT /api/community/tags/{tagId}`
+  - update a global topic tag
+- `DELETE /api/community/tags/{tagId}`
+  - delete a global topic tag
+
+### 5. Posts and Composer
+
+Core post lifecycle endpoints.
+
+- `GET /api/community/posts/{postId}`
+  - get post detail by id
+- `GET /api/community/posts/by-slug/{communitySlug}/{postSlug}`
+  - get SEO-friendly post detail
+- `POST /api/community/posts`
+  - create a new post or draft
+- `PUT /api/community/posts/{postId}`
+  - update title, body, tags, flair, metadata
+- `DELETE /api/community/posts/{postId}`
+  - soft-delete own post
+- `PATCH /api/community/posts/{postId}/publish`
+  - publish a draft
+- `PATCH /api/community/posts/{postId}/archive`
+  - archive own post
+- `PATCH /api/community/posts/{postId}/lock`
+  - lock or unlock post, usually moderator action
+- `PATCH /api/community/posts/{postId}/pin`
+  - pin or unpin post inside a community
+- `POST /api/community/posts/{postId}/view`
+  - increment view count or record view event
+- `GET /api/community/me/posts`
+  - current user's published posts
+- `GET /api/community/me/drafts`
+  - current user's draft posts
+- `GET /api/community/me/saved-posts`
+  - current user's saved/bookmarked posts
+
+### 6. Attachment Uploads and Sharing Helpers
+
+These power uploaded files plus fish/tank share cards.
+
+- `POST /api/community/attachments`
+  - upload one file attachment before attaching it to a post
+- `POST /api/community/attachments/batch`
+  - upload multiple attachments
+- `DELETE /api/community/attachments/{attachmentId}`
+  - delete an uploaded attachment owned by current user
+- `POST /api/community/posts/{postId}/attachments`
+  - attach one or more existing attachments to a post
+- `DELETE /api/community/posts/{postId}/attachments/{attachmentId}`
+  - detach an attachment from a post
+- `PATCH /api/community/posts/{postId}/attachments/reorder`
+  - reorder gallery attachments
+- `PATCH /api/community/posts/{postId}/attachments/{attachmentId}/primary`
+  - set the main thumbnail attachment
+- `GET /api/community/share-preview/species/{speciesId}`
+  - build preview payload for a species share card
+- `GET /api/community/share-preview/tanks/{tankId}`
+  - build preview payload for a tank share card using latest snapshot
+- `GET /api/community/share-preview/tanks/{tankId}/snapshots/{snapshotId}`
+  - build preview payload for a specific tank snapshot
+- `POST /api/community/posts/{postId}/share/species/{speciesId}`
+  - attach a species share card to an existing draft post
+- `POST /api/community/posts/{postId}/share/tanks/{tankId}`
+  - attach a tank share card to an existing draft post
+- `POST /api/community/posts/{postId}/share/tank-snapshots/{snapshotId}`
+  - attach a frozen tank snapshot card to an existing draft post
+
+### 7. Votes, Saves, and Reactions
+
+Authenticated interaction endpoints.
+
+- `POST /api/community/posts/{postId}/vote`
+  - set post vote with value `1` or `-1`
+- `DELETE /api/community/posts/{postId}/vote`
+  - remove current user's post vote
+- `POST /api/community/comments/{commentId}/vote`
+  - set comment vote with value `1` or `-1`
+- `DELETE /api/community/comments/{commentId}/vote`
+  - remove current user's comment vote
+- `POST /api/community/posts/{postId}/save`
+  - save a post
+- `DELETE /api/community/posts/{postId}/save`
+  - unsave a post
+
+### 8. Comments and Replies
+
+Threaded discussion endpoints.
+
+- `GET /api/community/posts/{postId}/comments`
+  - list comment tree for a post with sort options
+- `GET /api/community/comments/{commentId}`
+  - get one comment with context
+- `POST /api/community/posts/{postId}/comments`
+  - create a top-level comment
+- `POST /api/community/comments/{commentId}/reply`
+  - reply to an existing comment
+- `PUT /api/community/comments/{commentId}`
+  - edit own comment
+- `DELETE /api/community/comments/{commentId}`
+  - soft-delete own comment
+- `PATCH /api/community/comments/{commentId}/lock`
+  - lock or unlock a comment thread
+- `GET /api/community/me/comments`
+  - current user's comment history
+
+### 9. Search
+
+Search endpoints should use the PostgreSQL FTS and trigram strategy described above.
+
+- `GET /api/community/search/posts`
+  - search posts by title, body, tags, fish names, tank metadata
+- `GET /api/community/search/comments`
+  - search comments
+- `GET /api/community/search/communities`
+  - search communities by name and description
+- `GET /api/community/search/tags`
+  - search topic tags
+- `GET /api/community/search/suggestions`
+  - fast autocomplete for global search bar
+
+### 10. Reporting and Moderation Queue
+
+Authenticated report creation plus moderator review tools.
+
+- `POST /api/community/reports`
+  - create a report for post, comment, or community
+- `GET /api/community/mod/communities/{communityId}/queue`
+  - get moderation queue for one community
+- `GET /api/community/mod/reports`
+  - get global or filtered reports list for moderators/admins
+- `GET /api/community/mod/reports/{reportId}`
+  - get report detail
+- `PATCH /api/community/mod/reports/{reportId}/status`
+  - mark open, reviewed, dismissed, or actioned
+
+### 11. Post and Comment Moderation Actions
+
+Moderator endpoints.
+
+- `POST /api/community/mod/posts/{postId}/approve`
+  - approve a post if community uses approval flow
+- `POST /api/community/mod/posts/{postId}/remove`
+  - remove a post from public view
+- `POST /api/community/mod/posts/{postId}/restore`
+  - restore a removed post
+- `POST /api/community/mod/posts/{postId}/lock`
+  - lock post comments
+- `DELETE /api/community/mod/posts/{postId}/lock`
+  - unlock post comments
+- `POST /api/community/mod/posts/{postId}/pin`
+  - pin post in community
+- `DELETE /api/community/mod/posts/{postId}/pin`
+  - unpin post
+- `POST /api/community/mod/comments/{commentId}/approve`
+  - approve comment if needed
+- `POST /api/community/mod/comments/{commentId}/remove`
+  - remove comment
+- `POST /api/community/mod/comments/{commentId}/restore`
+  - restore removed comment
+- `POST /api/community/mod/comments/{commentId}/lock`
+  - lock comment branch
+- `DELETE /api/community/mod/comments/{commentId}/lock`
+  - unlock comment branch
+
+### 12. Community Safety and Ban Management
+
+Optional but strongly recommended for moderation completeness.
+
+- `GET /api/community/mod/communities/{communityId}/bans`
+  - list banned users
+- `POST /api/community/mod/communities/{communityId}/bans`
+  - ban a user from a community
+- `DELETE /api/community/mod/communities/{communityId}/bans/{userId}`
+  - unban a user
+- `GET /api/community/mod/communities/{communityId}/muted-keywords`
+  - list blocked terms
+- `POST /api/community/mod/communities/{communityId}/muted-keywords`
+  - add blocked term or phrase
+- `DELETE /api/community/mod/communities/{communityId}/muted-keywords/{keywordId}`
+  - remove blocked term
+
+### 13. Admin and Backoffice Endpoints
+
+Platform-level management, separate from community moderators.
+
+- `GET /api/admin/community/categories`
+  - admin list of categories
+- `POST /api/admin/community/categories`
+  - create category
+- `PUT /api/admin/community/categories/{categoryId}`
+  - update category
+- `DELETE /api/admin/community/categories/{categoryId}`
+  - delete category
+- `GET /api/admin/community/communities`
+  - admin list of all communities with moderation state
+- `PATCH /api/admin/community/communities/{communityId}/official`
+  - mark or unmark community as official
+- `PATCH /api/admin/community/communities/{communityId}/status`
+  - suspend, archive, or restore community
+- `GET /api/admin/community/tags`
+  - admin list of global tags
+- `POST /api/admin/community/tags`
+  - create global tag
+- `PUT /api/admin/community/tags/{tagId}`
+  - update global tag
+- `DELETE /api/admin/community/tags/{tagId}`
+  - delete global tag
+- `GET /api/admin/community/reports`
+  - admin-level report oversight
+- `GET /api/admin/community/analytics`
+  - platform community analytics dashboard
+
+### 14. Notifications
+
+Phase 3 endpoints if you add alerts for replies, votes, moderation actions, and follows.
+
+- `GET /api/community/me/notifications`
+  - list current user's community notifications
+- `PATCH /api/community/me/notifications/{notificationId}/read`
+  - mark one notification as read
+- `PATCH /api/community/me/notifications/read-all`
+  - mark all notifications as read
+
+### 15. Minimal First Release API Slice
+
+If you want the first shippable version only, implement these first:
+
+- `GET /api/community/categories`
+- `GET /api/community/communities`
+- `GET /api/community/communities/{slug}`
+- `GET /api/community/communities/{slug}/feed`
+- `POST /api/community/communities/{communityId}/join`
+- `DELETE /api/community/communities/{communityId}/join`
+- `POST /api/community/posts`
+- `PUT /api/community/posts/{postId}`
+- `DELETE /api/community/posts/{postId}`
+- `GET /api/community/posts/{postId}`
+- `GET /api/community/posts/by-slug/{communitySlug}/{postSlug}`
+- `POST /api/community/attachments`
+- `POST /api/community/posts/{postId}/attachments`
+- `GET /api/community/share-preview/species/{speciesId}`
+- `GET /api/community/share-preview/tanks/{tankId}`
+- `POST /api/community/posts/{postId}/share/species/{speciesId}`
+- `POST /api/community/posts/{postId}/share/tanks/{tankId}`
+- `POST /api/community/posts/{postId}/vote`
+- `DELETE /api/community/posts/{postId}/vote`
+- `POST /api/community/posts/{postId}/save`
+- `DELETE /api/community/posts/{postId}/save`
+- `GET /api/community/search/posts`
+
 ## API/Backend Implementation Plan
 
 ### Step 1. Domain and Infrastructure
