@@ -6,7 +6,10 @@ namespace Infrastructure.Settings
     /// </summary>
     public class RedisSettings
     {
+        public bool Enabled { get; set; } = true;
         public string ConnectionString { get; set; } = string.Empty;
         public string InstanceName { get; set; } = string.Empty;
+        public int ConnectTimeoutMs { get; set; } = 500;
+        public int OperationTimeoutMs { get; set; } = 500;
     }
 }

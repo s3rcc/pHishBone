@@ -21,6 +21,6 @@ namespace Domain.Exceptions
     {
         [JsonPropertyName("errorCode")] public string? ErrorCode { get; set; }
 
-        [JsonPropertyName("message")] public string? Message { get; set; }
+        [JsonPropertyName("message")] public object? Message { get; set; }
     }
 }

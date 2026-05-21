@@ -1,7 +1,11 @@
 using Application.Constants;
 using Domain.Exceptions;
 using Infrastructure;
+using Infrastructure.Persistence;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Hosting.Server.Features;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
 using pHishbone.Extensions;
@@ -9,6 +13,7 @@ using pHishbone.Filters;
 using pHishbone.Middleware;
 using Serilog;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading.RateLimiting;
 
@@ -200,6 +205,9 @@ try
 
     var app = builder.Build();
 
+    await StartupDiagnosticsLogger.LogStartupConfigurationAsync(app, builder.Configuration);
+    app.Lifetime.ApplicationStarted.Register(() => StartupDiagnosticsLogger.LogBoundAddresses(app));
+
     // Configure the HTTP request pipeline.
     // Enable Swagger in all environments for container verification
     app.UseSwagger();
@@ -275,5 +283,92 @@ public class EnumSchemaFilter : ISchemaFilter
         var mappings = enumValues.Zip(enumNames, (v, n) => $"{v} = {n}");
         schema.Description = (schema.Description ?? "") +
             " Values: " + string.Join(", ", mappings);
+    }
+}
+
+internal static class StartupDiagnosticsLogger
+{
+    public static async Task LogStartupConfigurationAsync(WebApplication app, IConfiguration configuration)
+    {
+        Log.Information(
+            "Startup context: Application={Application}; Environment={Environment}; ContentRoot={ContentRoot}; Runtime={Runtime}; ProcessId={ProcessId}; MachineName={MachineName}",
+            app.Environment.ApplicationName,
+            app.Environment.EnvironmentName,
+            app.Environment.ContentRootPath,
+            RuntimeInformation.FrameworkDescription,
+            Environment.ProcessId,
+            Environment.MachineName);
+
+        var configuredUrls = configuration["urls"]
+            ?? configuration["ASPNETCORE_URLS"]
+            ?? Environment.GetEnvironmentVariable("ASPNETCORE_URLS")
+            ?? "Not explicitly configured";
+
+        Log.Information(
+            "HTTP pipeline: Swagger={SwaggerEnabled}; HTTPSRedirection={HttpsRedirectionEnabled}; CORS={CorsPolicy}; RateLimiting={RateLimitingEnabled}; Authentication={AuthenticationEnabled}; ConfiguredUrls={ConfiguredUrls}",
+            true,
+            true,
+            "AllowAll",
+            true,
+            true,
+            configuredUrls);
+
+        LogRedisConfiguration(configuration);
+
+        await LogDatabaseConnectivityAsync(app.Services);
+    }
+
+    public static void LogBoundAddresses(WebApplication app)
+    {
+        var server = app.Services.GetRequiredService<IServer>();
+        var addressesFeature = server.Features.Get<IServerAddressesFeature>();
+        var addresses = addressesFeature?.Addresses?.ToArray() ?? Array.Empty<string>();
+
+        Log.Information(
+            "pHishbone API started and listening on: {Addresses}",
+            addresses.Length > 0 ? string.Join(", ", addresses) : "No bound addresses reported");
+    }
+
+    private static async Task LogDatabaseConnectivityAsync(IServiceProvider services)
+    {
+        using var scope = services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var provider = dbContext.Database.ProviderName ?? "Unknown";
+
+        try
+        {
+            var canConnect = await dbContext.Database.CanConnectAsync();
+
+            if (!canConnect)
+            {
+                Log.Warning("Database connectivity check failed. Provider={Provider}", provider);
+                return;
+            }
+
+            var pendingMigrations = (await dbContext.Database.GetPendingMigrationsAsync()).ToArray();
+
+            Log.Information(
+                "Database connectivity check succeeded. Provider={Provider}; PendingMigrations={PendingMigrationCount}",
+                provider,
+                pendingMigrations.Length);
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Database connectivity check threw an exception. Provider={Provider}", provider);
+        }
+    }
+
+    private static void LogRedisConfiguration(IConfiguration configuration)
+    {
+        var redisEnabled = configuration.GetValue("RedisSettings:Enabled", true);
+        var redisConnectionString = configuration["RedisSettings:ConnectionString"];
+
+        if (!redisEnabled || string.IsNullOrWhiteSpace(redisConnectionString))
+        {
+            Log.Information("Cache configuration: Provider={Provider}", "InMemory");
+            return;
+        }
+
+        Log.Information("Cache configuration: Provider={Provider}", "Redis");
     }
 }
