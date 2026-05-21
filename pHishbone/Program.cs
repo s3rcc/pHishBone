@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
 using pHishbone.Extensions;
+using pHishbone.Filters;
 using pHishbone.Middleware;
 using Serilog;
 using Swashbuckle.AspNetCore.SwaggerGen;
@@ -36,7 +37,10 @@ try
         .Enrich.FromLogContext());
 
     // Add services to the container.
-    builder.Services.AddControllers();
+    builder.Services.AddControllers(options =>
+    {
+        options.Filters.Add<ControllerRequestLoggingFilter>();
+    });
 
     // Add HttpContextAccessor (required for CurrentUserService)
     builder.Services.AddHttpContextAccessor();
