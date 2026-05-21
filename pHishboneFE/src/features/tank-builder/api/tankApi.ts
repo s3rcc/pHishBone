@@ -7,6 +7,7 @@ import type {
     CreateTankPayload,
     GuestTankAnalysisRequest,
     TankAnalysisReportDto,
+    TankItemMutationResponseDto,
     TankItemResponseDto,
     TankListItemDto,
     TankResponseDto,
@@ -66,8 +67,8 @@ export const tankApi = {
         return data.data;
     },
 
-    addTankItem: async (tankId: string, payload: AddTankItemPayload): Promise<TankItemResponseDto> => {
-        const { data } = await axiosInstance.post<ApiResponse<TankItemResponseDto>>(
+    addTankItem: async (tankId: string, payload: AddTankItemPayload): Promise<TankItemMutationResponseDto> => {
+        const { data } = await axiosInstance.post<ApiResponse<TankItemMutationResponseDto>>(
             `/api/tanks/${tankId}/items`,
             payload,
         );
@@ -78,16 +79,17 @@ export const tankApi = {
         tankId: string,
         itemId: string,
         payload: UpdateTankItemPayload,
-    ): Promise<TankItemResponseDto> => {
-        const { data } = await axiosInstance.put<ApiResponse<TankItemResponseDto>>(
+    ): Promise<TankItemMutationResponseDto> => {
+        const { data } = await axiosInstance.put<ApiResponse<TankItemMutationResponseDto>>(
             `/api/tanks/${tankId}/items/${itemId}`,
             payload,
         );
         return data.data;
     },
 
-    deleteTankItem: async (tankId: string, itemId: string): Promise<void> => {
-        await axiosInstance.delete(`/api/tanks/${tankId}/items/${itemId}`);
+    deleteTankItem: async (tankId: string, itemId: string): Promise<TankItemMutationResponseDto> => {
+        const { data } = await axiosInstance.delete<ApiResponse<TankItemMutationResponseDto>>(`/api/tanks/${tankId}/items/${itemId}`);
+        return data.data;
     },
 
     getTankAnalysis: async (tankId: string): Promise<TankAnalysisReportDto> => {

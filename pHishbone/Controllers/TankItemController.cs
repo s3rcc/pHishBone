@@ -53,7 +53,7 @@ namespace pHishbone.Controllers
         /// Add an item to a tank with catalog validation and merge logic.
         /// </summary>
         [HttpPost(ApiEndpointConstant.TankItem.Add)]
-        [ProducesResponseType(typeof(ApiResponse<TankItemResponseDto>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<TankItemMutationResponseDto>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> AddItemToTank([FromRoute] string tankId, [FromBody] AddTankItemDto dto, CancellationToken cancellationToken)
@@ -68,14 +68,14 @@ namespace pHishbone.Controllers
 
             var item = await _tankItemService.AddItemAsync(tankId, dto, userId, cancellationToken);
             return StatusCode(StatusCodes.Status201Created,
-                ApiResponse<TankItemResponseDto>.Success(item, SuccessMessageConstant.TankItemAddedSuccessfully, 201));
+                ApiResponse<TankItemMutationResponseDto>.Success(item, SuccessMessageConstant.TankItemAddedSuccessfully, 201));
         }
 
         /// <summary>
         /// Update a tank item.
         /// </summary>
         [HttpPut(ApiEndpointConstant.TankItem.Update)]
-        [ProducesResponseType(typeof(ApiResponse<TankItemResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<TankItemMutationResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> UpdateTankItem([FromRoute] string tankId, [FromRoute] string itemId, [FromBody] UpdateTankItemDto dto, CancellationToken cancellationToken)
@@ -87,14 +87,14 @@ namespace pHishbone.Controllers
             }
 
             var item = await _tankItemService.UpdateItemAsync(tankId, itemId, dto, userId, cancellationToken);
-            return Ok(ApiResponse<TankItemResponseDto>.Success(item, SuccessMessageConstant.TankItemUpdatedSuccessfully));
+            return Ok(ApiResponse<TankItemMutationResponseDto>.Success(item, SuccessMessageConstant.TankItemUpdatedSuccessfully));
         }
 
         /// <summary>
         /// Remove an item from a tank.
         /// </summary>
         [HttpDelete(ApiEndpointConstant.TankItem.Delete)]
-        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<TankItemMutationResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> RemoveItemFromTank([FromRoute] string tankId, [FromRoute] string itemId, CancellationToken cancellationToken)
@@ -107,8 +107,8 @@ namespace pHishbone.Controllers
 
             _logger.LogInformation("Removing item {ItemId} from tank {TankId}", itemId, tankId);
 
-            await _tankItemService.RemoveItemAsync(tankId, itemId, userId, cancellationToken);
-            return Ok(ApiResponse<object>.Success(null, SuccessMessageConstant.TankItemRemovedSuccessfully));
+            var result = await _tankItemService.RemoveItemAsync(tankId, itemId, userId, cancellationToken);
+            return Ok(ApiResponse<TankItemMutationResponseDto>.Success(result, SuccessMessageConstant.TankItemRemovedSuccessfully));
         }
     }
 }

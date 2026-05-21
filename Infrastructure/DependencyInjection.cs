@@ -21,6 +21,8 @@ namespace Infrastructure
             this IServiceCollection services,
             IConfiguration configuration)
         {
+            services.AddMemoryCache();
+
             // Add DbContext with PostgreSQL
             var connectionString = configuration.GetConnectionString("DefaultConnection");
 

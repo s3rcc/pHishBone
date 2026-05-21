@@ -32,4 +32,16 @@ namespace Application.DTOs.ProjectDTOs
         string? Note,
         DateTime CreatedTime
     );
+
+    /// <summary>
+    /// DTO returned by tank item mutations so the client can refresh analysis
+    /// without issuing a separate follow-up request.
+    /// </summary>
+    public record TankItemMutationResponseDto(
+        TankItemResponseDto? Item,
+        TankAnalysisReportDto Analysis,
+        int ItemCount,
+        TankStatus Status,
+        DateTime? LastUpdatedTime
+    );
 }

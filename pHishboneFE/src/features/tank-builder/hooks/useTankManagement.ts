@@ -4,7 +4,11 @@ import { tankApi } from '../api/tankApi';
 import type {
     AddTankItemPayload,
     CreateTankPayload,
+    TankListItemDto,
+    TankItemMutationResponseDto,
     TankItemResponseDto,
+    TankResponseDto,
+    TankStatus,
     UpdateTankItemPayload,
     UpdateTankPayload,
 } from '../types';
@@ -17,13 +21,83 @@ export const TANK_BUILDER_KEYS = {
     tankSpeciesDetails: (speciesIds: string[]) => ['tank-builder', 'tank-species-details', ...speciesIds] as const,
 } as const;
 
-function invalidateTankWorkspace(queryClient: ReturnType<typeof useQueryClient>, tankId: string): Promise<unknown[]> {
-    return Promise.all([
-        queryClient.invalidateQueries({ queryKey: TANK_BUILDER_KEYS.userTanks }),
-        queryClient.invalidateQueries({ queryKey: TANK_BUILDER_KEYS.tankDetail(tankId) }),
-        queryClient.invalidateQueries({ queryKey: TANK_BUILDER_KEYS.tankItems(tankId) }),
-        queryClient.invalidateQueries({ queryKey: TANK_BUILDER_KEYS.tankAnalysis(tankId) }),
-    ]);
+interface TankMutationState {
+    itemCount?: number;
+    itemCountDelta?: number;
+    status?: TankStatus;
+    lastUpdatedTime?: string | null;
+}
+
+function clampItemCount(value: number): number {
+    return Math.max(0, value);
+}
+
+function applyTankMutationStateToDetail(
+    tank: TankResponseDto,
+    state: TankMutationState,
+): TankResponseDto {
+    return {
+        ...tank,
+        itemCount: state.itemCount ?? clampItemCount(tank.itemCount + (state.itemCountDelta ?? 0)),
+        status: state.status ?? tank.status,
+        lastUpdatedTime: state.lastUpdatedTime ?? tank.lastUpdatedTime,
+    };
+}
+
+function applyTankMutationStateToListItem(
+    tank: TankListItemDto,
+    state: TankMutationState,
+): TankListItemDto {
+    return {
+        ...tank,
+        itemCount: state.itemCount ?? clampItemCount(tank.itemCount + (state.itemCountDelta ?? 0)),
+        status: state.status ?? tank.status,
+    };
+}
+
+function updateTankCaches(
+    queryClient: ReturnType<typeof useQueryClient>,
+    tankId: string,
+    state: TankMutationState,
+) {
+    queryClient.setQueryData<TankResponseDto | undefined>(
+        TANK_BUILDER_KEYS.tankDetail(tankId),
+        (tank) => (tank ? applyTankMutationStateToDetail(tank, state) : tank),
+    );
+
+    queryClient.setQueryData<TankListItemDto[] | undefined>(
+        TANK_BUILDER_KEYS.userTanks,
+        (tanks) => tanks?.map((tank) =>
+            tank.id === tankId
+                ? applyTankMutationStateToListItem(tank, state)
+                : tank),
+    );
+}
+
+function upsertTankItem(items: TankItemResponseDto[], item: TankItemResponseDto): TankItemResponseDto[] {
+    const existingIndex = items.findIndex((existingItem) => existingItem.id === item.id);
+
+    if (existingIndex === -1) {
+        return [item, ...items];
+    }
+
+    return items.map((existingItem, index) => (index === existingIndex ? item : existingItem));
+}
+
+function syncAnalysisQuery(
+    queryClient: ReturnType<typeof useQueryClient>,
+    tankId: string,
+    mutation: TankItemMutationResponseDto,
+    items: TankItemResponseDto[],
+) {
+    const hasSpeciesItems = items.some((item) => item.itemType === 1);
+
+    if (!hasSpeciesItems) {
+        queryClient.removeQueries({ queryKey: TANK_BUILDER_KEYS.tankAnalysis(tankId) });
+        return;
+    }
+
+    queryClient.setQueryData(TANK_BUILDER_KEYS.tankAnalysis(tankId), mutation.analysis);
 }
 
 export function useUserTanks() {
@@ -99,7 +173,20 @@ export function useUpdateTank() {
             tankApi.updateTank(tankId, payload),
         onSuccess: (tank) => {
             queryClient.setQueryData(TANK_BUILDER_KEYS.tankDetail(tank.id), tank);
-            void queryClient.invalidateQueries({ queryKey: TANK_BUILDER_KEYS.userTanks });
+            queryClient.setQueryData<TankListItemDto[] | undefined>(
+                TANK_BUILDER_KEYS.userTanks,
+                (tanks) => tanks?.map((existingTank) => (
+                    existingTank.id === tank.id
+                        ? {
+                            ...existingTank,
+                            name: tank.name,
+                            waterVolume: tank.waterVolume,
+                            waterType: tank.waterType,
+                            status: tank.status,
+                        }
+                        : existingTank
+                )),
+            );
             void queryClient.invalidateQueries({ queryKey: TANK_BUILDER_KEYS.tankAnalysis(tank.id) });
         },
     });
@@ -125,8 +212,33 @@ export function useAddTankItem() {
     return useMutation({
         mutationFn: ({ tankId, payload }: { tankId: string; payload: AddTankItemPayload }) =>
             tankApi.addTankItem(tankId, payload),
-        onSuccess: (_item, { tankId }) => {
-            void invalidateTankWorkspace(queryClient, tankId);
+        onSuccess: (mutation, { tankId }) => {
+            let nextItems: TankItemResponseDto[] = [];
+            let itemAlreadyExisted = false;
+
+            queryClient.setQueryData<TankItemResponseDto[]>(
+                TANK_BUILDER_KEYS.tankItems(tankId),
+                (items = []) => {
+                    if (!mutation.item) {
+                        nextItems = items;
+                        return nextItems;
+                    }
+
+                    const item = mutation.item;
+                    itemAlreadyExisted = items.some((existingItem) => existingItem.id === item.id);
+                    nextItems = upsertTankItem(items, item);
+                    return nextItems;
+                },
+            );
+
+            updateTankCaches(queryClient, tankId, {
+                itemCount: mutation.itemCount,
+                itemCountDelta: itemAlreadyExisted ? 0 : 1,
+                status: mutation.status,
+                lastUpdatedTime: mutation.lastUpdatedTime,
+            });
+
+            syncAnalysisQuery(queryClient, tankId, mutation, nextItems);
         },
     });
 }
@@ -137,8 +249,30 @@ export function useUpdateTankItem() {
     return useMutation({
         mutationFn: ({ tankId, itemId, payload }: { tankId: string; itemId: string; payload: UpdateTankItemPayload }) =>
             tankApi.updateTankItem(tankId, itemId, payload),
-        onSuccess: (_item, { tankId }) => {
-            void invalidateTankWorkspace(queryClient, tankId);
+        onSuccess: (mutation, { tankId }) => {
+            let nextItems: TankItemResponseDto[] = [];
+
+            queryClient.setQueryData<TankItemResponseDto[]>(
+                TANK_BUILDER_KEYS.tankItems(tankId),
+                (items = []) => {
+                    if (!mutation.item) {
+                        nextItems = items;
+                        return nextItems;
+                    }
+
+                    const item = mutation.item;
+                    nextItems = upsertTankItem(items, item);
+                    return nextItems;
+                },
+            );
+
+            updateTankCaches(queryClient, tankId, {
+                itemCount: mutation.itemCount,
+                status: mutation.status,
+                lastUpdatedTime: mutation.lastUpdatedTime,
+            });
+
+            syncAnalysisQuery(queryClient, tankId, mutation, nextItems);
         },
     });
 }
@@ -149,8 +283,27 @@ export function useDeleteTankItem() {
     return useMutation({
         mutationFn: ({ tankId, itemId }: { tankId: string; itemId: string }) =>
             tankApi.deleteTankItem(tankId, itemId),
-        onSuccess: (_data, { tankId }) => {
-            void invalidateTankWorkspace(queryClient, tankId);
+        onSuccess: (mutation, { tankId, itemId }) => {
+            let removedItemCount = 0;
+            let nextItems: TankItemResponseDto[] = [];
+
+            queryClient.setQueryData<TankItemResponseDto[]>(
+                TANK_BUILDER_KEYS.tankItems(tankId),
+                (items = []) => {
+                    removedItemCount = items.some((item) => item.id === itemId) ? 1 : 0;
+                    nextItems = items.filter((item) => item.id !== itemId);
+                    return nextItems;
+                },
+            );
+
+            updateTankCaches(queryClient, tankId, {
+                itemCount: mutation.itemCount,
+                itemCountDelta: removedItemCount === 0 ? 0 : -1,
+                status: mutation.status,
+                lastUpdatedTime: mutation.lastUpdatedTime,
+            });
+
+            syncAnalysisQuery(queryClient, tankId, mutation, nextItems);
         },
     });
 }
