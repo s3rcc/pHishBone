@@ -18,17 +18,20 @@ namespace pHishbone.Controllers
     {
         private readonly ITankService _tankService;
         private readonly ITankAnalysisService _tankAnalysisService;
+        private readonly ITankAnalysisV2Service _tankAnalysisV2Service;
         private readonly ICurrentUserService _currentUserService;
         private readonly ILogger<TankController> _logger;
 
         public TankController(
             ITankService tankService,
             ITankAnalysisService tankAnalysisService,
+            ITankAnalysisV2Service tankAnalysisV2Service,
             ICurrentUserService currentUserService,
             ILogger<TankController> logger)
         {
             _tankService = tankService;
             _tankAnalysisService = tankAnalysisService;
+            _tankAnalysisV2Service = tankAnalysisV2Service;
             _currentUserService = currentUserService;
             _logger = logger;
         }
@@ -166,6 +169,25 @@ namespace pHishbone.Controllers
             }
 
             var report = await _tankAnalysisService.GetTankAnalysisAsync(tankId, userId, cancellationToken);
+            return Ok(ApiResponse<TankAnalysisReportDto>.Success(report, SuccessMessageConstant.TankAnalysisRetrievedSuccessfully));
+        }
+
+        /// <summary>
+        /// Get a real-time analysis report for a tank using the optimized v2 read path.
+        /// </summary>
+        [HttpGet(ApiEndpointConstant.Tank.AnalysisV2)]
+        [ProducesResponseType(typeof(ApiResponse<TankAnalysisReportDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> GetTankAnalysisV2([FromRoute] string tankId, CancellationToken cancellationToken)
+        {
+            var userId = _currentUserService.GetUserId();
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+
+            var report = await _tankAnalysisV2Service.GetTankAnalysisV2Async(tankId, userId, cancellationToken);
             return Ok(ApiResponse<TankAnalysisReportDto>.Success(report, SuccessMessageConstant.TankAnalysisRetrievedSuccessfully));
         }
     }

@@ -75,6 +75,7 @@ namespace Application.Constants
             public const string Delete = "{tankId}";
             public const string LatestSnapshot = "{tankId}/snapshot";
             public const string Analysis = "{tankId}/analysis";
+            public const string AnalysisV2 = "{tankId}/analysis/v2";
         }
 
         public static class TankItem

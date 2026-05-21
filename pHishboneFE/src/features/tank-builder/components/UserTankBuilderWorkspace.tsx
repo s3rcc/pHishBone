@@ -16,15 +16,13 @@ import {
     reconcileSceneFish,
 } from '../helpers/scene';
 import {
-    useAddTankItem,
+    useBufferedTankSpeciesSync,
     useCreateTank,
     useDeleteTank,
-    useDeleteTankItem,
     useTankDetail,
     useTankItems,
     useTankSpeciesDetails,
     useUpdateTank,
-    useUpdateTankItem,
     useUserTankAnalysis,
     useUserTanks,
 } from '../hooks/useTankManagement';
@@ -144,9 +142,11 @@ function UserTankWorkspaceContent({
     const [viewMode, setViewMode] = useState<TankSceneViewMode>('3d');
     const [selectedSpeciesId, setSelectedSpeciesId] = useState<string | null>(null);
 
-    const addTankItem = useAddTankItem();
-    const updateTankItem = useUpdateTankItem();
-    const deleteTankItem = useDeleteTankItem();
+    const {
+        queueAddSpecies,
+        queueSetSpeciesQuantity,
+        isSyncing: isBufferedSpeciesSyncing,
+    } = useBufferedTankSpeciesSync(selectedTankId);
     const updateTank = useUpdateTank();
 
     const debouncedTankName = useDebounce(tankName, 450);
@@ -237,39 +237,18 @@ function UserTankWorkspaceContent({
     );
 
     const handleAddSpecies = useCallback(
-        async (species: SpeciesDto) => {
-            const existingItem = speciesItemMap.get(species.id);
-
+        async (species: SpeciesDto): Promise<void> => {
             try {
-                if (existingItem) {
-                    await updateTankItem.mutateAsync({
-                        tankId: selectedTankId,
-                        itemId: existingItem.id,
-                        payload: {
-                            quantity: existingItem.quantity + 1,
-                            note: existingItem.note ?? undefined,
-                        },
-                    });
-                    return;
-                }
-
-                await addTankItem.mutateAsync({
-                    tankId: selectedTankId,
-                    payload: {
-                        itemType: 1,
-                        referenceId: species.id,
-                        quantity: 1,
-                    },
-                });
+                queueAddSpecies(species);
             } catch (_error) {
                 showSnackbar(t('TankBuilder.addSpeciesError'), 'error');
             }
         },
-        [addTankItem, selectedTankId, showSnackbar, speciesItemMap, t, updateTankItem],
+        [queueAddSpecies, showSnackbar, t],
     );
 
     const handleIncrementSpecies = useCallback(
-        async (speciesId: string) => {
+        (speciesId: string) => {
             const item = speciesItemMap.get(speciesId);
 
             if (!item) {
@@ -277,23 +256,16 @@ function UserTankWorkspaceContent({
             }
 
             try {
-                await updateTankItem.mutateAsync({
-                    tankId: selectedTankId,
-                    itemId: item.id,
-                    payload: {
-                        quantity: item.quantity + 1,
-                        note: item.note ?? undefined,
-                    },
-                });
+                queueSetSpeciesQuantity(speciesId, item.quantity + 1);
             } catch (_error) {
                 showSnackbar(t('TankBuilder.updateTankError'), 'error');
             }
         },
-        [selectedTankId, showSnackbar, speciesItemMap, t, updateTankItem],
+        [queueSetSpeciesQuantity, showSnackbar, speciesItemMap, t],
     );
 
     const handleDecrementSpecies = useCallback(
-        async (speciesId: string) => {
+        (speciesId: string) => {
             const item = speciesItemMap.get(speciesId);
 
             if (!item) {
@@ -301,31 +273,16 @@ function UserTankWorkspaceContent({
             }
 
             try {
-                if (item.quantity <= 1) {
-                    await deleteTankItem.mutateAsync({
-                        tankId: selectedTankId,
-                        itemId: item.id,
-                    });
-                    return;
-                }
-
-                await updateTankItem.mutateAsync({
-                    tankId: selectedTankId,
-                    itemId: item.id,
-                    payload: {
-                        quantity: item.quantity - 1,
-                        note: item.note ?? undefined,
-                    },
-                });
+                queueSetSpeciesQuantity(speciesId, Math.max(0, item.quantity - 1));
             } catch (_error) {
                 showSnackbar(t('TankBuilder.updateTankError'), 'error');
             }
         },
-        [deleteTankItem, selectedTankId, showSnackbar, speciesItemMap, t, updateTankItem],
+        [queueSetSpeciesQuantity, showSnackbar, speciesItemMap, t],
     );
 
     const handleRemoveSpecies = useCallback(
-        async (speciesId: string) => {
+        (speciesId: string) => {
             const item = speciesItemMap.get(speciesId);
 
             if (!item) {
@@ -333,42 +290,32 @@ function UserTankWorkspaceContent({
             }
 
             try {
-                await deleteTankItem.mutateAsync({
-                    tankId: selectedTankId,
-                    itemId: item.id,
-                });
+                queueSetSpeciesQuantity(speciesId, 0);
             } catch (_error) {
                 showSnackbar(t('TankBuilder.updateTankError'), 'error');
             }
         },
-        [deleteTankItem, selectedTankId, showSnackbar, speciesItemMap, t],
+        [queueSetSpeciesQuantity, showSnackbar, speciesItemMap, t],
     );
 
-    const handleClearInventory = useCallback(async () => {
+    const handleClearInventory = useCallback(() => {
         try {
-            await Promise.all(
-                items
-                    .filter((item) => item.itemType === 1)
-                    .map((item) =>
-                        deleteTankItem.mutateAsync({
-                            tankId: selectedTankId,
-                            itemId: item.id,
-                        }),
-                    ),
-            );
+            items
+                .filter((item) => item.itemType === 1)
+                .forEach((item) => {
+                    queueSetSpeciesQuantity(item.referenceId, 0);
+                });
 
             showSnackbar(t('TankBuilder.clearedTankMessage'), 'success');
         } catch (_error) {
             showSnackbar(t('TankBuilder.updateTankError'), 'error');
         }
-    }, [deleteTankItem, items, selectedTankId, showSnackbar, t]);
+    }, [items, queueSetSpeciesQuantity, showSnackbar, t]);
 
     const isSidebarSyncing =
         isTankMutating
         || updateTank.isPending
-        || addTankItem.isPending
-        || updateTankItem.isPending
-        || deleteTankItem.isPending;
+        || isBufferedSpeciesSyncing;
 
     return (
         <Box

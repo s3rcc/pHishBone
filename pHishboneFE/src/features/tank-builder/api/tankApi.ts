@@ -93,7 +93,7 @@ export const tankApi = {
     },
 
     getTankAnalysis: async (tankId: string): Promise<TankAnalysisReportDto> => {
-        const { data } = await axiosInstance.get<ApiResponse<TankAnalysisReportDto>>(`/api/tanks/${tankId}/analysis`);
+        const { data } = await axiosInstance.get<ApiResponse<TankAnalysisReportDto>>(`/api/tanks/${tankId}/analysis/v2`);
         return data.data;
     },
 };
