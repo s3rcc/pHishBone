@@ -95,6 +95,14 @@ export interface TankItemResponseDto {
     createdTime: string;
 }
 
+export interface TankItemMutationResponseDto {
+    item: TankItemResponseDto | null;
+    analysis: TankAnalysisReportDto;
+    itemCount: number;
+    status: TankStatus;
+    lastUpdatedTime?: string | null;
+}
+
 export type AnalysisSeverity = 0 | 1 | 2 | 'Info' | 'Warning' | 'Danger';
 
 export interface DecimalRangeDto {

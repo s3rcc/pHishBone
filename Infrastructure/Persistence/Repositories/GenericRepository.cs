@@ -4,6 +4,8 @@ using Infrastructure.Common.Interfaces;
 using Infrastructure.Paginate;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
+using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -13,22 +15,26 @@ namespace Infrastructure.Persistence.Repositories
     {
         private readonly ApplicationDbContext _context;
         private readonly DbSet<T> _dbSet;
+        private readonly ILogger _logger;
+        private readonly string _entityName;
 
-        public GenericRepository(ApplicationDbContext context)
+        public GenericRepository(ApplicationDbContext context, ILoggerFactory loggerFactory)
         {
             _context = context;
             _dbSet = context.Set<T>();
+            _logger = loggerFactory.CreateLogger($"{nameof(GenericRepository<T>)}<{typeof(T).Name}>");
+            _entityName = typeof(T).Name;
         }
 
         public IQueryable<T> GetQueryable(bool tracking = false)
         {
-            return tracking ? _dbSet : _dbSet.AsNoTracking();
+            return ApplyTracking(_dbSet, tracking);
         }
 
         public IQueryable<T> FromSqlInterpolated(FormattableString sql, bool tracking = false)
         {
             var query = _dbSet.FromSqlInterpolated(sql);
-            return tracking ? query : query.AsNoTracking();
+            return ApplyTracking(query, tracking);
         }
 
         public void Delete(T entity)
@@ -49,9 +55,19 @@ namespace Infrastructure.Persistence.Repositories
 
             if (predicate != null) query = query.Where(predicate);
 
-            if (orderBy != null) return await orderBy(query).AsNoTracking().ToListAsync(cancellationToken);
+            if (orderBy != null) query = orderBy(query);
 
-            return await query.AsNoTracking().ToListAsync(cancellationToken);
+            query = ApplyTracking(query, tracking);
+
+            return await ExecuteWithLoggingAsync(
+                "GetList",
+                async () => await query.ToListAsync(cancellationToken),
+                (results, elapsedMs) =>
+                    _logger.LogInformation(
+                        "Successfully retrieved {Count} {EntityName} record(s) from DB in {ElapsedMs:0.000} ms",
+                        results.Count,
+                        _entityName,
+                        elapsedMs));
         }
 
         public async Task<IPaginate<T>> GetPagingListAsync(IFilter<T>? filter = null, Expression<Func<T, bool>>? predicate = null, Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null, Func<IQueryable<T>, IIncludableQueryable<T, object>>? include = null, int page = 1, int size = 10, string? sortBy = null, bool isAsc = true, CancellationToken cancellationToken = default)
@@ -74,7 +90,19 @@ namespace Infrastructure.Persistence.Repositories
                 query = orderBy(query);
             }
 
-            return await query.AsNoTracking().ToPaginateAsync(page, size, 1, cancellationToken);
+            query = query.AsNoTracking();
+
+            return await ExecuteWithLoggingAsync(
+                "GetPagingList",
+                async () => await query.ToPaginateAsync(page, size, 1, cancellationToken),
+                (result, elapsedMs) =>
+                    _logger.LogInformation(
+                        "Successfully retrieved page {Page} of {EntityName} from DB in {ElapsedMs:0.000} ms. Returned {Count} record(s) out of {Total}",
+                        result.Page,
+                        _entityName,
+                        elapsedMs,
+                        result.Items.Count,
+                        result.Total));
         }
 
         public async Task InsertAsync(T entity, CancellationToken cancellationToken = default)
@@ -95,9 +123,19 @@ namespace Infrastructure.Persistence.Repositories
 
             if (predicate != null) query = query.Where(predicate);
 
-            if (orderBy != null) return await orderBy(query).AsNoTracking().FirstOrDefaultAsync(cancellationToken);
+            if (orderBy != null) query = orderBy(query);
 
-            return await query.AsNoTracking().FirstOrDefaultAsync(cancellationToken);
+            query = ApplyTracking(query, tracking);
+
+            return await ExecuteWithLoggingAsync(
+                "SingleOrDefault",
+                async () => await query.FirstOrDefaultAsync(cancellationToken),
+                (entity, elapsedMs) =>
+                    _logger.LogInformation(
+                        "Successfully retrieved {EntityName} from DB in {ElapsedMs:0.000} ms. Found: {Found}",
+                        _entityName,
+                        elapsedMs,
+                        entity is not null));
         }
 
         public Task Update(T entity)
@@ -124,6 +162,39 @@ namespace Infrastructure.Persistence.Repositories
         public void UpdateRange(IEnumerable<T> entities)
         {
             _dbSet.UpdateRange(entities);
+        }
+
+        private IQueryable<T> ApplyTracking(IQueryable<T> query, bool tracking)
+        {
+            return tracking ? query : query.AsNoTracking();
+        }
+
+        private async Task<TResult> ExecuteWithLoggingAsync<TResult>(
+            string operation,
+            Func<Task<TResult>> action,
+            Action<TResult, double> onSuccess)
+        {
+            var stopwatch = Stopwatch.StartNew();
+
+            try
+            {
+                var result = await action();
+                stopwatch.Stop();
+
+                onSuccess(result, stopwatch.Elapsed.TotalMilliseconds);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                stopwatch.Stop();
+                _logger.LogError(
+                    ex,
+                    "DB {Operation} for {EntityName} failed after {ElapsedMs:0.000} ms",
+                    operation,
+                    _entityName,
+                    stopwatch.Elapsed.TotalMilliseconds);
+                throw;
+            }
         }
 
         //sort for paginate

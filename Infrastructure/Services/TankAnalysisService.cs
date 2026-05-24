@@ -56,6 +56,13 @@ namespace Infrastructure.Services
                 );
             }
 
+            return await GetTankAnalysisForTankAsync(tank, cancellationToken);
+        }
+
+        public async Task<TankAnalysisReportDto> GetTankAnalysisForTankAsync(
+            Tank tank,
+            CancellationToken cancellationToken = default)
+        {
             var speciesItems = tank.TankItems
                 .Where(ti => ti.DeletedTime == null && ti.ItemType == ItemType.Species)
                 .ToList();

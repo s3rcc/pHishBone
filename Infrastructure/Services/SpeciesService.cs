@@ -54,13 +54,24 @@ namespace Infrastructure.Services
                 return cached;
             }
 
-            var species = await _unitOfWork.Repository<Species>().SingleOrDefaultAsync(
-                predicate: s => s.Id == id,
-                include: q => q.Include(s => s.Type),
-                cancellationToken: cancellationToken
-            );
+            var dto = await _unitOfWork.Repository<Species>()
+                .GetQueryable()
+                .Where(s => s.Id == id)
+                .Select(s => new SpeciesDto
+                {
+                    Id = s.Id,
+                    TypeId = s.TypeId,
+                    TypeName = s.Type != null ? s.Type.Name : null,
+                    ScientificName = s.ScientificName,
+                    CommonName = s.CommonName,
+                    ThumbnailUrl = s.ThumbnailUrl,
+                    Slug = s.Slug,
+                    IsActive = s.IsActive,
+                    CreatedTime = s.CreatedTime
+                })
+                .SingleOrDefaultAsync(cancellationToken);
 
-            if (species == null)
+            if (dto == null)
             {
                 throw new CustomErrorException(
                     StatusCodes.Status404NotFound,
@@ -69,7 +80,6 @@ namespace Infrastructure.Services
                 );
             }
 
-            var dto = _mapper.Map<SpeciesDto>(species);
             await _cache.SetAsync(cacheKey, dto, TimeSpan.FromMinutes(CacheKeyConstant.DefaultExpiryMinutes), cancellationToken);
             return dto;
         }

@@ -7,7 +7,7 @@ namespace Domain.Exceptions
         public int StatusCode { get; }
         public ErrorDetail ErrorDetail { get; }
 
-        public CustomErrorException(int statusCode, string errorCode, string message = null)
+        public CustomErrorException(int statusCode, string errorCode, string? message = null)
         {
             StatusCode = statusCode;
             ErrorDetail = new ErrorDetail
@@ -19,8 +19,8 @@ namespace Domain.Exceptions
     }
     public class ErrorDetail
     {
-        [JsonPropertyName("errorCode")] public string ErrorCode { get; set; }
+        [JsonPropertyName("errorCode")] public string? ErrorCode { get; set; }
 
-        [JsonPropertyName("message")] public object Message { get; set; }
+        [JsonPropertyName("message")] public object? Message { get; set; }
     }
 }

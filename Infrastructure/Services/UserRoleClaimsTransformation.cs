@@ -1,6 +1,7 @@
 using Domain.Entities;
 using Infrastructure.Common.Interfaces;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System.Security.Claims;
 
@@ -11,14 +12,19 @@ namespace Infrastructure.Services
     /// </summary>
     public class UserRoleClaimsTransformation : IClaimsTransformation
     {
+        private static readonly TimeSpan RoleCacheDuration = TimeSpan.FromMinutes(5);
+
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IMemoryCache _memoryCache;
         private readonly ILogger<UserRoleClaimsTransformation> _logger;
 
         public UserRoleClaimsTransformation(
             IUnitOfWork unitOfWork,
+            IMemoryCache memoryCache,
             ILogger<UserRoleClaimsTransformation> logger)
         {
             _unitOfWork = unitOfWork;
+            _memoryCache = memoryCache;
             _logger = logger;
         }
 
@@ -37,19 +43,24 @@ namespace Infrastructure.Services
                 return principal;
             }
 
-            var user = await _unitOfWork.Repository<PBUser>()
-                .SingleOrDefaultAsync(
-                    predicate: item => item.SupabaseUserId == supabaseUserId && item.DeletedTime == null);
-
-            if (user == null)
+            var cacheKey = $"auth:app-role:{supabaseUserId}";
+            if (!_memoryCache.TryGetValue(cacheKey, out string? applicationRole))
             {
-                _logger.LogWarning(
-                    "Authenticated Supabase user {SupabaseUserId} does not have a local PBUser role record",
-                    supabaseUserId);
-                return principal;
-            }
+                var user = await _unitOfWork.Repository<PBUser>()
+                    .SingleOrDefaultAsync(
+                        predicate: item => item.SupabaseUserId == supabaseUserId && item.DeletedTime == null);
 
-            var applicationRole = user.Role.ToString();
+                if (user == null)
+                {
+                    _logger.LogWarning(
+                        "Authenticated Supabase user {SupabaseUserId} does not have a local PBUser role record",
+                        supabaseUserId);
+                    return principal;
+                }
+
+                applicationRole = user.Role.ToString();
+                _memoryCache.Set(cacheKey, applicationRole, RoleCacheDuration);
+            }
 
             foreach (var existingRoleClaim in identity.FindAll(ClaimTypes.Role).ToList())
             {

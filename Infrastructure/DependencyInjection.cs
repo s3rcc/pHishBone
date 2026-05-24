@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 using StackExchange.Redis;
 
 namespace Infrastructure
@@ -20,6 +21,8 @@ namespace Infrastructure
             this IServiceCollection services,
             IConfiguration configuration)
         {
+            services.AddMemoryCache();
+
             // Add DbContext with PostgreSQL
             var connectionString = configuration.GetConnectionString("DefaultConnection");
 
@@ -62,18 +65,27 @@ namespace Infrastructure
 
             // Configure Redis distributed cache
             var redisSettings = configuration.GetSection("RedisSettings").Get<RedisSettings>();
-            if (redisSettings != null && !string.IsNullOrEmpty(redisSettings.ConnectionString))
+            if (redisSettings is { Enabled: true } && !string.IsNullOrWhiteSpace(redisSettings.ConnectionString))
             {
                 services.Configure<RedisSettings>(configuration.GetSection("RedisSettings"));
-                services.AddStackExchangeRedisCache(options =>
-                {
-                    options.Configuration = redisSettings.ConnectionString;
-                    options.InstanceName = redisSettings.InstanceName;
-                });
 
-                // Register IConnectionMultiplexer for prefix-based cache invalidation
-                services.AddSingleton<IConnectionMultiplexer>(_ =>
-                    ConnectionMultiplexer.Connect(redisSettings.ConnectionString));
+                var redisConfiguration = BuildRedisConfiguration(redisSettings);
+
+                if (TryConnectToRedis(redisConfiguration, out var redisConnection))
+                {
+                    services.AddStackExchangeRedisCache(options =>
+                    {
+                        options.ConfigurationOptions = redisConfiguration;
+                        options.InstanceName = redisSettings.InstanceName;
+                    });
+
+                    // Register IConnectionMultiplexer for prefix-based cache invalidation
+                    services.AddSingleton<IConnectionMultiplexer>(redisConnection);
+                }
+                else
+                {
+                    services.AddDistributedMemoryCache();
+                }
             }
             else
             {
@@ -98,6 +110,7 @@ namespace Infrastructure
             services.AddScoped<ITankService, TankService>();
             services.AddScoped<ITankItemService, TankItemService>();
             services.AddScoped<ITankAnalysisService, TankAnalysisService>();
+            services.AddScoped<ITankAnalysisV2Service, TankAnalysisV2Service>();
             services.AddScoped<IGuestTankAnalysisService, GuestTankAnalysisService>();
             services.AddScoped<ISpeciesImageService, SpeciesImageService>();
             services.AddScoped<ITankImageService, TankImageService>();
@@ -108,6 +121,46 @@ namespace Infrastructure
             services.AddTransient<IClaimsTransformation, UserRoleClaimsTransformation>();
 
             return services;
+        }
+
+        private static ConfigurationOptions BuildRedisConfiguration(RedisSettings redisSettings)
+        {
+            var options = ConfigurationOptions.Parse(redisSettings.ConnectionString);
+            options.AbortOnConnectFail = false;
+            options.ConnectRetry = 1;
+            options.ConnectTimeout = redisSettings.ConnectTimeoutMs;
+            options.SyncTimeout = redisSettings.OperationTimeoutMs;
+            options.AsyncTimeout = redisSettings.OperationTimeoutMs;
+
+            return options;
+        }
+
+        private static bool TryConnectToRedis(
+            ConfigurationOptions redisConfiguration,
+            out IConnectionMultiplexer redisConnection)
+        {
+            try
+            {
+                redisConnection = ConnectionMultiplexer.Connect(redisConfiguration);
+
+                if (redisConnection.IsConnected)
+                {
+                    Log.Information(
+                        "Redis cache is available. Endpoints={Endpoints}",
+                        string.Join(", ", redisConfiguration.EndPoints.Select(endpoint => endpoint.ToString())));
+                    return true;
+                }
+
+                redisConnection.Dispose();
+                Log.Warning("Redis reported a disconnected state during startup. Falling back to in-memory distributed cache.");
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Redis is unavailable during startup. Falling back to in-memory distributed cache.");
+            }
+
+            redisConnection = null!;
+            return false;
         }
     }
 }

@@ -21,12 +21,18 @@ namespace Infrastructure.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ICurrentUserService _currentUserService;
+        private readonly ITankAnalysisService _tankAnalysisService;
 
-        public TankItemService(IUnitOfWork unitOfWork, IMapper mapper, ICurrentUserService currentUserService)
+        public TankItemService(
+            IUnitOfWork unitOfWork,
+            IMapper mapper,
+            ICurrentUserService currentUserService,
+            ITankAnalysisService tankAnalysisService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _currentUserService = currentUserService;
+            _tankAnalysisService = tankAnalysisService;
         }
 
         public async Task<IEnumerable<TankItemResponseDto>> GetTankItemsAsync(string tankId, string userId, CancellationToken cancellationToken = default)
@@ -44,7 +50,7 @@ namespace Infrastructure.Services
             return _mapper.Map<IEnumerable<TankItemResponseDto>>(items);
         }
 
-        public async Task<TankItemResponseDto> AddItemAsync(string tankId, AddTankItemDto dto, string userId, CancellationToken cancellationToken = default)
+        public async Task<TankItemMutationResponseDto> AddItemAsync(string tankId, AddTankItemDto dto, string userId, CancellationToken cancellationToken = default)
         {
             // Verify tank exists and user has access
             var tank = await GetTankWithAuthorizationAsync(tankId, userId, cancellationToken);
@@ -85,6 +91,7 @@ namespace Infrastructure.Services
                 tankItem.CreatedBy = _currentUserService.GetUserId();
 
                 await _unitOfWork.Repository<TankItem>().InsertAsync(tankItem, cancellationToken);
+                tank.TankItems.Add(tankItem);
             }
 
             // Invalidate tank - set status to Draft when inventory changes
@@ -92,10 +99,10 @@ namespace Infrastructure.Services
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            return _mapper.Map<TankItemResponseDto>(tankItem);
+            return await BuildMutationResponseAsync(tank, tankItem, cancellationToken);
         }
 
-        public async Task<TankItemResponseDto> UpdateItemAsync(string tankId, string itemId, UpdateTankItemDto dto, string userId, CancellationToken cancellationToken = default)
+        public async Task<TankItemMutationResponseDto> UpdateItemAsync(string tankId, string itemId, UpdateTankItemDto dto, string userId, CancellationToken cancellationToken = default)
         {
             // Verify tank exists and user has access
             var tank = await GetTankWithAuthorizationAsync(tankId, userId, cancellationToken);
@@ -125,10 +132,10 @@ namespace Infrastructure.Services
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            return _mapper.Map<TankItemResponseDto>(tankItem);
+            return await BuildMutationResponseAsync(tank, tankItem, cancellationToken);
         }
 
-        public async Task RemoveItemAsync(string tankId, string itemId, string userId, CancellationToken cancellationToken = default)
+        public async Task<TankItemMutationResponseDto> RemoveItemAsync(string tankId, string itemId, string userId, CancellationToken cancellationToken = default)
         {
             // Verify tank exists and user has access
             var tank = await GetTankWithAuthorizationAsync(tankId, userId, cancellationToken);
@@ -149,11 +156,14 @@ namespace Infrastructure.Services
 
             // Hard delete for tank items
             _unitOfWork.Repository<TankItem>().Delete(tankItem);
+            tank.TankItems.Remove(tankItem);
 
             // Invalidate tank status
             await InvalidateTankStatusAsync(tank);
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            return await BuildMutationResponseAsync(tank, null, cancellationToken);
         }
 
         #region Private Helper Methods
@@ -165,6 +175,7 @@ namespace Infrastructure.Services
         {
             var tank = await _unitOfWork.Repository<Tank>().SingleOrDefaultAsync(
                 predicate: t => t.Id == tankId && t.DeletedTime == null,
+                include: q => q.Include(t => t.TankItems),
                 cancellationToken: cancellationToken
             );
 
@@ -223,13 +234,26 @@ namespace Infrastructure.Services
         /// </summary>
         private async Task InvalidateTankStatusAsync(Tank tank)
         {
-            if (tank.Status != TankStatus.Draft)
-            {
-                tank.Status = TankStatus.Draft;
-                tank.LastUpdatedBy = _currentUserService.GetUserId();
-                tank.LastUpdatedTime = DateTime.UtcNow;
-                await _unitOfWork.Repository<Tank>().Update(tank);
-            }
+            tank.Status = TankStatus.Draft;
+            tank.LastUpdatedBy = _currentUserService.GetUserId();
+            tank.LastUpdatedTime = DateTime.UtcNow;
+            await _unitOfWork.Repository<Tank>().Update(tank);
+        }
+
+        private async Task<TankItemMutationResponseDto> BuildMutationResponseAsync(
+            Tank tank,
+            TankItem? tankItem,
+            CancellationToken cancellationToken)
+        {
+            var analysis = await _tankAnalysisService.GetTankAnalysisForTankAsync(tank, cancellationToken);
+            var itemCount = tank.TankItems.Count(item => item.DeletedTime == null);
+
+            return new TankItemMutationResponseDto(
+                tankItem == null ? null : _mapper.Map<TankItemResponseDto>(tankItem),
+                analysis,
+                itemCount,
+                tank.Status,
+                tank.LastUpdatedTime);
         }
 
         #endregion
